@@ -1,0 +1,3 @@
+[submodule "qpl-parser/tokenizers"]
+	path = qpl-parser/tokenizers
+	url = https://github.com/hasktorch/tokenizers

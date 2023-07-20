@@ -1,0 +1,3 @@
+packages:
+    qpl-parser.cabal
+    tokenizers/bindings/haskell/tokenizers-haskell/tokenizers.cabal 

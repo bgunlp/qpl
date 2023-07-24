@@ -1,0 +1,1208 @@
+{
+  "car_1": [
+    "continents",
+    "countries",
+    "car_makers",
+    "model_list",
+    "car_names",
+    "cars_data"
+  ],
+  "party_people": [
+    "region",
+    "party",
+    "member",
+    "party_events"
+  ],
+  "imdb": [
+    "actor",
+    "copyright",
+    "cast",
+    "genre",
+    "classification",
+    "company",
+    "director",
+    "producer",
+    "directed_by",
+    "keyword",
+    "made_by",
+    "movie",
+    "tags",
+    "tv_series",
+    "writer",
+    "written_by"
+  ],
+  "cre_Doc_Tracking_DB": [
+    "ref_document_types",
+    "ref_calendar",
+    "ref_locations",
+    "roles",
+    "all_documents",
+    "employees",
+    "document_locations",
+    "documents_to_be_destroyed"
+  ],
+  "riding_club": [
+    "player",
+    "club",
+    "coach",
+    "player_coach",
+    "match_result"
+  ],
+  "tracking_orders": [
+    "customers",
+    "invoices",
+    "orders",
+    "products",
+    "order_items",
+    "shipments",
+    "shipment_items"
+  ],
+  "journal_committee": [
+    "journal",
+    "editor",
+    "journal_committee"
+  ],
+  "local_govt_mdm": [
+    "customer_master_index",
+    "cmi_cross_references",
+    "council_tax",
+    "business_rates",
+    "benefits_overpayments",
+    "parking_fines",
+    "rent_arrears",
+    "electoral_register"
+  ],
+  "performance_attendance": [
+    "member",
+    "performance",
+    "member_attendance"
+  ],
+  "school_bus": [
+    "driver",
+    "school",
+    "school_bus"
+  ],
+  "academic": [
+    "author",
+    "conference",
+    "domain",
+    "domain_author",
+    "domain_conference",
+    "journal",
+    "domain_journal",
+    "keyword",
+    "domain_keyword",
+    "publication",
+    "domain_publication",
+    "organization",
+    "publication_keyword",
+    "writes",
+    "cite"
+  ],
+  "product_catalog": [
+    "attribute_definitions",
+    "catalogs",
+    "catalog_structure",
+    "catalog_contents",
+    "catalog_contents_additional_attributes"
+  ],
+  "soccer_1": [
+    "player",
+    "player_attributes",
+    "country",
+    "league",
+    "team",
+    "match",
+    "team_attributes"
+  ],
+  "department_management": [
+    "department",
+    "head",
+    "management"
+  ],
+  "voter_1": [
+    "area_code_state",
+    "contestants",
+    "votes"
+  ],
+  "insurance_fnol": [
+    "customers",
+    "services",
+    "available_policies",
+    "customers_policies",
+    "first_notification_of_loss",
+    "claims",
+    "settlements"
+  ],
+  "pets_1": [
+    "student",
+    "pets",
+    "has_pet"
+  ],
+  "match_season": [
+    "country",
+    "team",
+    "match_season",
+    "player"
+  ],
+  "formula_1": [
+    "circuits",
+    "races",
+    "drivers",
+    "status",
+    "seasons",
+    "constructors",
+    "constructorstandings",
+    "results",
+    "driverstandings",
+    "constructorresults",
+    "qualifying",
+    "pitstops",
+    "laptimes"
+  ],
+  "school_player": [
+    "school",
+    "school_details",
+    "school_performance",
+    "player"
+  ],
+  "medicine_enzyme_interaction": [
+    "medicine",
+    "enzyme",
+    "medicine_enzyme_interaction"
+  ],
+  "flight_4": [
+    "airports",
+    "airlines",
+    "routes"
+  ],
+  "network_2": [
+    "person",
+    "personfriend"
+  ],
+  "battle_death": [
+    "battle",
+    "ship",
+    "death"
+  ],
+  "apartment_rentals": [
+    "apartment_buildings",
+    "apartments",
+    "apartment_facilities",
+    "guests",
+    "apartment_bookings",
+    "view_unit_status"
+  ],
+  "store_1": [
+    "artists",
+    "albums",
+    "employees",
+    "customers",
+    "genres",
+    "invoices",
+    "media_types",
+    "tracks",
+    "invoice_lines",
+    "playlists",
+    "playlist_tracks"
+  ],
+  "phone_1": [
+    "chip_model",
+    "screen_mode",
+    "phone"
+  ],
+  "shop_membership": [
+    "member",
+    "branch",
+    "membership_register_branch",
+    "purchase"
+  ],
+  "music_2": [
+    "songs",
+    "albums",
+    "band",
+    "instruments",
+    "performance",
+    "tracklists",
+    "vocals"
+  ],
+  "employee_hire_evaluation": [
+    "employee",
+    "shop",
+    "hiring",
+    "evaluation"
+  ],
+  "cre_Doc_Template_Mgt": [
+    "ref_template_types",
+    "templates",
+    "documents",
+    "paragraphs"
+  ],
+  "products_for_hire": [
+    "discount_coupons",
+    "customers",
+    "bookings",
+    "products_for_hire",
+    "payments",
+    "products_booked",
+    "view_product_availability"
+  ],
+  "decoration_competition": [
+    "college",
+    "member",
+    "round"
+  ],
+  "store_product": [
+    "product",
+    "store",
+    "district",
+    "store_product",
+    "store_district"
+  ],
+  "game_1": [
+    "student",
+    "video_games",
+    "plays_games",
+    "sportsinfo"
+  ],
+  "musical": [
+    "musical",
+    "actor"
+  ],
+  "machine_repair": [
+    "repair",
+    "machine",
+    "technician",
+    "repair_assignment"
+  ],
+  "allergy_1": [
+    "allergy_type",
+    "student",
+    "has_allergy"
+  ],
+  "film_rank": [
+    "film",
+    "market",
+    "film_market_estimation"
+  ],
+  "customers_card_transactions": [
+    "accounts",
+    "customers",
+    "customers_cards",
+    "financial_transactions"
+  ],
+  "insurance_and_eClaims": [
+    "customers",
+    "staff",
+    "policies",
+    "claim_headers",
+    "claims_documents",
+    "claims_processing_stages",
+    "claims_processing"
+  ],
+  "station_weather": [
+    "train",
+    "station",
+    "route",
+    "weekly_weather"
+  ],
+  "program_share": [
+    "program",
+    "channel",
+    "broadcast",
+    "broadcast_share"
+  ],
+  "scientist_1": [
+    "scientists",
+    "projects",
+    "assignedto"
+  ],
+  "school_finance": [
+    "school",
+    "budget",
+    "endowment"
+  ],
+  "student_transcripts_tracking": [
+    "addresses",
+    "courses",
+    "departments",
+    "degree_programs",
+    "sections",
+    "semesters",
+    "students",
+    "student_enrolment",
+    "student_enrolment_courses",
+    "transcripts",
+    "transcript_contents"
+  ],
+  "cre_Theme_park": [
+    "ref_hotel_star_ratings",
+    "locations",
+    "ref_attraction_types",
+    "visitors",
+    "features",
+    "hotels",
+    "tourist_attractions",
+    "street_markets",
+    "shops",
+    "museums",
+    "royal_family",
+    "theme_parks",
+    "visits",
+    "photos",
+    "staff",
+    "tourist_attraction_features"
+  ],
+  "local_govt_in_alabama": [
+    "services",
+    "participants",
+    "events",
+    "participants_in_events"
+  ],
+  "scholar": [
+    "venue",
+    "author",
+    "dataset",
+    "journal",
+    "keyphrase",
+    "paper",
+    "cite",
+    "paperdataset",
+    "paperkeyphrase",
+    "writes"
+  ],
+  "debate": [
+    "people",
+    "debate",
+    "debate_people"
+  ],
+  "perpetrator": [
+    "people",
+    "perpetrator"
+  ],
+  "gymnast": [
+    "people",
+    "gymnast"
+  ],
+  "roller_coaster": [
+    "country",
+    "roller_coaster"
+  ],
+  "concert_singer": [
+    "stadium",
+    "singer",
+    "concert",
+    "singer_in_concert"
+  ],
+  "local_govt_and_lot": [
+    "customers",
+    "properties",
+    "residents",
+    "organizations",
+    "services",
+    "residents_services",
+    "things",
+    "customer_events",
+    "customer_event_notes",
+    "timed_status_of_things",
+    "timed_locations_of_things"
+  ],
+  "workshop_paper": [
+    "workshop",
+    "submission",
+    "acceptance"
+  ],
+  "storm_record": [
+    "storm",
+    "region",
+    "affected_region"
+  ],
+  "student_assessment": [
+    "addresses",
+    "people",
+    "students",
+    "courses",
+    "people_addresses",
+    "student_course_registrations",
+    "student_course_attendance",
+    "candidates",
+    "candidate_assessments"
+  ],
+  "chinook_1": [
+    "artist",
+    "album",
+    "employee",
+    "customer",
+    "genre",
+    "invoice",
+    "mediatype",
+    "track",
+    "invoiceline",
+    "playlist",
+    "playlisttrack"
+  ],
+  "book_2": [
+    "book",
+    "publication"
+  ],
+  "culture_company": [
+    "book_club",
+    "movie",
+    "culture_company"
+  ],
+  "soccer_2": [
+    "college",
+    "player",
+    "tryout"
+  ],
+  "election": [
+    "county",
+    "party",
+    "election"
+  ],
+  "inn_1": [
+    "rooms",
+    "reservations"
+  ],
+  "club_1": [
+    "student",
+    "club",
+    "member_of_club"
+  ],
+  "election_representative": [
+    "representative",
+    "election"
+  ],
+  "wta_1": [
+    "players",
+    "matches",
+    "qualifying_matches",
+    "rankings"
+  ],
+  "singer": [
+    "singer",
+    "song"
+  ],
+  "insurance_policies": [
+    "customers",
+    "customer_policies",
+    "claims",
+    "settlements",
+    "payments"
+  ],
+  "dog_kennels": [
+    "breeds",
+    "charges",
+    "sizes",
+    "treatment_types",
+    "owners",
+    "dogs",
+    "professionals",
+    "treatments"
+  ],
+  "entertainment_awards": [
+    "festival_detail",
+    "artwork",
+    "nomination"
+  ],
+  "customer_deliveries": [
+    "products",
+    "addresses",
+    "customers",
+    "regular_orders",
+    "regular_order_products",
+    "actual_orders",
+    "actual_order_products",
+    "customer_addresses",
+    "delivery_routes",
+    "delivery_route_locations",
+    "trucks",
+    "employees",
+    "order_deliveries"
+  ],
+  "yelp": [
+    "business",
+    "category",
+    "user",
+    "checkin",
+    "neighbourhood",
+    "review",
+    "tip"
+  ],
+  "tracking_software_problems": [
+    "problem_category_codes",
+    "problem_status_codes",
+    "staff",
+    "product",
+    "problems",
+    "problem_log"
+  ],
+  "museum_visit": [
+    "museum",
+    "visitor",
+    "visit"
+  ],
+  "small_bank_1": [
+    "accounts",
+    "savings",
+    "checking"
+  ],
+  "solvency_ii": [
+    "addresses",
+    "locations",
+    "products",
+    "parties",
+    "assets",
+    "channels",
+    "finances",
+    "events",
+    "products_in_events",
+    "parties_in_events",
+    "agreements",
+    "assets_in_events"
+  ],
+  "browser_web": [
+    "web_client_accelerator",
+    "browser",
+    "accelerator_compatible_browser"
+  ],
+  "department_store": [
+    "addresses",
+    "staff",
+    "suppliers",
+    "department_store_chain",
+    "customers",
+    "products",
+    "supplier_addresses",
+    "customer_addresses",
+    "customer_orders",
+    "department_stores",
+    "departments",
+    "order_items",
+    "product_suppliers",
+    "staff_department_assignments"
+  ],
+  "party_host": [
+    "party",
+    "host",
+    "party_host"
+  ],
+  "hr_1": [
+    "regions",
+    "countries",
+    "jobs",
+    "employees",
+    "job_history",
+    "locations"
+  ],
+  "college_3": [
+    "student",
+    "faculty",
+    "department",
+    "member_of",
+    "course",
+    "minor_in",
+    "gradeconversion",
+    "enrolled_in"
+  ],
+  "music_1": [
+    "genre",
+    "artist",
+    "files",
+    "song"
+  ],
+  "orchestra": [
+    "conductor",
+    "orchestra",
+    "performance",
+    "show"
+  ],
+  "poker_player": [
+    "people",
+    "poker_player"
+  ],
+  "university_basketball": [
+    "university",
+    "basketball_match"
+  ],
+  "e_learning": [
+    "course_authors_and_tutors",
+    "students",
+    "subjects",
+    "courses",
+    "student_course_enrolment",
+    "student_tests_taken"
+  ],
+  "company_office": [
+    "buildings",
+    "companies",
+    "office_locations"
+  ],
+  "course_teach": [
+    "course",
+    "teacher",
+    "course_arrange"
+  ],
+  "company_employee": [
+    "people",
+    "company",
+    "employment"
+  ],
+  "phone_market": [
+    "phone",
+    "market",
+    "phone_market"
+  ],
+  "candidate_poll": [
+    "people",
+    "candidate"
+  ],
+  "device": [
+    "device",
+    "shop",
+    "stock"
+  ],
+  "voter_2": [
+    "student",
+    "voting_record"
+  ],
+  "railway": [
+    "railway",
+    "train",
+    "manager",
+    "railway_manage"
+  ],
+  "music_4": [
+    "artist",
+    "volume",
+    "music_festival"
+  ],
+  "theme_gallery": [
+    "artist",
+    "exhibition",
+    "exhibition_record"
+  ],
+  "assets_maintenance": [
+    "third_party_companies",
+    "maintenance_contracts",
+    "parts",
+    "skills",
+    "staff",
+    "assets",
+    "asset_parts",
+    "maintenance_engineers",
+    "engineer_skills",
+    "fault_log",
+    "engineer_visits",
+    "part_faults",
+    "fault_log_parts",
+    "skills_required_to_fix"
+  ],
+  "movie_1": [
+    "movie",
+    "reviewer",
+    "rating"
+  ],
+  "ship_mission": [
+    "ship",
+    "mission"
+  ],
+  "hospital_1": [
+    "physician",
+    "department",
+    "affiliated_with",
+    "procedures",
+    "trained_in",
+    "patient",
+    "nurse",
+    "appointment",
+    "medication",
+    "prescribes",
+    "block",
+    "room",
+    "on_call",
+    "stay",
+    "undergoes"
+  ],
+  "epinions_1": [
+    "item",
+    "useracct",
+    "review",
+    "trust"
+  ],
+  "flight_2": [
+    "airlines",
+    "airports",
+    "flights"
+  ],
+  "customers_and_invoices": [
+    "customers",
+    "orders",
+    "invoices",
+    "accounts",
+    "product_categories",
+    "products",
+    "financial_transactions",
+    "order_items",
+    "invoice_line_items"
+  ],
+  "wrestler": [
+    "wrestler",
+    "elimination"
+  ],
+  "college_2": [
+    "classroom",
+    "department",
+    "course",
+    "instructor",
+    "section",
+    "teaches",
+    "student",
+    "takes",
+    "advisor",
+    "time_slot",
+    "prereq"
+  ],
+  "tracking_grants_for_research": [
+    "document_types",
+    "organisation_types",
+    "organisations",
+    "grants",
+    "documents",
+    "projects",
+    "research_outcomes",
+    "research_staff",
+    "staff_roles",
+    "project_outcomes",
+    "project_staff",
+    "tasks"
+  ],
+  "aircraft": [
+    "pilot",
+    "aircraft",
+    "match",
+    "airport",
+    "airport_aircraft"
+  ],
+  "geo": [
+    "state",
+    "city",
+    "border_info",
+    "highlow",
+    "lake",
+    "mountain",
+    "river"
+  ],
+  "dorm_1": [
+    "student",
+    "dorm",
+    "dorm_amenity",
+    "has_amenity",
+    "lives_in"
+  ],
+  "cre_Doc_Control_Systems": [
+    "ref_document_types",
+    "roles",
+    "addresses",
+    "ref_document_status",
+    "ref_shipping_agents",
+    "documents",
+    "employees",
+    "document_drafts",
+    "draft_copies",
+    "circulation_history",
+    "documents_mailed"
+  ],
+  "restaurants": [
+    "geographic",
+    "restaurant",
+    "location"
+  ],
+  "city_record": [
+    "city",
+    "match",
+    "temperature",
+    "hosting_city"
+  ],
+  "game_injury": [
+    "stadium",
+    "game",
+    "injury_accident"
+  ],
+  "climbing": [
+    "mountain",
+    "climber"
+  ],
+  "restaurant_1": [
+    "student",
+    "restaurant",
+    "restaurant_type",
+    "type_of_restaurant",
+    "visits_restaurant"
+  ],
+  "icfp_1": [
+    "inst",
+    "authors",
+    "papers",
+    "authorship"
+  ],
+  "student_1": [
+    "list",
+    "teachers"
+  ],
+  "ship_1": [
+    "ship",
+    "captain"
+  ],
+  "loan_1": [
+    "bank",
+    "customer",
+    "loan"
+  ],
+  "document_management": [
+    "roles",
+    "users",
+    "document_structures",
+    "functional_areas",
+    "images",
+    "documents",
+    "document_functional_areas",
+    "document_sections",
+    "document_sections_images"
+  ],
+  "manufacturer": [
+    "manufacturer",
+    "furniture",
+    "furniture_manufacte"
+  ],
+  "swimming": [
+    "swimmer",
+    "stadium",
+    "event",
+    "record"
+  ],
+  "wine_1": [
+    "grapes",
+    "appellations",
+    "wine"
+  ],
+  "twitter_1": [
+    "user_profiles",
+    "follows",
+    "tweets"
+  ],
+  "e_government": [
+    "addresses",
+    "services",
+    "forms",
+    "individuals",
+    "organizations",
+    "parties",
+    "organization_contact_individuals",
+    "party_addresses",
+    "party_forms",
+    "party_services"
+  ],
+  "driving_school": [
+    "addresses",
+    "staff",
+    "vehicles",
+    "customers",
+    "customer_payments",
+    "lessons"
+  ],
+  "wedding": [
+    "people",
+    "church",
+    "wedding"
+  ],
+  "pilot_record": [
+    "aircraft",
+    "pilot",
+    "pilot_record"
+  ],
+  "county_public_safety": [
+    "county_public_safety",
+    "city"
+  ],
+  "csu_1": [
+    "campuses",
+    "csu_fees",
+    "degrees",
+    "discipline_enrollments",
+    "enrollments",
+    "faculty"
+  ],
+  "activity_1": [
+    "activity",
+    "student",
+    "participates_in",
+    "faculty",
+    "faculty_participates_in"
+  ],
+  "flight_1": [
+    "aircraft",
+    "flight",
+    "employee",
+    "certificate"
+  ],
+  "network_1": [
+    "highschooler",
+    "friend",
+    "likes"
+  ],
+  "baseball_1": [
+    "player",
+    "team",
+    "all_star",
+    "appearances",
+    "manager_award",
+    "player_award",
+    "manager_award_vote",
+    "player_award_vote",
+    "batting",
+    "batting_postseason",
+    "college",
+    "player_college",
+    "fielding",
+    "fielding_outfield",
+    "fielding_postseason",
+    "hall_of_fame",
+    "park",
+    "home_game",
+    "manager",
+    "manager_half",
+    "pitching",
+    "pitching_postseason",
+    "salary",
+    "postseason",
+    "team_franchise",
+    "team_half"
+  ],
+  "company_1": [
+    "works_on",
+    "employee",
+    "department",
+    "project",
+    "dependent",
+    "dept_locations"
+  ],
+  "architecture": [
+    "architect",
+    "bridge",
+    "mill"
+  ],
+  "gas_company": [
+    "company",
+    "gas_station",
+    "station_company"
+  ],
+  "customers_campaigns_ecommerce": [
+    "premises",
+    "products",
+    "customers",
+    "mailshot_campaigns",
+    "customer_addresses",
+    "customer_orders",
+    "mailshot_customers",
+    "order_items"
+  ],
+  "entrepreneur": [
+    "people",
+    "entrepreneur"
+  ],
+  "race_track": [
+    "track",
+    "race"
+  ],
+  "coffee_shop": [
+    "shop",
+    "member",
+    "happy_hour",
+    "happy_hour_member"
+  ],
+  "cre_Docs_and_Epenses": [
+    "ref_document_types",
+    "ref_budget_codes",
+    "projects",
+    "documents",
+    "statements",
+    "documents_with_expenses",
+    "accounts"
+  ],
+  "college_1": [
+    "employee",
+    "department",
+    "course",
+    "class",
+    "student",
+    "enroll",
+    "professor"
+  ],
+  "sports_competition": [
+    "club",
+    "club_rank",
+    "player",
+    "competition",
+    "competition_result"
+  ],
+  "sakila_1": [
+    "actor",
+    "country",
+    "city",
+    "address",
+    "category",
+    "staff",
+    "store",
+    "customer",
+    "language",
+    "film",
+    "film_actor",
+    "film_category",
+    "film_text",
+    "inventory",
+    "rental",
+    "payment"
+  ],
+  "real_estate_properties": [
+    "ref_feature_types",
+    "ref_property_types",
+    "other_available_features",
+    "properties",
+    "other_property_features"
+  ],
+  "body_builder": [
+    "people",
+    "body_builder"
+  ],
+  "train_station": [
+    "station",
+    "train",
+    "train_station"
+  ],
+  "cinema": [
+    "film",
+    "cinema",
+    "schedule"
+  ],
+  "mountain_photos": [
+    "mountain",
+    "camera_lens",
+    "photos"
+  ],
+  "behavior_monitoring": [
+    "ref_address_types",
+    "ref_detention_type",
+    "ref_incident_type",
+    "addresses",
+    "students",
+    "teachers",
+    "assessment_notes",
+    "behavior_incident",
+    "detention",
+    "student_addresses",
+    "students_in_detention"
+  ],
+  "cre_Drama_Workshop_Groups": [
+    "ref_payment_methods",
+    "ref_service_types",
+    "addresses",
+    "products",
+    "marketing_regions",
+    "clients",
+    "drama_workshop_groups",
+    "performers",
+    "customers",
+    "stores",
+    "bookings",
+    "performers_in_bookings",
+    "customer_orders",
+    "order_items",
+    "invoices",
+    "services",
+    "bookings_services",
+    "invoice_items"
+  ],
+  "products_gen_characteristics": [
+    "ref_characteristic_types",
+    "ref_colors",
+    "ref_product_categories",
+    "characteristics",
+    "products",
+    "product_characteristics"
+  ],
+  "news_report": [
+    "event",
+    "journalist",
+    "news_report"
+  ],
+  "farm": [
+    "city",
+    "farm",
+    "farm_competition",
+    "competition_record"
+  ],
+  "tvshow": [
+    "tv_channel",
+    "tv_series",
+    "cartoon"
+  ],
+  "flight_company": [
+    "airport",
+    "operate_company",
+    "flight"
+  ],
+  "protein_institute": [
+    "building",
+    "institution",
+    "protein"
+  ],
+  "manufactory_1": [
+    "manufacturers",
+    "products"
+  ],
+  "world_1": [
+    "country",
+    "city",
+    "countrylanguage"
+  ],
+  "customers_and_products_contacts": [
+    "addresses",
+    "products",
+    "customers",
+    "contacts",
+    "customer_address_history",
+    "customer_orders",
+    "order_items"
+  ],
+  "customer_complaints": [
+    "staff",
+    "customers",
+    "products",
+    "complaints"
+  ],
+  "bike_1": [
+    "station",
+    "status",
+    "trip",
+    "weather"
+  ],
+  "tracking_share_transactions": [
+    "investors",
+    "lots",
+    "ref_transaction_types",
+    "transactions",
+    "sales",
+    "purchases",
+    "transactions_lots"
+  ],
+  "customers_and_addresses": [
+    "addresses",
+    "products",
+    "customers",
+    "customer_addresses",
+    "customer_contact_channels",
+    "customer_orders",
+    "order_items"
+  ]
+}

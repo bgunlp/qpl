@@ -24,7 +24,7 @@ CREATE TABLE  wine_1.wine (
 [Year] INTEGER,
 [Price] INTEGER,
 [Score] INTEGER,
-[Cases] VARCHAR(6),
+[Cases] INTEGER,
 [Drink] VARCHAR(400),
 FOREIGN KEY (Grape) REFERENCES  wine_1.grapes(Grape),
 FOREIGN KEY (Appelation) REFERENCES  wine_1.appellations(Appelation)

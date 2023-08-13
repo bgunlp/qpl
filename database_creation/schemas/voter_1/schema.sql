@@ -13,7 +13,7 @@ CREATE TABLE voter_1.CONTESTANTS (
 CREATE TABLE voter_1.VOTES (
   vote_id integer NOT NULL PRIMARY KEY
 ,  phone_number bigint NOT NULL
-,  state varchar(2) NOT NULL
+,  state varchar(3) NOT NULL
 ,  contestant_number integer NOT NULL
 ,  created datetime NOT NULL DEFAULT CURRENT_TIMESTAMP
 , 	FOREIGN KEY (state) REFERENCES voter_1.AREA_CODE_STATE(state)

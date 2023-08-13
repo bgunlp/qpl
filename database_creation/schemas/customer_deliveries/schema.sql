@@ -94,7 +94,7 @@ FOREIGN KEY (employee_address_id ) REFERENCES  customer_deliveries.Addresses(add
 );
 
 CREATE TABLE  customer_deliveries.Order_Deliveries (
-location_code VARCHAR(10) NOT NULL,
+location_code VARCHAR(13) NOT NULL,
 actual_order_id INTEGER NOT NULL,
 delivery_status_code VARCHAR(10) NOT NULL,
 driver_employee_id INTEGER NOT NULL,

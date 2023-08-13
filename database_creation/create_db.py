@@ -1,8 +1,9 @@
+import argparse
 import json
-import pickle
 import sqlite3
 import subprocess
 from pathlib import Path
+from typing import List
 
 import numpy as np
 import pandas as pd
@@ -11,15 +12,13 @@ import sqlalchemy
 from sqlalchemy import create_engine
 from tqdm.auto import tqdm
 
-DBS = list(Path("spider/database/").glob("**/*.sqlite"))
 
-
-def create_database():
+def create_database(dbs: List[Path]):
     conn = pymssql.connect("0.0.0.0", "SA", "Passw0rd!", autocommit=True)
     cursor = conn.cursor()
     cursor.execute("CREATE DATABASE spider")
     cursor.execute("USE spider")
-    for db in DBS:
+    for db in dbs:
         cursor.execute(f"CREATE SCHEMA {db.stem}")
     conn.close()
     ddls = Path("./schemas").glob("**/*.sql")
@@ -51,7 +50,7 @@ def get_types(cursor, table):
     return {x[1]: x[2] for x in result}
 
 
-def convert_sqlite_type(df, types):
+def convert_sqlite_type(schema, df, types):
     def try_(f):
         def g(x):
             if x == "inf":
@@ -76,41 +75,49 @@ def convert_sqlite_type(df, types):
             or t.startswith("decimal")
         ):
             df[col] = df[col].apply(try_(float))
-        elif cl in (
-            "horsepower",
-            "mpg",
-        ):  # special case for car_1 schema
+        elif schema == "car_1" and cl in ("horsepower", "mpg"):
             if cl == "horsepower":
                 df[col] = df[col].apply(try_(int))
             else:
                 df[col] = df[col].apply(try_(float))
         elif (
-            cl == "transcript_date" and t == "datetime"
-        ):  # special case for `students_transcripts_tracking`
+            schema == "student_transcripts_tracking"
+            and cl == "transcript_date"
+            and t == "datetime"
+        ):
             df[col] = pd.to_datetime(df[col]).dt.year
+        elif schema == "wta_1" and t == "date":
+            df[col] = pd.to_datetime(df[col], format="%Y%m%d")
         else:  # keep other types as text
             pass
 
     return df
 
 
-def dump(conn, cursor):
+def dump(schema, conn, cursor):
     tables = get_tables(cursor)
     result = {}
     for t in tables:
         types = get_types(cursor, t)
         df = pd.read_sql(f"select * from {t}", conn)
-        result[t] = convert_sqlite_type(df, types)
+        if schema == "orchestra" and t == "show":
+            df.rename(
+                {"If_first_show": "Result", "Result": "If_first_show"},
+                axis=1,
+                inplace=True,
+            )
+        result[t] = convert_sqlite_type(schema, df, types)
     return result
 
 
-def dump_all():
+def dump_all(dbs: List[Path]):
     result = {}
-    for db in DBS:
+    for db in dbs:
         conn = sqlite3.connect(db)
         conn.text_factory = lambda b: b.decode(errors="ignore")
         cursor = conn.cursor()
-        result[db.stem] = dump(conn, cursor)
+        schema = db.stem
+        result[schema] = dump(schema, conn, cursor)
     return result
 
 
@@ -118,19 +125,25 @@ def fill_databases():
     conn = pymssql.connect("0.0.0.0", "SA", "Passw0rd!", autocommit=True)
     cursor = conn.cursor()
     cursor.execute("USE spider")
-    with open("./data_to_insert_no_alters.pkl", "rb") as f:
-        data = pickle.load(f)
-    for stmt in tqdm(data):
+    df = pd.read_pickle("./data_to_insert_no_alters.pkl")
+    for _, row in tqdm(list(df.iterrows())):
         try:
-            cursor.execute(stmt["sql"], stmt["parameters"])
+            cursor.execute(row["sql"], row["parameters"])
         except:
             pass
 
 
-if __name__ == "__main__":
-    create_database()
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-s", "--spider-path", type=Path)
+    args = parser.parse_args()
+    spider_path: Path = args.spider_path
 
-    data = dump_all()
+    dbs = list((spider_path / "database").glob("**/*.sqlite"))
+
+    create_database(dbs)
+
+    data = dump_all(dbs)
 
     engine = create_engine(
         "mssql+pyodbc://SA:Passw0rd!@0.0.0.0/spider?driver=ODBC+Driver+17+for+SQL+Server",
@@ -156,3 +169,7 @@ if __name__ == "__main__":
     engine.dispose()
 
     fill_databases()
+
+
+if __name__ == "__main__":
+    main()

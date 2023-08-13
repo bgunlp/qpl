@@ -19,7 +19,8 @@ CREATE TABLE  concert_singer.singer (
 [Song_release_year] VARCHAR(400),
 [Age] int,
 [Is_male] CHAR(1),
-PRIMARY KEY ([Singer_ID])
+PRIMARY KEY ([Singer_ID]),
+CONSTRAINT CHK_Is_male CHECK ([Is_male] IN ('T', 'F'))
 );
 
 

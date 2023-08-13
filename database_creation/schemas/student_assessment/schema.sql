@@ -32,7 +32,7 @@ FOREIGN KEY (student_id) REFERENCES  student_assessment.People (person_id)
 
 
 CREATE TABLE  student_assessment.Courses (
-course_id VARCHAR(100) NOT NULL,
+course_id INTEGER NOT NULL,
 course_name VARCHAR(120),
 course_description VARCHAR(255),
 other_details VARCHAR(255),
@@ -54,7 +54,7 @@ FOREIGN KEY (address_id) REFERENCES  student_assessment.Addresses (address_id)
 
 CREATE TABLE  student_assessment.Student_Course_Registrations (
 student_id INTEGER NOT NULL,
-course_id VARCHAR(100) NOT NULL,
+course_id INTEGER NOT NULL,
 registration_date DATETIME NOT NULL,
 PRIMARY KEY (student_id, course_id),
 FOREIGN KEY (student_id) REFERENCES  student_assessment.Students (student_id),
@@ -62,7 +62,7 @@ FOREIGN KEY (course_id) REFERENCES  student_assessment.Courses (course_id)
 );
 CREATE TABLE  student_assessment.Student_Course_Attendance (
 student_id INTEGER NOT NULL,
-course_id VARCHAR(100) NOT NULL,
+course_id INTEGER NOT NULL,
 date_of_attendance DATETIME NOT NULL,
 PRIMARY KEY (student_id, course_id),
 FOREIGN KEY (student_id, course_id) REFERENCES  student_assessment.Student_Course_Registrations (student_id,course_id)

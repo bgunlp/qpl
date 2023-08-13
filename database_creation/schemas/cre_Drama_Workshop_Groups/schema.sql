@@ -16,7 +16,7 @@ UNIQUE (Service_Type_Code)
 
 
 CREATE TABLE  cre_Drama_Workshop_Groups.Addresses (
-Address_ID VARCHAR(100) NOT NULL,
+Address_ID INTEGER NOT NULL,
 Line_1 VARCHAR(255),
 Line_2 VARCHAR(255),
 City_Town VARCHAR(255),
@@ -27,7 +27,7 @@ UNIQUE (Address_ID)
 );
 
 CREATE TABLE  cre_Drama_Workshop_Groups.Products (
-Product_ID VARCHAR(100) NOT NULL,
+Product_ID INTEGER NOT NULL,
 Product_Name VARCHAR(255),
 Product_Price DECIMAL(20,4),
 Product_Description VARCHAR(255),
@@ -49,7 +49,7 @@ UNIQUE (Marketing_Region_Code)
 
 CREATE TABLE  cre_Drama_Workshop_Groups.Clients (
 Client_ID INTEGER NOT NULL,
-Address_ID VARCHAR(100) NOT NULL,
+Address_ID INTEGER NOT NULL,
 Customer_Email_Address VARCHAR(255),
 Customer_Name VARCHAR(255),
 Customer_Phone VARCHAR(255),
@@ -62,7 +62,7 @@ FOREIGN KEY (Address_ID) REFERENCES  cre_Drama_Workshop_Groups.Addresses (Addres
 
 CREATE TABLE  cre_Drama_Workshop_Groups.Drama_Workshop_Groups (
 Workshop_Group_ID INTEGER NOT NULL,
-Address_ID VARCHAR(100) NOT NULL,
+Address_ID INTEGER NOT NULL,
 Currency_Code CHAR(15) NOT NULL,
 Marketing_Region_Code CHAR(15) NOT NULL,
 Store_Name VARCHAR(255),
@@ -77,7 +77,7 @@ FOREIGN KEY (Address_ID) REFERENCES  cre_Drama_Workshop_Groups.Addresses (Addres
 
 CREATE TABLE  cre_Drama_Workshop_Groups.Performers (
 Performer_ID INTEGER NOT NULL,
-Address_ID VARCHAR(100) NOT NULL,
+Address_ID INTEGER NOT NULL,
 Customer_Name VARCHAR(255),
 Customer_Phone VARCHAR(255),
 Customer_Email_Address VARCHAR(255),
@@ -89,8 +89,8 @@ FOREIGN KEY (Address_ID) REFERENCES  cre_Drama_Workshop_Groups.Addresses (Addres
 
 
 CREATE TABLE  cre_Drama_Workshop_Groups.Customers (
-Customer_ID VARCHAR(100) NOT NULL,
-Address_ID VARCHAR(100) NOT NULL,
+Customer_ID INTEGER NOT NULL,
+Address_ID INTEGER NOT NULL,
 Customer_Name VARCHAR(255),
 Customer_Phone VARCHAR(255),
 Customer_Email_Address VARCHAR(255),
@@ -101,8 +101,8 @@ FOREIGN KEY (Address_ID) REFERENCES  cre_Drama_Workshop_Groups.Addresses (Addres
 );
 
 CREATE TABLE  cre_Drama_Workshop_Groups.Stores (
-Store_ID VARCHAR(100) NOT NULL,
-Address_ID VARCHAR(100) NOT NULL,
+Store_ID INTEGER NOT NULL,
+Address_ID INTEGER NOT NULL,
 Marketing_Region_Code CHAR(15) NOT NULL,
 Store_Name VARCHAR(255),
 Store_Phone VARCHAR(255),
@@ -142,8 +142,8 @@ FOREIGN KEY (Order_ID) REFERENCES  cre_Drama_Workshop_Groups.Bookings (Booking_I
 
 CREATE TABLE  cre_Drama_Workshop_Groups.Customer_Orders (
 Order_ID INTEGER NOT NULL ,
-Customer_ID VARCHAR(100) NOT NULL,
-Store_ID VARCHAR(100) NOT NULL,
+Customer_ID INTEGER NOT NULL,
+Store_ID INTEGER NOT NULL,
 Order_Date DATETIME NOT NULL,
 Planned_Delivery_Date DATETIME NOT NULL,
 Actual_Delivery_Date DATETIME NOT NULL,
@@ -157,7 +157,7 @@ FOREIGN KEY (Store_ID) REFERENCES  cre_Drama_Workshop_Groups.Stores (Store_ID)
 CREATE TABLE  cre_Drama_Workshop_Groups.Order_Items (
 Order_Item_ID INTEGER NOT NULL ,
 Order_ID INTEGER NOT NULL,
-Product_ID VARCHAR(100) NOT NULL,
+Product_ID INTEGER NOT NULL,
 Order_Quantity INTEGER,
 Other_Item_Details VARCHAR(255),
 PRIMARY KEY (Order_Item_ID),

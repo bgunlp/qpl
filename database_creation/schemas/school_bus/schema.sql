@@ -21,8 +21,9 @@ CREATE TABLE  school_bus.school_bus (
 [School_ID] int,
 [Driver_ID] int,
 [Years_Working] int,
-[If_full_time] VARCHAR(1),
+[If_full_time] CHAR(1),
 PRIMARY KEY ([School_ID],[Driver_ID]),
 FOREIGN KEY ([School_ID]) REFERENCES  school_bus.school([School_ID]),
-FOREIGN KEY ([Driver_ID]) REFERENCES  school_bus.driver([Driver_ID])
+FOREIGN KEY ([Driver_ID]) REFERENCES  school_bus.driver([Driver_ID]),
+CONSTRAINT CHK_If_full_time CHECK ([If_full_time] IN ('T', 'F'))
 );

@@ -22,12 +22,8 @@ create table [college_2].course
 	 dept_name		varchar(20) NULL,
 	 credits		numeric(2,0) check (credits > 0),
 	 primary key (course_id),
-    FOREIGN KEY (dept_name)
-    REFERENCES [college_2].[department] (dept_name)
-    ON DELETE SET NULL
---    ON UPDATE NO ACTION
---    foreign key (dept_name) references department
--- on delete set null
+	 foreign key (dept_name) references [college_2].department (dept_name)
+		on delete set null
    );
 GO
 create table [college_2].instructor
@@ -36,7 +32,7 @@ create table [college_2].instructor
 	 dept_name		varchar(20),
 	 salary			numeric(8,2) check (salary > 29000),
 	 primary key (ID),
-	 foreign key (dept_name) references department (dept_name)
+	 foreign key (dept_name) references [college_2].department (dept_name)
 		on delete set null
 	);
 GO
@@ -50,9 +46,9 @@ create table [college_2].section
 	 room_number		varchar(7),
 	 time_slot_id		varchar(4),
 	 primary key (course_id, sec_id, semester, year),
-	 foreign key (course_id) references course (course_id)
+	 foreign key (course_id) references [college_2].course (course_id)
 		on delete cascade,
-	 foreign key (building, room_number) references classroom (building, room_number)
+	 foreign key (building, room_number) references [college_2].classroom (building, room_number)
 		on delete set null
 	);
 GO
@@ -63,9 +59,9 @@ create table [college_2].teaches
 	 semester		varchar(6),
 	 year			numeric(4,0),
 	 primary key (ID, course_id, sec_id, semester, year),
-	 foreign key (course_id,sec_id, semester, year) references section (course_id, sec_id, semester, year)
+	 foreign key (course_id,sec_id, semester, year) references [college_2].section (course_id, sec_id, semester, year)
 		on delete cascade,
-	 foreign key (ID) references instructor (ID)
+	 foreign key (ID) references [college_2].instructor (ID)
 		on delete cascade
 	);
 GO
@@ -75,7 +71,7 @@ create table [college_2].student
 	 dept_name		varchar(20),
 	 tot_cred		numeric(3,0) check (tot_cred >= 0),
 	 primary key (ID),
-	 foreign key (dept_name) references department (dept_name)
+	 foreign key (dept_name) references [college_2].department (dept_name)
 		on delete set null
 	);
 GO
@@ -87,19 +83,19 @@ create table [college_2].takes
 	 year			numeric(4,0),
 	 grade		        varchar(2),
 	 primary key (ID, course_id, sec_id, semester, year),
-	 foreign key (course_id,sec_id, semester, year) references section (course_id, sec_id, semester, year)
+	 foreign key (course_id,sec_id, semester, year) references [college_2].section (course_id, sec_id, semester, year)
 		on delete cascade,
-	 foreign key (ID) references student (ID)
+	 foreign key (ID) references [college_2].student (ID)
 		on delete cascade
 	);
 GO
 create table [college_2].advisor
-	(s_ID			INTEGER,
-	 i_ID			INTEGER,
+	(s_ID			varchar(5),
+	 i_ID			varchar(5),
 	 primary key (s_ID, i_ID),
-	 foreign key (i_ID) references instructor (ID)
-		on delete set null,
-	 foreign key (s_ID) references student (ID)
+	 foreign key (i_ID) references [college_2].instructor (ID)
+		on delete cascade,
+	 foreign key (s_ID) references [college_2].student (ID)
 		on delete cascade
 	);
 GO
@@ -117,9 +113,9 @@ create table [college_2].prereq
 	(course_id		varchar(8),
 	 prereq_id		varchar(8),
 	 primary key (course_id, prereq_id),
-	 foreign key (course_id) references course (course_id)
+	 foreign key (course_id) references [college_2].course (course_id)
 		on delete cascade,
-	 foreign key (prereq_id) references course (course_id)
+	 foreign key (prereq_id) references [college_2].course (course_id)
 	);
 GO
 COMMIT;

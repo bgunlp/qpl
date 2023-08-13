@@ -24,7 +24,8 @@ CREATE TABLE  employee_hire_evaluation.hiring (
 [Is_full_time] CHAR(1),
 PRIMARY KEY ([Employee_ID]),
 FOREIGN KEY (Shop_ID) REFERENCES  employee_hire_evaluation.shop(Shop_ID),
-FOREIGN KEY (Employee_ID) REFERENCES  employee_hire_evaluation.employee(Employee_ID)
+FOREIGN KEY (Employee_ID) REFERENCES  employee_hire_evaluation.employee(Employee_ID),
+CONSTRAINT CHK_Is_full_time CHECK ([Is_full_time] IN ('T', 'F'))
 );
 
 CREATE TABLE  employee_hire_evaluation.evaluation (

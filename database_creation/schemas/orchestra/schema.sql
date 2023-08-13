@@ -34,8 +34,9 @@ FOREIGN KEY (Orchestra_ID) REFERENCES  orchestra.orchestra(Orchestra_ID)
 CREATE TABLE  orchestra.show (
 [Show_ID] int,
 [Performance_ID] int,
-[If_first_show] VARCHAR(15),
-[Result] CHAR(1),
+[If_first_show] CHAR(1),
+[Result] VARCHAR(15),
 [Attendance] real,
-FOREIGN KEY (Performance_ID) REFERENCES  orchestra.performance(Performance_ID)
+FOREIGN KEY (Performance_ID) REFERENCES  orchestra.performance(Performance_ID),
+CONSTRAINT CHK_If_first_show CHECK ([If_first_show] IN ('T', 'F'))
 );

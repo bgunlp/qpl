@@ -27,6 +27,6 @@ CREATE TABLE  debate.debate_people (
 PRIMARY KEY ([Debate_ID],[Affirmative],[Negative]),
 FOREIGN KEY ([Debate_ID]) REFERENCES  debate.debate([Debate_ID]),
 FOREIGN KEY ([Affirmative]) REFERENCES  debate.people([People_ID]),
-FOREIGN KEY ([Negative]) REFERENCES  debate.people([People_ID])
+FOREIGN KEY ([Negative]) REFERENCES  debate.people([People_ID]), 
+CONSTRAINT CHK_If_Affirmative_Win CHECK ([If_Affirmative_Win] IN ('T', 'F'))
 );
-

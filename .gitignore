@@ -1,0 +1,7 @@
+spider
+.metals
+.bsp
+.scala-build
+dist-newstyle
+__pycache__
+output-*

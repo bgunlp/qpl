@@ -150,5 +150,61 @@
   {
     "id": "bff2974c43a128f711181e493e2036cb2b26cb7aa8f12d9009b047620bef2c21",
     "qpl": "voter_1 | #1 = Scan Table [ votes ] Output [ contestant_number ] ; #2 = Scan Table [ contestants ] Output [ contestant_number , contestant_name ] ; #3 = Join [ #1 , #2 ] Predicate [ #2.contestant_number = #1.contestant_number ] Output [ #2.contestant_name , #2.contestant_number ] ; #4 = Aggregate [ #3 ] GroupBy [ contestant_name , contestant_number ] Output [ countstar AS Count_Star , contestant_number , contestant_name ] ; #5 = TopSort [ #4 ] Rows [ 1 ] OrderBy [ Count_Star ASC ] WithTies [ true ] Output [ contestant_number , contestant_name ]"
+  },
+  {
+    "id": "1b4ff28beddb2e20b5b98772dc08dc31b033b25d3bb666da28b6bfc81b517174",
+    "qpl": "concert_singer | #1 = Scan Table [ concert ] Predicate [ Year >= 2014 ] Output [ Year , Stadium_ID ] ; #2 = Scan Table [ stadium ] Output [ Capacity , Stadium_ID , Name ] ; #3 = Join [ #1 , #2 ] Predicate [ #1.Stadium_ID = #2.Stadium_ID ] Output [ #2.Stadium_ID , #2.Capacity , #2.Name ] ; #4 = Aggregate [ #3 ] GroupBy [ Stadium_ID ] Output [ Capacity , Name , countstar AS Count_Star ] ; #5 = TopSort [ #4 ] Rows [ 1 ] OrderBy [ Count_Star DESC ] Output [ Count_Star , Capacity , Name ]"
+  },
+  {
+    "id": "6b4498103b5d61a19827ce25667aea3019ce7675511bd6745692252c786e1437",
+    "qpl": "concert_singer | #1 = Scan Table [ concert ] Predicate [ Year > 2013 ] Output [ Year , Stadium_ID ] ; #2 = Scan Table [ stadium ] Output [ Capacity , Stadium_ID , Name ] ; #3 = Join [ #1 , #2 ] Predicate [ #1.Stadium_ID = #2.Stadium_ID ] Output [ #2.Stadium_ID , #2.Capacity , #2.Name ] ; #4 = Aggregate [ #3 ] GroupBy [ Stadium_ID ] Output [ Capacity , Name , countstar AS Count_Star ] ; #5 = TopSort [ #4 ] Rows [ 1 ] OrderBy [ Count_Star DESC ] Output [ Count_Star , Capacity , Name ]"
+  },
+  {
+    "id": "c08c23e7cc708242ee88a3d2b2b77fcc6eba87f51093769a204df2c410d443ae",
+    "qpl": "battle_death | #1 = Scan Table [ ship ] Output [ lost_in_battle , id ] ; #2 = Scan Table [ battle ] Output [ name , id ] ; #3 = Join [ #1 , #2 ] Predicate [ #1.lost_in_battle = #2.id ] Output [ #2.id , #2.name ] ; #4 = Scan Table [ death ] Output [ caused_by_ship_id , killed ] ; #5 = Join [ #3 , #4 ] Predicate [ #3.id = #4.caused_by_ship_id ] Output [ #3.id , #3.name , #4.killed ] ; #6 = Aggregate [ #5 ] GroupBy [ id ] Output [ SUM(killed) AS Sum_killed , name , id ] ; #7 = Filter [ #6 ] Predicate [ Sum_killed > 10 ] Output [ name , id ]"
+  },
+  {
+    "id": "5f6c5c97e4535a57a648be9149e33db7045c08bc96516c2e753c41f04e1e2583",
+    "qpl": "world_1 | #1 = Scan Table [ country ] Output [ Code2 , Region , IndepYear , HeadOfState , Name , GNPOld , Continent , GNP , Capital , LifeExpectancy , LocalName , SurfaceArea , Code , Population , GovernmentForm ] ; #2 = Scan Table [ countrylanguage ] Predicate [ Language = 'English' ] Output [ IsOfficial , CountryCode , Language , Percentage ] ; #3 = Filter [ #2 ] Predicate [ IsOfficial = 'T' ] Output [ IsOfficial , CountryCode , Language , Percentage ] ; #4 = Join [ #1 , #3 ] Predicate [ #3.CountryCode = #1.Code ] Output [ #3.IsOfficial , #1.LifeExpectancy , #3.Percentage , #1.Code , #1.IndepYear , #1.Region , #1.Capital , #1.LocalName , #1.Name , #1.Continent , #1.Population , #1.HeadOfState , #1.GovernmentForm , #1.GNP , #1.Code2 , #1.SurfaceArea , #1.GNPOld , #3.Language , #3.CountryCode ] ; #5 = Scan Table [ country ] Output [ Code2 , Region , IndepYear , HeadOfState , Name , GNPOld , Continent , GNP , Capital , LifeExpectancy , LocalName , SurfaceArea , Code , Population , GovernmentForm ] ; #6 = Scan Table [ countrylanguage ] Predicate [ Language = 'Dutch' ] Output [ IsOfficial , CountryCode , Language , Percentage ] ; #7 = Filter [ #6 ] Predicate [ IsOfficial = 'T' ] Output [ IsOfficial , CountryCode , Language , Percentage ] ; #8 = Join [ #5 , #7 ] Predicate [ #7.CountryCode = #5.Code ] Output [ #5.Population , #5.Code2 , #7.IsOfficial , #5.Name , #5.LifeExpectancy , #5.Code , #7.Percentage , #5.Continent , #5.GNP , #7.Language , #5.GNPOld , #5.SurfaceArea , #5.IndepYear , #5.Region , #5.HeadOfState , #5.GovernmentForm , #7.CountryCode , #5.LocalName , #5.Capital ] ; #9 = Union [ #4 , #8 ] Output [ #4.CountryCode , #4.IsOfficial , #4.Code2 , #4.Percentage , #4.Language , #4.LifeExpectancy , #4.GNP , #4.Region , #4.GNPOld , #4.Name , #4.IndepYear , #4.SurfaceArea , #4.Capital , #4.HeadOfState , #4.Population , #4.GovernmentForm , #4.Code , #4.Continent , #4.LocalName ]"
+  },
+  {
+    "id": "ad21629f0a4e48341926c3e116c4f3ae3e68f41715b9f118146b1b81010b5be1",
+    "qpl": "car_1 | #1 = Scan Table [ cars_data ] Output [ Year ] ; #2 = Aggregate [ #1 ] Output [ MIN(Year) as Min_Year ] ; #3 = Scan Table [ cars_data ] Output [ Id , Year ] ; #4 = Join [ #2, #3 ] Predicate [ #3.Year = #2.Min_Year ] Output [ #3.Id , #3.Year ] ; #5 = Scan Table [ car_names ] Output [ Make , MakeId ] ; #6 = Join [ #4 , #5 ] Predicate [ #5.MakeId = #4.Id ] Output [ #4.Year , #5.Make ]"
+  },
+  {
+    "id": "71b8e3eee7e7618b7730a3dc215c5d838411a0a424df17b4823a8f1ed6b56062",
+    "qpl": "car_1 | #1 = Scan Table [ cars_data ] Output [ Year ] ; #2 = Aggregate [ #1 ] Output [ MIN(Year) as Min_Year ] ; #3 = Scan Table [ cars_data ] Output [ Id , Year ] ; #4 = Join [ #2, #3 ] Predicate [ #3.Year = #2.Min_Year ] Output [ #3.Id , #3.Year ] ; #5 = Scan Table [ car_names ] Output [ Make , MakeId ] ; #6 = Join [ #4 , #5 ] Predicate [ #5.MakeId = #4.Id ] Output [ #4.Year , #5.Make ]"
+  },
+  {
+    "id": "7e07965719bdc4b883c84663dcc9b66ffdf2d7e962e4fcf8cebbdc95bad61b70",
+    "qpl": "car_1 | #1 = Scan Table [ car_makers ] Output [ FullName , Id ] ; #2 = Scan Table [ model_list ] Output [ Model , Maker ] ; #3 = Scan Table [ car_names ] Output [ Model , MakeId ] ; #4 = Scan Table [ cars_data ] Output [ Weight , Id ] ; #5 = Join [ #3 , #4 ] Predicate [ #4.Id = #3.MakeId ] Output [ #3.Model , #4.Weight ] ; #6 = Join [ #2 , #5 ] Predicate [ #5.Model = #2.Model ] Output [ #2.Model , #2.Maker , #5.Weight ] ; #7 = Join [ #1 , #6 ] Predicate [ #6.Maker = #1.Id ] Output [ #6.Model , #6.Weight , #1.FullName ] ; #8 = Filter [ #7 ] Predicate [ Weight > 3500 Or FullName = 'General Motors' ] Distinct [ true ] Output [ Model ]"
+  },
+  {
+    "id": "869d090908c20d389878b3c1a8c760b86d77771817c2396a1fe57ce4f1537348",
+    "qpl": "car_1 | #1 = Scan Table [ car_makers ] Output [ FullName , Id ] ; #2 = Scan Table [ model_list ] Output [ Model , Maker ] ; #3 = Scan Table [ car_names ] Output [ Model , MakeId ] ; #4 = Scan Table [ cars_data ] Output [ Weight , Id ] ; #5 = Join [ #3 , #4 ] Predicate [ #4.Id = #3.MakeId ] Output [ #3.Model , #4.Weight ] ; #6 = Join [ #2 , #5 ] Predicate [ #5.Model = #2.Model ] Output [ #2.Model , #2.Maker , #5.Weight ] ; #7 = Join [ #1 , #6 ] Predicate [ #6.Maker = #1.Id ] Output [ #6.Model , #6.Weight , #1.FullName ] ; #8 = Filter [ #7 ] Predicate [ Weight > 3500 Or FullName = 'General Motors' ] Distinct [ true ] Output [ Model ]"
+  },
+  {
+    "id": "a9ff32fcd6bd92e2683cd5b35a991b73751f44afc13e6146cc8b4a68a61dcc1c",
+    "qpl": "flight_2 | #1 = Scan Table [ airlines ] Output [ uid , Airline ] ; #2 = Scan Table [ flights ] Output [ Airline ] ; #3 = Join [ #1 , #2 ] Predicate [ #2.Airline = #1.uid ] Output [ #1.Airline ] ; #4 = Aggregate [ #3 ] GroupBy [ Airline ] Output [ countstar AS Count_Star , Airline ] ; #5 = Filter [ #4 ] Predicate [ Count_Star > 10 ] Output [ Airline ]"
+  },
+  {
+    "id": "67367330d8de673f906ebfa5f90854abadcd59ec692acaadafbf1c0b0fcbd88b",
+    "qpl": "flight_2 | #1 = Scan Table [ airlines ] Output [ uid , Airline ] ; #2 = Scan Table [ flights ] Output [ Airline ] ; #3 = Join [ #1 , #2 ] Predicate [ #2.Airline = #1.uid ] Output [ #1.Airline ] ; #4 = Aggregate [ #3 ] GroupBy [ Airline ] Output [ countstar AS Count_Star , Airline ] ; #5 = Filter [ #4 ] Predicate [ Count_Star > 10 ] Output [ Airline ]"
+  },
+  {
+    "id": "5f6c5c97e4535a57a648be9149e33db7045c08bc96516c2e753c41f04e1e2583",
+    "qpl": "world_1 | #1 = Scan Table [ country ] Output [ Code2 , Region , IndepYear , HeadOfState , Name , GNPOld , Continent , GNP , Capital , LifeExpectancy , LocalName , SurfaceArea , Code , Population , GovernmentForm ] ; #2 = Scan Table [ countrylanguage ] Predicate [ Language = 'English' ] Output [ IsOfficial , CountryCode , Language , Percentage ] ; #3 = Filter [ #2 ] Predicate [ IsOfficial = 'T' ] Output [ IsOfficial , CountryCode , Language , Percentage ] ; #4 = Join [ #1 , #3 ] Predicate [ #3.CountryCode = #1.Code ] Output [ #3.IsOfficial , #1.LifeExpectancy , #3.Percentage , #1.Code , #1.IndepYear , #1.Region , #1.Capital , #1.LocalName , #1.Name , #1.Continent , #1.Population , #1.HeadOfState , #1.GovernmentForm , #1.GNP , #1.Code2 , #1.SurfaceArea , #1.GNPOld , #3.Language , #3.CountryCode ] ; #5 = Scan Table [ country ] Output [ Code2 , Region , IndepYear , HeadOfState , Name , GNPOld , Continent , GNP , Capital , LifeExpectancy , LocalName , SurfaceArea , Code , Population , GovernmentForm ] ; #6 = Scan Table [ countrylanguage ] Predicate [ Language = 'Dutch' ] Output [ IsOfficial , CountryCode , Language , Percentage ] ; #7 = Filter [ #6 ] Predicate [ IsOfficial = 'T' ] Output [ IsOfficial , CountryCode , Language , Percentage ] ; #8 = Join [ #5 , #7 ] Predicate [ #7.CountryCode = #5.Code ] Output [ #5.Population , #5.Code2 , #7.IsOfficial , #5.Name , #5.LifeExpectancy , #5.Code , #7.Percentage , #5.Continent , #5.GNP , #7.Language , #5.GNPOld , #5.SurfaceArea , #5.IndepYear , #5.Region , #5.HeadOfState , #5.GovernmentForm , #7.CountryCode , #5.LocalName , #5.Capital ] ; #9 = Union [ #4 , #8 ] Output [ #4.CountryCode , #4.IsOfficial , #4.Code2 , #4.Percentage , #4.Language , #4.LifeExpectancy , #4.GNP , #4.Region , #4.GNPOld , #4.Name , #4.IndepYear , #4.SurfaceArea , #4.Capital , #4.HeadOfState , #4.Population , #4.GovernmentForm , #4.Code , #4.Continent , #4.LocalName ]"
+  },
+  {
+    "id": "cb384f0755ee64aadab7999c2dfdc55442be5549699fa4be5be6b2bc0a111457",
+    "qpl": "dog_kennels | #1 = Scan Table [ owners ] Output [ owner_id , last_name ] ; #2 = Scan Table [ dogs ] Output [ owner_id , age ] ; #3 = Filter [ #2 ] Predicate [ age IS NOT NULL ] Output [ owner_id , age ] ; #4 = TopSort [ #3 ] Rows [ 1 ] OrderBy [ age DESC ] WithTies [ True ] Output [ age, owner_id ] ; #5 = Join [ #1 , #4 ] Predicate [ #4.owner_id = #1.owner_id ] Output [ #1.last_name ]"
+  },
+  {
+    "id": "1f310f5bbbc32f27959b1948e0a2b55cc6d6ab439f95fa18d2a151873b24edf2",
+    "qpl": "flight_2 | #1 = Scan Table [ airlines ] Predicate [ Airline = 'JetBlue Airways' ] Output [ uid ] ; #2 = Scan Table [ flights ] Output [ Airline ] ; #3 = Join [ #1 , #2 ] Predicate [ #1.uid = #2.Airline ] Output [ #1.uid ] ; #4 = Aggregate [ #3 ] Output [ countstar AS Count_Star ]"
+  },
+  {
+    "id": "b3a92bd00df018276c532ac506f498a4aab18fc78bd5e5c233593b3d0919d6e3",
+    "qpl": "flight_2 | #1 = Scan Table [ airlines ] Predicate [ Airline = 'JetBlue Airways' ] Output [ uid ] ; #2 = Scan Table [ flights ] Output [ Airline ] ; #3 = Join [ #1 , #2 ] Predicate [ #1.uid = #2.Airline ] Output [ #1.uid ] ; #4 = Aggregate [ #3 ] Output [ countstar AS Count_Star ]"
   }
 ]

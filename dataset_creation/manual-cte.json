@@ -1,0 +1,6 @@
+[
+  {
+    "id": "c08c23e7cc708242ee88a3d2b2b77fcc6eba87f51093769a204df2c410d443ae",
+    "cte": "WITH Scan_1 AS ( SELECT lost_in_battle, id FROM battle_death.ship ), Scan_2 AS ( SELECT name, id FROM battle_death.battle ), Join_3 AS ( SELECT Scan_2.id, Scan_2.name, Scan_1.id as ship_id FROM Scan_1 JOIN Scan_2 ON Scan_1.lost_in_battle = Scan_2.id ), Scan_4 AS ( SELECT caused_by_ship_id, killed FROM battle_death.death ), Join_5 AS ( SELECT Join_3.id, Join_3.name, Scan_4.killed FROM Join_3 JOIN Scan_4 ON Join_3.ship_id = Scan_4.caused_by_ship_id ), Aggregate_6 AS ( SELECT SUM(killed) AS Sum_killed, name, id FROM Join_5 GROUP BY name, id ), Filter_7 AS ( SELECT name, id FROM Aggregate_6 WHERE Sum_killed > 10 ) SELECT * FROM Filter_7"
+  }
+]

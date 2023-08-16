@@ -36,8 +36,8 @@ object parsing {
       case ("Aggregate", "Hash Match") =>
         parseHashAggregate((node \ "Hash").head)
       case (s"$dir Anti Semi Join", "Hash Match") =>
-        if (dir == "Left") parseHashExcept((node \ "Hash").head, ExceptDirection.Left)
-        else parseHashExcept((node \ "Hash").head, ExceptDirection.Right)
+        if (dir == "Left") parseHashExcept((node \ "Hash").head, Direction.Left)
+        else parseHashExcept((node \ "Hash").head, Direction.Right)
       case ("Clustered Index Scan", "Clustered Index Scan") | ("Clustered Index Seek", "Clustered Index Seek") |
           ("Index Scan", "Index Scan") | ("Index Seek", "Index Seek") =>
         parseIndexScan((node \ "IndexScan").head)
@@ -46,16 +46,17 @@ object parsing {
       case ("Inner Join", "Merge Join") | ("Left Semi Join", "Merge Join") =>
         parseMergeJoin((node \ "Merge").head)
       case (s"$dir Anti Semi Join", "Merge Join") =>
-        if (dir == "Left") parseMergeExcept((node \ "Merge").head, ExceptDirection.Left)
-        else parseMergeExcept((node \ "Merge").head, ExceptDirection.Right)
+        if (dir == "Left") parseMergeExcept((node \ "Merge").head, Direction.Left)
+        else parseMergeExcept((node \ "Merge").head, Direction.Right)
       case ("Inner Join", "Nested Loops") =>
         parseNestedLoopsJoin((node \ "NestedLoops").head)
       case ("Left Anti Semi Join", "Nested Loops") =>
         parseNestedLoopsExcept((node \ "NestedLoops").head)
       case ("Left Semi Join", "Nested Loops") =>
         parseIntersect((node \ "NestedLoops").head)
-      case ("Left Semi Join", "Hash Match") | ("Right Semi Join", "Hash Match") =>
-        parseHashIntersect((node \ "Hash").head)
+      case (s"$dir Semi Join", "Hash Match") =>
+        if (dir == "Left") parseHashIntersect((node \ "Hash").head, Direction.Left)
+        else parseHashIntersect((node \ "Hash").head, Direction.Right)
       case ("Union", "Hash Match") =>
         parseHashUnion((node \ "Hash").head)
       case ("Lazy Spool", "Table Spool") | ("Eager Spool", "Table Spool") | ("Eager Spool", "Index Spool") =>
@@ -207,7 +208,7 @@ object parsing {
     MergeJoin(top, bottom, joinColumns, definedValues)
   }
 
-  private def parseMergeExcept(node: Node, dir: ExceptDirection): MergeExcept = {
+  private def parseMergeExcept(node: Node, dir: Direction): MergeExcept = {
     val relops        = node \ "RelOp"
     val top           = parseRelOp(relops(0))
     val bottom        = parseRelOp(relops(1))
@@ -248,14 +249,14 @@ object parsing {
     HashUnion(top, bottom, definedValues)
   }
 
-  private def parseHashIntersect(node: Node): HashIntersect = {
+  private def parseHashIntersect(node: Node, dir: Direction): HashIntersect = {
     val relops        = node \ "RelOp"
     val top           = parseRelOp(relops(0))
     val bottom        = parseRelOp(relops(1))
     val hashKeysBuild = (node \ "HashKeysBuild" \ "ColumnReference").map(parseColumnReference).to(Chunk)
     val hashKeysProbe = (node \ "HashKeysProbe" \ "ColumnReference").map(parseColumnReference).to(Chunk)
     val definedValues = parseDefinedValues(node)
-    HashIntersect(top, bottom, hashKeysBuild, hashKeysProbe, definedValues)
+    HashIntersect(top, bottom, hashKeysBuild, hashKeysProbe, dir, definedValues)
   }
 
   private def parseHashAggregate(node: Node): HashAggregate = {
@@ -264,7 +265,7 @@ object parsing {
     HashAggregate(relop, definedValues)
   }
 
-  private def parseHashExcept(node: Node, dir: ExceptDirection): HashExcept = {
+  private def parseHashExcept(node: Node, dir: Direction): HashExcept = {
     val relops        = node \ "RelOp"
     val top           = parseRelOp(relops(0))
     val bottom        = parseRelOp(relops(1))

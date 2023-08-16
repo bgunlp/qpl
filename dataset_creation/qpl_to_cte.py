@@ -13,6 +13,50 @@ class CTE:
     query: str
 
 
+def get_agg(token):
+    "If token has the form <agg>(<param>) - return [agg, param, <Agg>_<Param>] else None"
+    if token == "countstar":
+        return ["count(*)", "Count_Star"]
+    valid_agg_values = ["count", "avg", "sum", "min", "max"]
+    a = None
+    param = None
+    token = token.lower()
+    for agg in valid_agg_values:
+        if token.startswith(agg):
+            a = agg
+            break
+    if a == None:
+        return None
+    if "(" in token and ")" in token:
+        agg_start = token.find("(")
+        agg_end = token.find(")")
+        if agg_start != -1 and agg_end != -1:
+            param = token[agg_start + 1 : agg_end]
+            return [token, f"{a.capitalize()}_{param.capitalize()}"]
+    else:
+        return None
+
+
+def add_aliases(ls):
+    aliases = []
+    i = 0
+    while i < len(ls):
+        token = ls[i]
+        aggr = get_agg(token)
+        if aggr == None:
+            aliases.append(token)
+            i += 1
+        else:
+            [agg, alias] = aggr
+            if len(ls) > i + 2 and ls[i + 1].lower() == "as":
+                aliases += [agg, ls[i + 1], ls[i + 2]]
+                i += 3
+            else:
+                aliases += [agg, "as", alias]
+                i += 1
+    return aliases
+
+
 def flat_qpl_to_cte(flat_qpl: List[str], db_id: str) -> str:
     flat_qpl_scan_pattern = re.compile(
         r"#(?P<idx>\d+) = Scan Table \[ (?P<table>\w+) \]( Predicate \[ (?P<pred>[^\]]+) \])?( Distinct \[ (?P<distinct>true) \])? Output \[ (?P<out>[^\]]+) \]"
@@ -105,10 +149,10 @@ def flat_qpl_to_cte(flat_qpl: List[str], db_id: str) -> str:
                             replaced_output_list.append(out)
                         else:
                             raise AssertionError(f"Don't know how to handle {out = }")
-                        cte = CTE(
-                            f"Except_{idx}",
-                            f"SELECT {', '.join(replaced_output_list)} FROM {i2c[lhs]} WHERE {lhs_pred_col} NOT IN (SELECT {rhs_pred_col} FROM {i2c[rhs]})",
-                        )
+                    cte = CTE(
+                        f"Except_{idx}",
+                        f"SELECT {', '.join(replaced_output_list)} FROM {i2c[lhs]} WHERE {lhs_pred_col} NOT IN (SELECT {rhs_pred_col} FROM {i2c[rhs]})",
+                    )
                 elif predicate and (
                     m := re.match(
                         r"#(?P<rhs_table>\d+)\.(?P<rhs_col>\w+) IS NULL OR #(?P<lhs_table>\d+)\.(?P<lhs_col>\w+) = #\1\.\2",
@@ -170,7 +214,7 @@ def flat_qpl_to_cte(flat_qpl: List[str], db_id: str) -> str:
                         f"SELECT {', '.join(replaced_output_list)} FROM {i2c[lhs]} WHERE NOT EXISTS (SELECT {ec} FROM {i2c[rhs]} WHERE {i2c[lhs]}.{ec} = {i2c[rhs]}.{ec})",
                     )
                 else:
-                    raise AssertionError
+                    raise AssertionError("Unknown Except variant")
             elif op == "Filter":
                 i = ins[0]
                 predicate = opts["Predicate"]
@@ -197,25 +241,37 @@ def flat_qpl_to_cte(flat_qpl: List[str], db_id: str) -> str:
                     assert set(predicate_ins) <= set(
                         ins
                     ), "Intersect uses columns in predicate that are not direct inputs"
-                    cte = CTE(
-                        f"Intersect_{idx}",
-                        f"SELECT {', '.join([lhs_pred_col])} FROM {i2c[lhs]} INTERSECT SELECT {', '.join([rhs_pred_col])} FROM {i2c[rhs]}",
-                    )
-                else:
                     replaced_output_list = []
                     for out in output_list:
                         if m := re.match(r"#(?P<i>\d+)\.(?P<col>\w+)", out):
                             g = m.groupdict()
+                            i = int(g["i"])
                             col = g["col"]
-                            replaced_output_list.append(col)
+                            replaced_output_list.append(f"{i2c[i]}.{col}")
                         elif out == "1 AS One":
                             replaced_output_list.append(out)
                         else:
                             raise AssertionError(f"Don't know how to handle {out = }")
                     cte = CTE(
                         f"Intersect_{idx}",
-                        f"SELECT {', '.join(replaced_output_list)} FROM {i2c[lhs]} INTERSECT SELECT {', '.join(replaced_output_list)} FROM {i2c[rhs]}",
+                        f"SELECT {', '.join(replaced_output_list)} FROM {i2c[lhs]} WHERE {rhs_pred_col} IN (SELECT {lhs_pred_col} FROM {i2c[rhs]})",
                     )
+                else:
+                    raise AssertionError("Intersect without predicate")
+                    # replaced_output_list = []
+                    # for out in output_list:
+                    #     if m := re.match(r"#(?P<i>\d+)\.(?P<col>\w+)", out):
+                    #         g = m.groupdict()
+                    #         col = g["col"]
+                    #         replaced_output_list.append(col)
+                    #     elif out == "1 AS One":
+                    #         replaced_output_list.append(out)
+                    #     else:
+                    #         raise AssertionError(f"Don't know how to handle {out = }")
+                    # cte = CTE(
+                    #     f"Intersect_{idx}",
+                    #     f"SELECT {', '.join(replaced_output_list)} FROM {i2c[lhs]} INTERSECT SELECT {', '.join(replaced_output_list)} FROM {i2c[rhs]}",
+                    # )
             elif op == "Join":
                 lhs, rhs = ins
                 predicate = opts.get("Predicate")
@@ -382,11 +438,18 @@ def main():
     parser.add_argument("-o", "--output", type=Path)
     args = parser.parse_args()
 
+    with open("./manual-cte.json") as f:
+        manual_ctes = {ex["id"]: ex["cte"] for ex in json.load(f)}
+
     with open(args.input) as f:
         qpls = json.load(f)
 
     with_cte = []
     for ex in qpls:
+        if ex["id"] in manual_ctes:
+            ex["cte"] = manual_ctes[ex["id"]]
+            with_cte.append(ex)
+            continue
         if "valid" in ex and not ex["valid"]:
             ex["cte"] = None
             with_cte.append(ex)

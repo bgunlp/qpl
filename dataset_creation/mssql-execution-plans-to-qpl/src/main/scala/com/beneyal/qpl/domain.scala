@@ -48,7 +48,7 @@ object domain {
     case AND, ISNULL, OR, NOT
   }
 
-  enum ExceptDirection {
+  enum Direction {
     case Left, Right
   }
 
@@ -124,6 +124,7 @@ object domain {
         bottom: RelOp,
         hashKeysBuild: Chunk[ColumnReference],
         hashKeysProbe: Chunk[ColumnReference],
+        direction: Direction,
         definedValues: Chunk[DefinedValue]
     )
     case HashAggregate(
@@ -135,7 +136,7 @@ object domain {
         bottom: RelOp,
         hashKeysBuild: Chunk[ColumnReference],
         hashKeysProbe: Chunk[ColumnReference],
-        direction: ExceptDirection,
+        direction: Direction,
         definedValues: Chunk[DefinedValue]
     )
     case IndexScan(
@@ -160,7 +161,7 @@ object domain {
         top: RelOp,
         bottom: RelOp,
         joinColumns: Option[JoinColumns],
-        direction: ExceptDirection,
+        direction: Direction,
         definedValues: Chunk[DefinedValue]
     )
     case NestedLoopsJoin(

@@ -122,15 +122,15 @@ object plantoqpl extends ZIOAppDefault {
           } yield
             if (isRoot) {
               if (isDistinct) {
-                val last = inner.last
-                val op   = last.operation
-                val opts = op.options
+                val last   = inner.last
+                val lastOp = last.operation
+                val opts   = lastOp.options
                 val newOpts = if (!opts.exists { case Opt("Distinct", _) => true; case _ => false }) {
                   opts :+ Opt("Distinct", "true")
                 } else {
                   opts
                 }
-                val newLast = last.copy(operation = op.copy(options = newOpts))
+                val newLast = last.copy(operation = lastOp.copy(outs = op.outs, options = newOpts))
                 inner.init :+ newLast
               } else {
                 inner :+ FlatQplLine(state.currentIdx, Chunk(state.currentIdx - 1), op)
@@ -382,7 +382,7 @@ object plantoqpl extends ZIOAppDefault {
           _   <- State.modify[Env](addDefinedValuesToEnv(definedValues))
           env <- State.get[Env]
         } yield Operation("Union", outputList.map(cr => env.deref(cr.column)), Chunk(t, b))
-      case HashIntersect(top, bottom, hashKeysBuild, hashKeysProbe, definedValues) =>
+      case HashIntersect(top, bottom, hashKeysBuild, hashKeysProbe, dir, definedValues) =>
         for {
           t   <- toCR(top)
           b   <- toCR(bottom)
@@ -390,10 +390,11 @@ object plantoqpl extends ZIOAppDefault {
           env <- State.get[Env]
           hashKeys      = hashKeysBuild.map(getOrDeref(env)).zip(hashKeysProbe.map(getOrDeref(env)))
           newOutputList = if (outputList.isEmpty) t.outs else outputList.map(getOrDeref(env))
+          ins           = if (dir == Direction.Left) Chunk(t, b) else Chunk(b, t)
         } yield Operation(
           "Intersect",
-          newOutputList,
-          Chunk(t, b),
+          outputList.map(getOrDeref(env)),
+          ins,
           Opt("Predicate", hashKeys.map { case (lhs, rhs) => s"$lhs = $rhs" })
         )
       case HashExcept(top, bottom, hashKeysBuild, hashKeysProbe, dir, definedValues) =>
@@ -403,7 +404,7 @@ object plantoqpl extends ZIOAppDefault {
           _   <- State.modify[Env](addDefinedValuesToEnv(definedValues))
           env <- State.get[Env]
           hashKeys = hashKeysBuild.map(getOrDeref(env)).zip(hashKeysProbe.map(getOrDeref(env)))
-          ins      = if (dir == ExceptDirection.Left) Chunk(t, b) else Chunk(b, t)
+          ins      = if (dir == Direction.Left) Chunk(t, b) else Chunk(b, t)
         } yield Operation(
           "Except",
           outputList.map(getOrDeref(env)),
@@ -456,7 +457,7 @@ object plantoqpl extends ZIOAppDefault {
               Chunk(Opt("Predicate", s"$lhs = $rhs"))
             }
             .getOrElse(Chunk.empty)
-          ins = if (dir == ExceptDirection.Left) Chunk(t, b) else Chunk(b, t)
+          ins = if (dir == Direction.Left) Chunk(t, b) else Chunk(b, t)
         } yield Operation("Except", outputList.map(getOrDeref(env)), ins, predicate)
       case MergeUnion(top, bottom, definedValues) =>
         for {

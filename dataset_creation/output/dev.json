@@ -890,18 +890,18 @@
   {
     "id": "6b4935ecf21e96347d09f914c1134d872dd90cea1d200906b8422cec79050abe",
     "question": "What is the accelerate of the car make amc hornet sportabout (sw)?",
-    "query": "SELECT T1.Accelerate FROM car_1.CARS_DATA AS T1 WITH (FORCESCAN) JOIN car_1.CAR_NAMES AS T2 WITH (FORCESCAN) ON T1.Id = T2.MakeId WHERE T2.Make = 'amc hornet sportabout ( sw )'  OPTION (HASH JOIN, ORDER GROUP)",
-    "qpl": "car_1 | #1 = Scan Table [ car_names ] Predicate [ Make = 'amc hornet sportabout ( sw )' ] Output [ MakeId , Make ] ; #2 = Scan Table [ cars_data ] Output [ Accelerate , Id ] ; #3 = Join [ #1 , #2 ] Predicate [ #1.MakeId = #2.Id ] Output [ #2.Accelerate ]",
-    "cte": "WITH Scan_1 AS ( SELECT MakeId, Make FROM car_1.car_names WHERE Make = 'amc hornet sportabout ( sw )' ), Scan_2 AS ( SELECT Accelerate, Id FROM car_1.cars_data ), Join_3 AS ( SELECT Scan_2.Accelerate FROM Scan_1 JOIN Scan_2 ON Scan_1.MakeId = Scan_2.Id ) SELECT * FROM Join_3",
-    "clean_query": "SELECT T1.Accelerate FROM car_1.CARS_DATA AS T1  JOIN car_1.CAR_NAMES AS T2  ON T1.Id = T2.MakeId WHERE T2.Make = 'amc hornet sportabout ( sw )'"
+    "query": "SELECT T1.Accelerate FROM car_1.CARS_DATA AS T1 WITH (FORCESCAN) JOIN car_1.CAR_NAMES AS T2 WITH (FORCESCAN) ON T1.Id = T2.MakeId WHERE T2.Make = 'amc hornet sportabout (sw)'  OPTION (HASH JOIN, ORDER GROUP)",
+    "qpl": "car_1 | #1 = Scan Table [ car_names ] Predicate [ Make = 'amc hornet sportabout (sw)' ] Output [ MakeId , Make ] ; #2 = Scan Table [ cars_data ] Output [ Accelerate , Id ] ; #3 = Join [ #1 , #2 ] Predicate [ #1.MakeId = #2.Id ] Output [ #2.Accelerate ]",
+    "cte": "WITH Scan_1 AS ( SELECT MakeId, Make FROM car_1.car_names WHERE Make = 'amc hornet sportabout (sw)' ), Scan_2 AS ( SELECT Accelerate, Id FROM car_1.cars_data ), Join_3 AS ( SELECT Scan_2.Accelerate FROM Scan_1 JOIN Scan_2 ON Scan_1.MakeId = Scan_2.Id ) SELECT * FROM Join_3",
+    "clean_query": "SELECT T1.Accelerate FROM car_1.CARS_DATA AS T1  JOIN car_1.CAR_NAMES AS T2  ON T1.Id = T2.MakeId WHERE T2.Make = 'amc hornet sportabout (sw)'"
   },
   {
     "id": "9f6ea46405112628df6ab798bc562f0bebb75f5ea0d962a455271e949a879db5",
     "question": "How much does the car accelerate that makes amc hornet sportabout (sw)?",
-    "query": "SELECT T1.Accelerate FROM car_1.CARS_DATA AS T1 WITH (FORCESCAN) JOIN car_1.CAR_NAMES AS T2 WITH (FORCESCAN) ON T1.Id = T2.MakeId WHERE T2.Make = 'amc hornet sportabout ( sw )'  OPTION (HASH JOIN, ORDER GROUP)",
-    "qpl": "car_1 | #1 = Scan Table [ car_names ] Predicate [ Make = 'amc hornet sportabout ( sw )' ] Output [ MakeId , Make ] ; #2 = Scan Table [ cars_data ] Output [ Accelerate , Id ] ; #3 = Join [ #1 , #2 ] Predicate [ #1.MakeId = #2.Id ] Output [ #2.Accelerate ]",
-    "cte": "WITH Scan_1 AS ( SELECT MakeId, Make FROM car_1.car_names WHERE Make = 'amc hornet sportabout ( sw )' ), Scan_2 AS ( SELECT Accelerate, Id FROM car_1.cars_data ), Join_3 AS ( SELECT Scan_2.Accelerate FROM Scan_1 JOIN Scan_2 ON Scan_1.MakeId = Scan_2.Id ) SELECT * FROM Join_3",
-    "clean_query": "SELECT T1.Accelerate FROM car_1.CARS_DATA AS T1  JOIN car_1.CAR_NAMES AS T2  ON T1.Id = T2.MakeId WHERE T2.Make = 'amc hornet sportabout ( sw )'"
+    "query": "SELECT T1.Accelerate FROM car_1.CARS_DATA AS T1 WITH (FORCESCAN) JOIN car_1.CAR_NAMES AS T2 WITH (FORCESCAN) ON T1.Id = T2.MakeId WHERE T2.Make = 'amc hornet sportabout (sw)'  OPTION (HASH JOIN, ORDER GROUP)",
+    "qpl": "car_1 | #1 = Scan Table [ car_names ] Predicate [ Make = 'amc hornet sportabout (sw)' ] Output [ MakeId , Make ] ; #2 = Scan Table [ cars_data ] Output [ Accelerate , Id ] ; #3 = Join [ #1 , #2 ] Predicate [ #1.MakeId = #2.Id ] Output [ #2.Accelerate ]",
+    "cte": "WITH Scan_1 AS ( SELECT MakeId, Make FROM car_1.car_names WHERE Make = 'amc hornet sportabout (sw)' ), Scan_2 AS ( SELECT Accelerate, Id FROM car_1.cars_data ), Join_3 AS ( SELECT Scan_2.Accelerate FROM Scan_1 JOIN Scan_2 ON Scan_1.MakeId = Scan_2.Id ) SELECT * FROM Join_3",
+    "clean_query": "SELECT T1.Accelerate FROM car_1.CARS_DATA AS T1  JOIN car_1.CAR_NAMES AS T2  ON T1.Id = T2.MakeId WHERE T2.Make = 'amc hornet sportabout (sw)'"
   },
   {
     "id": "7c03fdfb4bdd1f01de1be9c484bed41e27e47fc1fbfbf8b8c8258bc22293fd9e",
@@ -2059,16 +2059,16 @@
     "id": "9a73a6338b34f5e65b5cc27586bccdf5fe018eeda56c944a0b2b0b9f7e6ca09c",
     "question": "Find the name of airports which do not have any flight in and out.",
     "query": "SELECT AirportName FROM flight_2.Airports WITH (FORCESCAN) WHERE AirportCode NOT IN ( SELECT SourceAirport FROM flight_2.Flights WITH (FORCESCAN) UNION SELECT DestAirport FROM flight_2.Flights WITH (FORCESCAN) ) ",
-    "qpl": "flight_2 | #1 = Scan Table [ airports ] Output [ AirportCode , AirportName ] ; #2 = Scan Table [ flights ] Output [ SourceAirport AS AirportName ] ; #3 = Scan Table [ flights ] Output [ DestAirport AS AirportName ] ; #4 = Union [ #2 , #3 ] Output [ #2.AirportName ] ; #5 = Except [ #1 , #4 ] ExceptColumns [ #1.AirportName ] Output [ #1.AirportName ]",
-    "cte": "WITH Scan_1 AS ( SELECT AirportCode, AirportName FROM flight_2.airports ), Scan_2 AS ( SELECT SourceAirport AS AirportName FROM flight_2.flights ), Scan_3 AS ( SELECT DestAirport AS AirportName FROM flight_2.flights ), Union_4 AS ( SELECT AirportName FROM Scan_2 UNION SELECT AirportName FROM Scan_3 ), Except_5 AS ( SELECT Scan_1.AirportName FROM Scan_1 WHERE NOT EXISTS (SELECT AirportName FROM Union_4 WHERE Scan_1.AirportName = Union_4.AirportName) ) SELECT * FROM Except_5",
+    "qpl":  "flight_2 | #1 = Scan Table [ airports ] Output [ AirportCode , AirportName ] ; #2 = Scan Table [ flights ] Output [ SourceAirport AS AirportCode ] ; #3 = Scan Table [ flights ] Output [ DestAirport AS AirportCode ] ; #4 = Union [ #2 , #3 ] Output [ #2.AirportCode ] ; #5 = Except [ #1 , #4 ] ExceptColumns [ #1.AirportCode ] Output [ #1.AirportName ]",
+    "cte": "WITH Scan_1 AS ( SELECT AirportCode, AirportName FROM flight_2.airports ), Scan_2 AS ( SELECT SourceAirport AS AirportCode FROM flight_2.flights ), Scan_3 AS ( SELECT DestAirport AS AirportCode FROM flight_2.flights ), Union_4 AS ( SELECT AirportCode FROM Scan_2 UNION SELECT AirportCode FROM Scan_3 ), Except_5 AS ( SELECT Scan_1.AirportName FROM Scan_1 WHERE NOT EXISTS (SELECT AirportCode FROM Union_4 WHERE Scan_1.AirportCode = Union_4.AirportCode) ) SELECT * FROM Except_5",
     "clean_query": "SELECT AirportName FROM flight_2.Airports  WHERE AirportCode NOT IN ( SELECT SourceAirport FROM flight_2.Flights  UNION SELECT DestAirport FROM flight_2.Flights  )"
   },
   {
     "id": "63bfffa86de5ddf9518ff92a308340dbf0884a3e273892bfb044d3f7c7fbe2a3",
     "question": "Which airports do not have departing or arriving flights?",
     "query": "SELECT AirportName FROM flight_2.Airports WITH (FORCESCAN) WHERE AirportCode NOT IN ( SELECT SourceAirport FROM flight_2.Flights WITH (FORCESCAN) UNION SELECT DestAirport FROM flight_2.Flights WITH (FORCESCAN) ) ",
-    "qpl": "flight_2 | #1 = Scan Table [ airports ] Output [ AirportCode , AirportName ] ; #2 = Scan Table [ flights ] Output [ SourceAirport AS AirportName ] ; #3 = Scan Table [ flights ] Output [ DestAirport AS AirportName ] ; #4 = Union [ #2 , #3 ] Output [ #2.AirportName ] ; #5 = Except [ #1 , #4 ] ExceptColumns [ #1.AirportName ] Output [ #1.AirportName ]",
-    "cte": "WITH Scan_1 AS ( SELECT AirportCode, AirportName FROM flight_2.airports ), Scan_2 AS ( SELECT SourceAirport AS AirportName FROM flight_2.flights ), Scan_3 AS ( SELECT DestAirport AS AirportName FROM flight_2.flights ), Union_4 AS ( SELECT AirportName FROM Scan_2 UNION SELECT AirportName FROM Scan_3 ), Except_5 AS ( SELECT Scan_1.AirportName FROM Scan_1 WHERE NOT EXISTS (SELECT AirportName FROM Union_4 WHERE Scan_1.AirportName = Union_4.AirportName) ) SELECT * FROM Except_5",
+    "qpl":  "flight_2 | #1 = Scan Table [ airports ] Output [ AirportCode , AirportName ] ; #2 = Scan Table [ flights ] Output [ SourceAirport AS AirportCode ] ; #3 = Scan Table [ flights ] Output [ DestAirport AS AirportCode ] ; #4 = Union [ #2 , #3 ] Output [ #2.AirportCode ] ; #5 = Except [ #1 , #4 ] ExceptColumns [ #1.AirportCode ] Output [ #1.AirportName ]",
+    "cte": "WITH Scan_1 AS ( SELECT AirportCode, AirportName FROM flight_2.airports ), Scan_2 AS ( SELECT SourceAirport AS AirportCode FROM flight_2.flights ), Scan_3 AS ( SELECT DestAirport AS AirportCode FROM flight_2.flights ), Union_4 AS ( SELECT AirportCode FROM Scan_2 UNION SELECT AirportCode FROM Scan_3 ), Except_5 AS ( SELECT Scan_1.AirportName FROM Scan_1 WHERE NOT EXISTS (SELECT AirportCode FROM Union_4 WHERE Scan_1.AirportCode = Union_4.AirportCode) ) SELECT * FROM Except_5",
     "clean_query": "SELECT AirportName FROM flight_2.Airports  WHERE AirportCode NOT IN ( SELECT SourceAirport FROM flight_2.Flights  UNION SELECT DestAirport FROM flight_2.Flights  )"
   },
   {
@@ -2939,16 +2939,16 @@
     "id": "a2cf4e35c9235fe7fe8b7f23cd46ecbf8798764d9afd5799468de4112f0a8b3d",
     "question": "Show all document ids and the number of paragraphs in each document. Order by document id.",
     "query": "SELECT document_id , count ( * ) AS Count_Star FROM cre_Doc_Template_Mgt.Paragraphs WITH (FORCESCAN) GROUP BY document_id ORDER BY document_id OPTION (HASH JOIN, ORDER GROUP)",
-    "qpl": "cre_Doc_Template_Mgt | #1 = Scan Table [ Paragraphs ] Output [ Document_ID ] ; #2 = Aggregate [ #1 ] GroupBy [ Document_ID ] Output [ Document_ID , countstar AS Count_Star ]",
-    "cte": "WITH Scan_1 AS ( SELECT Document_ID FROM cre_Doc_Template_Mgt.Paragraphs ), Aggregate_2 AS ( SELECT Document_ID, COUNT(*) AS Count_Star FROM Scan_1 GROUP BY Document_ID ) SELECT * FROM Aggregate_2",
+    "qpl": "cre_Doc_Template_Mgt | #1 = Scan Table [ Paragraphs ] Output [ Document_ID ] ; #2 = Aggregate [ #1 ] GroupBy [ Document_ID ] Output [ Document_ID , countstar AS Count_Star ] ; #3 = Sort [ #2 ] OrderBy [ Document_ID ] Output [ Document_ID , Count_Star ]",
+    "cte": "WITH Scan_1 AS ( SELECT Document_ID FROM cre_Doc_Template_Mgt.Paragraphs ), Aggregate_2 AS ( SELECT Document_ID, COUNT(*) AS Count_Star FROM Scan_1 GROUP BY Document_ID ) SELECT Document_ID, Count_Star FROM Aggregate_2 ORDER BY Document_ID",
     "clean_query": "SELECT document_id , count ( * ) AS Count_Star FROM cre_Doc_Template_Mgt.Paragraphs  GROUP BY document_id ORDER BY document_id"
   },
   {
     "id": "8b9d043a303b43c1a782650d2ce723fe3dcd74a534ba49ee19d1b194d80acc7b",
     "question": "Return the different document ids along with the number of paragraphs corresponding to each, ordered by id.",
     "query": "SELECT document_id , count ( * ) AS Count_Star FROM cre_Doc_Template_Mgt.Paragraphs WITH (FORCESCAN) GROUP BY document_id ORDER BY document_id OPTION (HASH JOIN, ORDER GROUP)",
-    "qpl": "cre_Doc_Template_Mgt | #1 = Scan Table [ Paragraphs ] Output [ Document_ID ] ; #2 = Aggregate [ #1 ] GroupBy [ Document_ID ] Output [ Document_ID , countstar AS Count_Star ]",
-    "cte": "WITH Scan_1 AS ( SELECT Document_ID FROM cre_Doc_Template_Mgt.Paragraphs ), Aggregate_2 AS ( SELECT Document_ID, COUNT(*) AS Count_Star FROM Scan_1 GROUP BY Document_ID ) SELECT * FROM Aggregate_2",
+    "qpl": "cre_Doc_Template_Mgt | #1 = Scan Table [ Paragraphs ] Output [ Document_ID ] ; #2 = Aggregate [ #1 ] GroupBy [ Document_ID ] Output [ Document_ID , countstar AS Count_Star ] ; #3 = Sort [ #2 ] OrderBy [ Document_ID ] Output [ Document_ID , Count_Star ]",
+    "cte": "WITH Scan_1 AS ( SELECT Document_ID FROM cre_Doc_Template_Mgt.Paragraphs ), Aggregate_2 AS ( SELECT Document_ID, COUNT(*) AS Count_Star FROM Scan_1 GROUP BY Document_ID ) SELECT Document_ID, Count_Star FROM Aggregate_2 ORDER BY Document_ID",
     "clean_query": "SELECT document_id , count ( * ) AS Count_Star FROM cre_Doc_Template_Mgt.Paragraphs  GROUP BY document_id ORDER BY document_id"
   },
   {
@@ -4874,18 +4874,18 @@
   {
     "id": "312ecca6914f2c420ffd5f838287d2bd37e5588d4adca8b138affdbf865a7f5c",
     "question": "What is the TV Channel that shows the cartoon \"The Rise of the Blue Beetle!\"? List the TV Channel's series name.",
-    "query": "SELECT T1.series_name FROM tvshow.TV_Channel AS T1 WITH (FORCESCAN) JOIN tvshow.Cartoon AS T2 WITH (FORCESCAN) ON T1.id = T2.Channel WHERE T2.Title = 'The Rise of the Blue Beetle !'  OPTION (HASH JOIN, ORDER GROUP)",
-    "qpl": "tvshow | #1 = Scan Table [ Cartoon ] Predicate [ Title = 'The Rise of the Blue Beetle !' ] Output [ Channel , Title ] ; #2 = Scan Table [ TV_Channel ] Output [ id , series_name ] ; #3 = Join [ #1 , #2 ] Predicate [ #1.Channel = #2.id ] Output [ #2.series_name ]",
-    "cte": "WITH Scan_1 AS ( SELECT Channel, Title FROM tvshow.Cartoon WHERE Title = 'The Rise of the Blue Beetle !' ), Scan_2 AS ( SELECT id, series_name FROM tvshow.TV_Channel ), Join_3 AS ( SELECT Scan_2.series_name FROM Scan_1 JOIN Scan_2 ON Scan_1.Channel = Scan_2.id ) SELECT * FROM Join_3",
-    "clean_query": "SELECT T1.series_name FROM tvshow.TV_Channel AS T1  JOIN tvshow.Cartoon AS T2  ON T1.id = T2.Channel WHERE T2.Title = 'The Rise of the Blue Beetle !'"
+    "query": "SELECT T1.series_name FROM tvshow.TV_Channel AS T1 WITH (FORCESCAN) JOIN tvshow.Cartoon AS T2 WITH (FORCESCAN) ON T1.id = T2.Channel WHERE T2.Title = 'The Rise of the Blue Beetle!'  OPTION (HASH JOIN, ORDER GROUP)",
+    "qpl": "tvshow | #1 = Scan Table [ Cartoon ] Predicate [ Title = 'The Rise of the Blue Beetle!' ] Output [ Channel , Title ] ; #2 = Scan Table [ TV_Channel ] Output [ id , series_name ] ; #3 = Join [ #1 , #2 ] Predicate [ #1.Channel = #2.id ] Output [ #2.series_name ]",
+    "cte": "WITH Scan_1 AS ( SELECT Channel, Title FROM tvshow.Cartoon WHERE Title = 'The Rise of the Blue Beetle!' ), Scan_2 AS ( SELECT id, series_name FROM tvshow.TV_Channel ), Join_3 AS ( SELECT Scan_2.series_name FROM Scan_1 JOIN Scan_2 ON Scan_1.Channel = Scan_2.id ) SELECT * FROM Join_3",
+    "clean_query": "SELECT T1.series_name FROM tvshow.TV_Channel AS T1  JOIN tvshow.Cartoon AS T2  ON T1.id = T2.Channel WHERE T2.Title = 'The Rise of the Blue Beetle!'"
   },
   {
     "id": "cbabb0f4acf5348df82086edafeb33e346d67ddb5ecf5f10dedfd657044434a3",
     "question": "What is the series name of the TV Channel that shows the cartoon \"The Rise of the Blue Beetle\"?",
-    "query": "SELECT T1.series_name FROM tvshow.TV_Channel AS T1 WITH (FORCESCAN) JOIN tvshow.Cartoon AS T2 WITH (FORCESCAN) ON T1.id = T2.Channel WHERE T2.Title = 'The Rise of the Blue Beetle !'  OPTION (HASH JOIN, ORDER GROUP)",
-    "qpl": "tvshow | #1 = Scan Table [ Cartoon ] Predicate [ Title = 'The Rise of the Blue Beetle !' ] Output [ Channel , Title ] ; #2 = Scan Table [ TV_Channel ] Output [ id , series_name ] ; #3 = Join [ #1 , #2 ] Predicate [ #1.Channel = #2.id ] Output [ #2.series_name ]",
-    "cte": "WITH Scan_1 AS ( SELECT Channel, Title FROM tvshow.Cartoon WHERE Title = 'The Rise of the Blue Beetle !' ), Scan_2 AS ( SELECT id, series_name FROM tvshow.TV_Channel ), Join_3 AS ( SELECT Scan_2.series_name FROM Scan_1 JOIN Scan_2 ON Scan_1.Channel = Scan_2.id ) SELECT * FROM Join_3",
-    "clean_query": "SELECT T1.series_name FROM tvshow.TV_Channel AS T1  JOIN tvshow.Cartoon AS T2  ON T1.id = T2.Channel WHERE T2.Title = 'The Rise of the Blue Beetle !'"
+    "query": "SELECT T1.series_name FROM tvshow.TV_Channel AS T1 WITH (FORCESCAN) JOIN tvshow.Cartoon AS T2 WITH (FORCESCAN) ON T1.id = T2.Channel WHERE T2.Title = 'The Rise of the Blue Beetle!'  OPTION (HASH JOIN, ORDER GROUP)",
+    "qpl": "tvshow | #1 = Scan Table [ Cartoon ] Predicate [ Title = 'The Rise of the Blue Beetle!' ] Output [ Channel , Title ] ; #2 = Scan Table [ TV_Channel ] Output [ id , series_name ] ; #3 = Join [ #1 , #2 ] Predicate [ #1.Channel = #2.id ] Output [ #2.series_name ]",
+    "cte": "WITH Scan_1 AS ( SELECT Channel, Title FROM tvshow.Cartoon WHERE Title = 'The Rise of the Blue Beetle!' ), Scan_2 AS ( SELECT id, series_name FROM tvshow.TV_Channel ), Join_3 AS ( SELECT Scan_2.series_name FROM Scan_1 JOIN Scan_2 ON Scan_1.Channel = Scan_2.id ) SELECT * FROM Join_3",
+    "clean_query": "SELECT T1.series_name FROM tvshow.TV_Channel AS T1  JOIN tvshow.Cartoon AS T2  ON T1.id = T2.Channel WHERE T2.Title = 'The Rise of the Blue Beetle!'"
   },
   {
     "id": "67ad6ffc709d3e44ff5f84c9af0a4d2e16a89919d6c6f723b770165a6314e930",
@@ -5130,18 +5130,18 @@
   {
     "id": "34ae116d68862a3d031e45083c8c14f67053408224f2484c61530216d7152422",
     "question": "find id of the tv channels that from the countries where have more than two tv channels.",
-    "query": "SELECT id FROM tvshow.tv_channel WITH (FORCESCAN) GROUP BY id , country HAVING count ( * ) > 2 OPTION (HASH JOIN, ORDER GROUP)",
-    "qpl": "tvshow | #1 = Scan Table [ TV_Channel ] Output [ id ] ; #2 = Aggregate [ #1 ] GroupBy [ id ] Output [ countstar as Count_Star , id ] ; #3 = Filter [ #2 ] Predicate [ Count_Star > 2 ] Output [ id ]",
-    "cte": "WITH Scan_1 AS ( SELECT id FROM tvshow.TV_Channel ), Aggregate_2 AS ( SELECT COUNT(*) AS Count_Star, id FROM Scan_1 GROUP BY id ), Filter_3 AS ( SELECT id FROM Aggregate_2 WHERE Count_Star > 2 ) SELECT * FROM Filter_3",
-    "clean_query": "SELECT id FROM tvshow.tv_channel  GROUP BY id , country HAVING count ( * ) > 2"
+    "query": "SELECT Id from tvshow.TV_Channel where country in (SELECT country from tvshow.TV_Channel GROUP BY country HAVING Count(*) > 2)",
+    "qpl": "tvshow | #1 = Scan Table [ TV_Channel ] Output [ id , country ] ; #2 = Aggregate [ #1 ] GroupBy [ country ] Output [ countstar as Count_Star , country ] ; #3 = Filter [ #2 ] Predicate [ Count_Star > 2 ] Output [ country ] ; #4 = Join [ #1 , #3 ] Predicate [ #1.country = #3.country ] Output [ #1.id ]",
+    "cte": "WITH Scan_1 AS ( SELECT id, country FROM tvshow.TV_Channel ), Aggregate_2 AS ( SELECT COUNT(*) AS Count_Star, country FROM Scan_1 GROUP BY country ), Filter_3 AS ( SELECT country FROM Aggregate_2 WHERE Count_Star > 2 ), Join_4 AS ( SELECT Scan_1.id FROM Scan_1 JOIN Filter_3 ON Scan_1.country = Filter_3.country ) SELECT * FROM Join_4",
+    "clean_query": "SELECT Id from tvshow.TV_Channel where country in (SELECT country from tvshow.TV_Channel GROUP BY country HAVING Count(*) > 2)"
   },
   {
     "id": "4030ca9a53a02732ea943743b6fe00d6d8750e215cf82b9ad4d9d63fd796c938",
-    "question": "What are the ids of all tv channels that have more than 2 TV channels?",
-    "query": "SELECT id FROM tvshow.tv_channel WITH (FORCESCAN) GROUP BY id , country HAVING count ( * ) > 2 OPTION (HASH JOIN, ORDER GROUP)",
-    "qpl": "tvshow | #1 = Scan Table [ TV_Channel ] Output [ id ] ; #2 = Aggregate [ #1 ] GroupBy [ id ] Output [ countstar as Count_Star , id ] ; #3 = Filter [ #2 ] Predicate [ Count_Star > 2 ] Output [ id ]",
-    "cte": "WITH Scan_1 AS ( SELECT id FROM tvshow.TV_Channel ), Aggregate_2 AS ( SELECT COUNT(*) AS Count_Star, id FROM Scan_1 GROUP BY id ), Filter_3 AS ( SELECT id FROM Aggregate_2 WHERE Count_Star > 2 ) SELECT * FROM Filter_3",
-    "clean_query": "SELECT id FROM tvshow.tv_channel  GROUP BY id , country HAVING count ( * ) > 2"
+    "question": "What are the ids of all tv channels in countries that have more than 2 TV channels?",
+    "query": "SELECT Id from tvshow.TV_Channel where country in (SELECT country from tvshow.TV_Channel GROUP BY country HAVING Count(*) > 2)",
+    "qpl": "tvshow | #1 = Scan Table [ TV_Channel ] Output [ id , country ] ; #2 = Aggregate [ #1 ] GroupBy [ country ] Output [ countstar as Count_Star , country ] ; #3 = Filter [ #2 ] Predicate [ Count_Star > 2 ] Output [ country ] ; #4 = Join [ #1 , #3 ] Predicate [ #1.country = #3.country ] Output [ #1.id ]",
+    "cte": "WITH Scan_1 AS ( SELECT id, country FROM tvshow.TV_Channel ), Aggregate_2 AS ( SELECT COUNT(*) AS Count_Star, country FROM Scan_1 GROUP BY country ), Filter_3 AS ( SELECT country FROM Aggregate_2 WHERE Count_Star > 2 ), Join_4 AS ( SELECT Scan_1.id FROM Scan_1 JOIN Filter_3 ON Scan_1.country = Filter_3.country ) SELECT * FROM Join_4",
+    "clean_query": "SELECT Id from tvshow.TV_Channel where country in (SELECT country from tvshow.TV_Channel GROUP BY country HAVING Count(*) > 2)"
   },
   {
     "id": "327bca9bb7bc2bad6f1c5c3550a309028f5d3855e7c1ec6922cdd503aa6bd187",

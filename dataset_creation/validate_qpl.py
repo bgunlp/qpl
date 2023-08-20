@@ -76,23 +76,89 @@ def rs_good_keys_fuzzy(grs, prs):
     return good_rs
 
 
-def eq_resultset(rs1, rs2, with_order=True):
-    if with_order:
-        set1 = [frozenset(d.items()) for d in rs1]
-        set2 = [frozenset(d.items()) for d in rs2]
+# Comparisons with Floats are not deterministic
+# Encode Floats as Strings.
+def encode_dict(d):
+    for k in d.keys():
+        if type(d[k]) == type(1.01):
+            d[k] = str(d[k])
+    return frozenset(d.items())
+
+
+# Given a list of keys - return a string with the value of the keys with ":::" separator
+def get_keys(d, keys):
+    return ":::".join(str(d[k]) for k in keys)
+
+
+# If last statement in qpl is a SORT operator - return the list of order_by keys else None
+# For example: "... #8 = Sort [ #7 ] OrderBy [ Model ASC ] Distinct [ true ] Output [ Model ]" -> [ 'Model' ]
+# OrderBy values can be: [ {<field> [ASC|DESC]?}+ ]
+def get_order_by(qpl):
+    last_qpl = qpl[-1].split(" ")
+    last_qpl_op = last_qpl[2].lower()
+    if last_qpl_op != 'sort':
+        return None
+    keys = []
+    i = last_qpl.index('OrderBy') + 2  # First position after OrderBy [
+    while last_qpl[i] != ']':
+        keys.append(last_qpl[i].lower())
+        i += 1
+        if (last_qpl[i].lower() in ['asc', 'desc']):
+            i += 1
+        if (last_qpl[i] == ','):
+            i += 1
+    return keys
+
+
+# rs1 is gold resultset
+# rs2 is predicted (or computed) resultset
+# order_by is a list of keys to sort by
+def eq_resultset(rs1, rs2, order_by):
+    if not order_by:
+        set1 = {encode_dict(d) for d in rs1}
+        set2 = {encode_dict(d) for d in rs2}
+        return set1 == set2
     else:
-        set1 = {frozenset(d.items()) for d in rs1}
-        set2 = {frozenset(d.items()) for d in rs2}
-    return set1 == set2
+        # Compare as ordered lists
+        list1 = [encode_dict(d) for d in rs1]
+        list2 = [encode_dict(d) for d in rs2]
+
+        if list1 == list2:
+            return True
+
+        # If the sorting keys of the QPL are present in the gold resultset
+        if frozenset(order_by) <= rs_columns(rs1):
+            # Verify that the order_by projection is properly sorted in predicted
+            # This covers the case when the order_by keys includes duplicated values
+            # in which case the order by is not fully deterministic
+            ordered_keys_1 = [get_keys(d, order_by) for d in rs1]
+            ordered_keys_2 = [get_keys(d, order_by) for d in rs2]
+            return ordered_keys_1 == ordered_keys_2
+
+        # There is an order_by but the sql resultset does not include the sorting keys
+        # In case of ties on the sorting keys - we cannot verify the order of the rows
+        # In this case - compare results as sets - ignoring the order of the rows.
+        return eq_resultset(rs1, rs2, None)
 
 
 # grs: gold result set returned by original SQL (resultset is a list of dicts)
 # prs: result set either predicted by model or computed by QPL/CTE transformation
 # qpl: list of strings - qpl sequence
+# - If order_by is NONE:
+#      Check set equality (ignore order of rows)
+# - Else if same order of rows - return TRUE
+# - Else (Not same row order):
+#     sorting keys are present in sql and in qpl - Check order for the sorting keys
+#     sorting keys are not present in sql - Check set equality (ignore order of rows)
 def same_rs(grs, prs, qpl):
-    with_order = qpl[-1].lower().split(" ")[2].startswith("sort")
+    # Geţ the orderBy list of fields in the QPL
+    order_by = get_order_by(qpl)
+
+    # Good keys is a resultset that only includes the keys from prs that are aligned with a key in grs
+    # The keys appear under the name of the grs with the value from prs for the corresponding key.
     good_keys = rs_good_keys_fuzzy(grs, prs)
-    return eq_resultset(grs, good_keys, with_order)
+
+    return eq_resultset(grs, good_keys, order_by)
 
 
 def main():
@@ -117,10 +183,10 @@ def main():
             "http://localhost:8081/validate", json={"qpl": ex["qpl"]}
         ).json()
         if (
-            ex["crs"]
-            and ex["grs"]
-            and is_valid
-            and same_rs(ex["grs"], ex["crs"], ex["qpl"].split(" ; "))
+                ex["crs"]
+                and ex["grs"]
+                and is_valid
+                and same_rs(ex["grs"], ex["crs"], ex["qpl"].split(" ; "))
         ):
             del ex["crs"]
             del ex["grs"]

@@ -1,7 +1,7 @@
 import argparse
 import json
 from pathlib import Path
-
+from collections import Counter
 import pandas as pd
 import requests
 
@@ -114,31 +114,27 @@ def get_order_by(qpl):
 # rs2 is predicted (or computed) resultset
 # order_by is a list of keys to sort by
 def eq_resultset(rs1, rs2, order_by):
+    list1 = [encode_dict(d) for d in rs1]
+    list2 = [encode_dict(d) for d in rs2]
+
+    counter1 = Counter(list1)
+    counter2 = Counter(list2)
+
+    if counter1 != counter2:
+        return False
+
     if not order_by:
-        set1 = {encode_dict(d) for d in rs1}
-        set2 = {encode_dict(d) for d in rs2}
-        return set1 == set2
-    else:
-        # Compare as ordered lists
-        list1 = [encode_dict(d) for d in rs1]
-        list2 = [encode_dict(d) for d in rs2]
+        return True
 
-        if list1 == list2:
-            return True
+    # If the sorting keys of the QPL are present in the gold resultset
+    order_by_intersect = frozenset(order_by).intersection(rs_columns(rs1))
 
-        # If the sorting keys of the QPL are present in the gold resultset
-        if frozenset(order_by) <= rs_columns(rs1):
-            # Verify that the order_by projection is properly sorted in predicted
-            # This covers the case when the order_by keys includes duplicated values
-            # in which case the order by is not fully deterministic
-            ordered_keys_1 = [get_keys(d, order_by) for d in rs1]
-            ordered_keys_2 = [get_keys(d, order_by) for d in rs2]
-            return ordered_keys_1 == ordered_keys_2
-
-        # There is an order_by but the sql resultset does not include the sorting keys
-        # In case of ties on the sorting keys - we cannot verify the order of the rows
-        # In this case - compare results as sets - ignoring the order of the rows.
-        return eq_resultset(rs1, rs2, None)
+    # Verify that the order_by projection is properly sorted in predicted
+    # This covers the case when the order_by keys includes duplicated values
+    # in which case the order by is not fully deterministic
+    ordered_keys_1 = [get_keys(d, order_by_intersect) for d in rs1]
+    ordered_keys_2 = [get_keys(d, order_by_intersect) for d in rs2]
+    return ordered_keys_1 == ordered_keys_2
 
 
 # grs: gold result set returned by original SQL (resultset is a list of dicts)

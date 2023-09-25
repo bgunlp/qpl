@@ -13,50 +13,6 @@ class CTE:
     query: str
 
 
-def get_agg(token):
-    "If token has the form <agg>(<param>) - return [agg, param, <Agg>_<Param>] else None"
-    if token == "countstar":
-        return ["count(*)", "Count_Star"]
-    valid_agg_values = ["count", "avg", "sum", "min", "max"]
-    a = None
-    param = None
-    token = token.lower()
-    for agg in valid_agg_values:
-        if token.startswith(agg):
-            a = agg
-            break
-    if a == None:
-        return None
-    if "(" in token and ")" in token:
-        agg_start = token.find("(")
-        agg_end = token.find(")")
-        if agg_start != -1 and agg_end != -1:
-            param = token[agg_start + 1 : agg_end]
-            return [token, f"{a.capitalize()}_{param.capitalize()}"]
-    else:
-        return None
-
-
-def add_aliases(ls):
-    aliases = []
-    i = 0
-    while i < len(ls):
-        token = ls[i]
-        aggr = get_agg(token)
-        if aggr == None:
-            aliases.append(token)
-            i += 1
-        else:
-            [agg, alias] = aggr
-            if len(ls) > i + 2 and ls[i + 1].lower() == "as":
-                aliases += [agg, ls[i + 1], ls[i + 2]]
-                i += 3
-            else:
-                aliases += [agg, "as", alias]
-                i += 1
-    return aliases
-
-
 def flat_qpl_to_cte(flat_qpl: List[str], db_id: str) -> str:
     flat_qpl_scan_pattern = re.compile(
         r"#(?P<idx>\d+) = Scan Table \[ (?P<table>\w+) \]( Predicate \[ (?P<pred>[^\]]+) \])?( Distinct \[ (?P<distinct>true) \])? Output \[ (?P<out>[^\]]+) \]"
@@ -111,7 +67,7 @@ def flat_qpl_to_cte(flat_qpl: List[str], db_id: str) -> str:
                     if " as " not in out.lower():
                         group_by.add(out)
                 if group_by:
-                    for g in gb.split(',')[::-1]:
+                    for g in gb.split(",")[::-1]:
                         g = g.strip()
                         if g not in output_list:
                             output_list = [g] + output_list
@@ -134,11 +90,14 @@ def flat_qpl_to_cte(flat_qpl: List[str], db_id: str) -> str:
                     )
                 ):
                     groups = m.groupdict()
-                    predicate_ins = [
-                        int(i) for i in (groups["lhs_table"], groups["rhs_table"])
-                    ]
+                    lhs_table = int(groups["lhs_table"])
+                    rhs_table = int(groups["rhs_table"])
+                    predicate_ins = [lhs_table, rhs_table]
                     lhs_pred_col = groups["lhs_col"]
                     rhs_pred_col = groups["rhs_col"]
+                    if rhs_table < lhs_table:
+                        rhs_table, lhs_table = lhs_table, rhs_table
+                        rhs_pred_col, lhs_pred_col = lhs_pred_col, rhs_pred_col
                     assert set(predicate_ins) <= set(
                         ins
                     ), "Except uses columns in predicate that are not direct inputs"
@@ -237,11 +196,14 @@ def flat_qpl_to_cte(flat_qpl: List[str], db_id: str) -> str:
                     )
                 ):
                     groups = m.groupdict()
-                    predicate_ins = [
-                        int(i) for i in (groups["lhs_table"], groups["rhs_table"])
-                    ]
+                    lhs_table = int(groups["lhs_table"])
+                    rhs_table = int(groups["rhs_table"])
+                    predicate_ins = [lhs_table, rhs_table]
                     lhs_pred_col = groups["lhs_col"]
                     rhs_pred_col = groups["rhs_col"]
+                    if rhs_table < lhs_table:
+                        rhs_table, lhs_table = lhs_table, rhs_table
+                        rhs_pred_col, lhs_pred_col = lhs_pred_col, rhs_pred_col
                     assert set(predicate_ins) <= set(
                         ins
                     ), "Intersect uses columns in predicate that are not direct inputs"

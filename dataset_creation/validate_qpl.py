@@ -150,11 +150,22 @@ def same_rs(grs, prs, qpl):
     # Geţ the orderBy list of fields in the QPL
     order_by = get_order_by(qpl)
 
-    # Good keys is a resultset that only includes the keys from prs that are aligned with a key in grs
-    # The keys appear under the name of the grs with the value from prs for the corresponding key.
-    good_keys = rs_good_keys_fuzzy(grs, prs)
+    # Same number of rows
+    if len(grs) == 0 and len(prs) == 0:
+        return True
 
-    return eq_resultset(grs, good_keys, order_by)
+    # Same number of columns
+    if len(grs[0]) == len(prs[0]):
+        gdf = pd.DataFrame(grs)
+        pdf = pd.DataFrame(prs)
+        if (gdf.to_numpy() == pdf.to_numpy()).all():
+            return True
+
+    # good_keys_prs is a resultset that only includes the keys from prs that are aligned with a key in grs
+    # The keys appear under the name of the grs with the value from prs for the corresponding key.
+    good_keys_prs = rs_good_keys_fuzzy(grs, prs)
+
+    return eq_resultset(grs, good_keys_prs, order_by)
 
 
 def main():

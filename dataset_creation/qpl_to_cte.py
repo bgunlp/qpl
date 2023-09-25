@@ -111,6 +111,10 @@ def flat_qpl_to_cte(flat_qpl: List[str], db_id: str) -> str:
                     if " as " not in out.lower():
                         group_by.add(out)
                 if group_by:
+                    for g in gb.split(',')[::-1]:
+                        g = g.strip()
+                        if g not in output_list:
+                            output_list = [g] + output_list
                     cte = CTE(
                         f"Aggregate_{idx}",
                         f"SELECT {', '.join(output_list)} FROM {i2c[i]} GROUP BY {', '.join(group_by)}",

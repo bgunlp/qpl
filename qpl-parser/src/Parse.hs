@@ -18,7 +18,7 @@ import Data.HashMap.Strict (HashMap)
 import Data.HashMap.Strict qualified as HashMap
 import Data.List (sortBy)
 import Data.List qualified as List
-import Data.Maybe (mapMaybe)
+import Data.Maybe (fromJust, isJust, listToMaybe, mapMaybe)
 import Data.Set (Set)
 import Data.Set qualified as Set
 import Data.Text (Text)
@@ -31,12 +31,23 @@ type ColumnId = Text
 
 type TableId = Text
 
+data ColumnType
+    = TNumber
+    | TBoolean
+    | TText
+    | TTime
+    | TOthers
+    deriving (Eq, Generic, Show)
+
 data SqlSchema = SqlSchema
     { peDbId :: Text
     , peTableNames :: HashMap TableId Text
     , peColumnNames :: HashMap ColumnId Text
+    , peColumnTypes :: HashMap ColumnId ColumnType
     , peColumnToTable :: HashMap ColumnId TableId
     , peTableToColumns :: HashMap TableId [ColumnId]
+    , peForeignKeys :: HashMap ColumnId ColumnId
+    , pePrimaryKeys :: [ColumnId]
     }
     deriving stock (Show, Generic)
 
@@ -95,6 +106,7 @@ newtype UnionOutput = UnionOutput [IndexedColumn] deriving newtype (Show)
 data Comparable
     = ConstNum Double
     | ConstString Text
+    | ConstBoolean Bool
     | ConstNull
     | Col Column
     | Alias Text
@@ -142,17 +154,13 @@ data Line = Line
     }
     deriving stock (Show)
 
-type P a = RWST SqlSchema () QplState Parser a
+type P = RWST SqlSchema () QplState Parser
 
 type Qpl = [Line]
 type QplParser = P Qpl
 
 aggToPrefix :: Agg -> Text
-aggToPrefix Count = "Count_"
-aggToPrefix Sum = "Sum_"
-aggToPrefix Min = "Min_"
-aggToPrefix Max = "Max_"
-aggToPrefix Avg = "Avg_"
+aggToPrefix agg = T.pack $ show agg <> "_"
 
 unaryOperationOutputToText :: UnaryOperationOutput -> Text
 unaryOperationOutputToText (AliasOutput a) = a
@@ -226,16 +234,16 @@ opToConstructor _ = error "No such comparison operator"
 
 comparisonOp :: P Text
 comparisonOp =
-    lift $
-        string "<>"
-            <|> string "<="
-            <|> string ">="
-            <|> string "IS NOT"
-            <|> string "IS"
-            <|> (asciiCI "like" $> "LIKE")
-            <|> string "<"
-            <|> string ">"
-            <|> string "="
+    lift
+        $ string "<>"
+        <|> string "<="
+        <|> string ">="
+        <|> string "IS NOT"
+        <|> string "IS"
+        <|> (asciiCI "like" $> "LIKE")
+        <|> string "<"
+        <|> string ">"
+        <|> string "="
 
 tableName :: P Text
 tableName = do
@@ -287,6 +295,9 @@ constStr = do
     lift $ char '\''
     pure $ ConstString s
 
+constBoolean :: P Comparable
+constBoolean = fmap ConstBoolean $ lift (string "0" $> False <|> string "1" $> True)
+
 constNull :: P Comparable
 constNull = lift $ asciiCI "null" $> ConstNull
 
@@ -295,14 +306,15 @@ alias = do
     QplState{..} <- get
     let p cn = lift $ asciiCI cn $> cn
     value <- choice $ fmap p (sortBy (compare `on` (negate . T.length)) (concat $ HashMap.elems qsOutputs))
-    let isValidAggAlias = or $ fmap (`T.isPrefixOf` value) ["Max_", "Min_", "Sum_", "Count_", "Avg_"]
+    let isValidAggAlias = any (`T.isPrefixOf` value) ["Max_", "Min_", "Sum_", "Count_", "Avg_"]
     unless isValidAggAlias $ unexpected ("Alias " <> T.unpack value <> " is not an aggregate alias")
     pure value
 
-indexedColumn :: P IndexedColumn
-indexedColumn = do
+indexedColumn :: [Int] -> P IndexedColumn
+indexedColumn inputs = do
     lift $ char '#'
     idx <- lift (decimal :: Parser Int)
+    unless (idx `elem` inputs) $ unexpected ("Index " <> show idx <> " is not a valid index given the inputs " <> show inputs)
     lift $ char '.'
     col <- fmap (ColumnOutput . Column) (columnInIndex idx colName) <|> fmap AliasOutput (columnInIndex idx alias)
     pure $ IndexedColumn idx col
@@ -314,6 +326,16 @@ columnInIndex idx p = do
     let outputs = HashMap.lookupDefault [] idx qsOutputs
     unless (column `elem` outputs) $ unexpected ("Column " <> T.unpack column <> " was not defined in index " <> show idx)
     pure column
+
+getColumnType :: Text -> Text -> P ColumnType
+getColumnType column table = do
+    SqlSchema{..} <- ask
+    let matchingColumnIds = HashMap.keys . HashMap.filter (\x -> T.toLower column == T.toLower x) $ peColumnNames
+        matchingTableIds = HashMap.keys . HashMap.filter (\x -> T.toLower table == T.toLower x) $ peTableNames
+        columnIdInTable = (listToMaybe matchingTableIds >>= flip HashMap.lookup peTableToColumns) >>= listToMaybe . (`List.intersect` matchingColumnIds)
+        columnType = columnIdInTable >>= flip HashMap.lookup peColumnTypes
+    unless (isJust columnType) $ unexpected "Error in column type lookup"
+    pure (fromJust columnType)
 
 scan :: P Operation
 scan = do
@@ -333,16 +355,35 @@ scan = do
     lift $ string " ]"
     pure $ Scan (Table table) maybePredicate isDistinct (ScanOutput $ fmap (fmap Column) columns)
   where
-    comparable' :: Text -> P Comparable
-    comparable' table = constNum <|> constStr <|> constNull <|> fmap (Col . Column) (columnInTable table)
+    columnInTableOfType :: Text -> ColumnType -> P Text
+    columnInTableOfType table lhsType = do
+        SqlSchema{..} <- ask
+        column <- colName
+        rhsType <- getColumnType column table
+        let matchingColumnIds cn = HashMap.keys . HashMap.filter (\x -> T.toLower cn == T.toLower x) $ peColumnNames
+            columnIdToTableNames = peTableNames `HashMap.compose` peColumnToTable
+            matchingTableNames cn = mapMaybe (`HashMap.lookup` columnIdToTableNames) $ matchingColumnIds cn
+            isColumnInTable cn = table `elem` matchingTableNames cn
+        unless (lhsType == rhsType) $ unexpected ("Column " <> T.unpack column <> " is not of the correct type in this context")
+        unless (isColumnInTable column) $ unexpected ("Column " <> T.unpack column <> " is not part of table " <> T.unpack table)
+        pure column
+
+    comparable' :: Text -> ColumnType -> P Comparable
+    comparable' table TNumber = constNum <|> constNull <|> fmap (Col . Column) (columnInTableOfType table TNumber)
+    comparable' table TText = constStr <|> constNull <|> fmap (Col . Column) (columnInTableOfType table TText)
+    comparable' table TTime = constStr <|> constNull <|> fmap (Col . Column) (columnInTableOfType table TTime)
+    comparable' table TBoolean = constBoolean <|> constNull <|> fmap (Col . Column) (columnInTableOfType table TBoolean)
+    comparable' table TOthers = constNum <|> constStr <|> constNull <|> fmap (Col . Column) (columnInTableOfType table TOthers)
 
     comparison' :: Text -> P Comparison
     comparison' table = do
-        lhs <- fmap (Col . Column) (columnInTable table)
+        col <- columnInTable table
+        lhsType <- getColumnType col table
+        let lhs = Col $ Column col
         spaces
         op <- comparisonOp
         spaces
-        rhs <- comparable' table
+        rhs <- comparable' table lhsType
         pure $ opToConstructor op lhs rhs
 
     inner' :: Text -> P Predicate
@@ -361,7 +402,7 @@ aggregate = do
     ol <- outputList input
     let prevOutputs = Set.fromList $ HashMap.lookupDefault [] input qsOutputs
         outputsText = aggregateOutputToText ol
-        p t = and $ fmap (not . (`T.isPrefixOf` t)) ["Max_", "Min_", "Sum_", "Count_", "Avg_"]
+        p t = not (any (`T.isPrefixOf` t) ["Max_", "Min_", "Sum_", "Count_", "Avg_"])
         outputsSet = Set.filter p $ Set.fromList outputsText
         noDups = Set.size outputsSet == length (Prelude.filter p outputsText)
     unless (noDups && outputsSet `Set.isSubsetOf` prevOutputs) $ unexpected "Trying to output a column that has not been output by the input"
@@ -391,12 +432,17 @@ aggregate = do
     aliasedAggregate :: Int -> P AliasedAggregate
     aliasedAggregate input = do
         agg <-
-            lift $
-                string "AVG" $> Avg
-                    <|> string "COUNT" $> Count
-                    <|> string "SUM" $> Sum
-                    <|> string "MIN" $> Min
-                    <|> string "MAX" $> Max
+            lift
+                $ string "AVG"
+                $> Avg
+                <|> string "COUNT"
+                $> Count
+                <|> string "SUM"
+                $> Sum
+                <|> string "MIN"
+                $> Min
+                <|> string "MAX"
+                $> Max
         lift $ char '('
         isDistinct <- lift $ option False (string "DISTINCT " $> True)
         col <- columnInIndex input colName
@@ -425,6 +471,9 @@ filter = do
     modify' (\s -> s{qsOutputs = HashMap.insert qsCurrentIdx outputsText qsOutputs})
     pure $ Filter inputs pred' isDistinct ol
   where
+    columnInIndexOfType :: Int -> P Text -> ColumnType -> P Text
+    columnInIndexOfType = undefined
+
     comparable :: Int -> P Comparable
     comparable input =
         constNum
@@ -451,9 +500,9 @@ filter = do
     outputList = do
         lift $ string "Output [ "
         outputs <-
-            fmap FilterOutput $
-                (lift (string "1 AS One") `eitherP` (fmap (ColumnOutput . Column) colName <|> fmap AliasOutput alias))
-                    `sepBy1` lift (skipSpace *> string ", ")
+            fmap FilterOutput
+                $ (lift (string "1 AS One") `eitherP` (fmap (ColumnOutput . Column) colName <|> fmap AliasOutput alias))
+                `sepBy1` lift (skipSpace *> string ", ")
         lift $ string " ]"
         pure outputs
 
@@ -478,8 +527,9 @@ top = do
     outputList = do
         lift $ string "Output [ "
         outputs <-
-            fmap TopOutput $
-                (fmap (ColumnOutput . Column) colName <|> fmap AliasOutput alias) `sepBy1` lift (skipSpace *> string ", ")
+            fmap TopOutput
+                $ (fmap (ColumnOutput . Column) colName <|> fmap AliasOutput alias)
+                `sepBy1` lift (skipSpace *> string ", ")
         lift $ string " ]"
         pure outputs
 
@@ -517,8 +567,9 @@ sort = do
     outputList = do
         lift $ string "Output [ "
         outputs <-
-            fmap SortOutput $
-                (fmap (ColumnOutput . Column) colName <|> fmap AliasOutput alias) `sepBy1` lift (skipSpace *> string ", ")
+            fmap SortOutput
+                $ (fmap (ColumnOutput . Column) colName <|> fmap AliasOutput alias)
+                `sepBy1` lift (skipSpace *> string ", ")
         lift $ string " ]"
         pure outputs
 
@@ -557,8 +608,9 @@ topSort = do
     outputList = do
         lift $ string "Output [ "
         outputs <-
-            fmap TopSortOutput $
-                (fmap (ColumnOutput . Column) colName <|> fmap AliasOutput alias) `sepBy1` lift (skipSpace *> string ", ")
+            fmap TopSortOutput
+                $ (fmap (ColumnOutput . Column) colName <|> fmap AliasOutput alias)
+                `sepBy1` lift (skipSpace *> string ", ")
         lift $ string " ]"
         pure outputs
 
@@ -568,9 +620,9 @@ join = do
     lift $ string "Join "
     inputs <- inputIds
     unless (length inputs == 2) $ unexpected "Wrong number of inputs for Join"
-    pred' <- optional (predicate inner)
+    pred' <- optional (predicate (inner inputs))
     isDistinct <- lift $ option False (string "Distinct [ true ] " $> True)
-    ol <- outputList
+    ol <- outputList inputs
     let prevOutputs1 = Set.fromList $ HashMap.lookupDefault [] (head inputs) qsOutputs
         prevOutputs2 = Set.fromList $ HashMap.lookupDefault [] (head $ tail inputs) qsOutputs
         prevOutputs = Set.union prevOutputs1 prevOutputs2
@@ -582,27 +634,27 @@ join = do
     modify' (\s -> s{qsOutputs = HashMap.insert qsCurrentIdx outputsText qsOutputs})
     pure $ Join inputs pred' isDistinct ol
   where
-    comparable' :: P Comparable
-    comparable' = fmap IC indexedColumn
+    comparable' :: [Int] -> P Comparable
+    comparable' inputs = fmap IC $ indexedColumn inputs
 
-    comparison' :: P Comparison
-    comparison' = do
-        lhs <- fmap IC indexedColumn
+    comparison' :: [Int] -> P Comparison
+    comparison' inputs = do
+        lhs <- fmap IC $ indexedColumn inputs
         spaces
         op <- comparisonOp
         spaces
-        rhs <- comparable'
+        rhs <- comparable' inputs
         pure $ opToConstructor op lhs rhs
 
-    inner :: P Predicate
-    inner =
-        fmap Single comparison'
+    inner :: [Int] -> P Predicate
+    inner inputs =
+        fmap Single (comparison' inputs)
             `chainl1` lift (skipSpace *> (Conjunction <$ string "AND" <|> Disjunction <$ string "OR") <* skipSpace)
 
-    outputList :: P JoinOutput
-    outputList = do
+    outputList :: [Int] -> P JoinOutput
+    outputList inputs = do
         lift $ string "Output [ "
-        outputs <- fmap JoinOutput $ (lift (string "1 AS One") `eitherP` indexedColumn) `sepBy1` lift (skipSpace *> string ", ")
+        outputs <- fmap JoinOutput $ (lift (string "1 AS One") `eitherP` indexedColumn inputs) `sepBy1` lift (skipSpace *> string ", ")
         lift $ string " ]"
         pure outputs
 
@@ -612,8 +664,8 @@ intersect = do
     lift $ string "Intersect "
     inputs <- inputIds
     unless (length inputs == 2) $ unexpected "Wrong number of inputs for Intersect"
-    pred' <- optional (predicate inner)
-    ol <- outputList
+    pred' <- optional (predicate $ inner inputs)
+    ol <- outputList inputs
     let prevOutputs1 = Set.fromList $ HashMap.lookupDefault [] (head inputs) qsOutputs
         prevOutputs2 = Set.fromList $ HashMap.lookupDefault [] (head $ tail inputs) qsOutputs
         prevOutputs = Set.union prevOutputs1 prevOutputs2
@@ -623,25 +675,25 @@ intersect = do
     modify' (\s -> s{qsOutputs = HashMap.insert qsCurrentIdx outputsText qsOutputs})
     pure $ Intersect inputs pred' ol
   where
-    comparable' :: P Comparable
-    comparable' = fmap IC indexedColumn
+    comparable' :: [Int] -> P Comparable
+    comparable' inputs = fmap IC $ indexedColumn inputs
 
-    comparison' :: P Comparison
-    comparison' = do
-        lhs <- fmap IC indexedColumn
+    comparison' :: [Int] -> P Comparison
+    comparison' inputs = do
+        lhs <- fmap IC $ indexedColumn inputs
         spaces
         op <- comparisonOp
         spaces
-        rhs <- comparable'
+        rhs <- comparable' inputs
         pure $ opToConstructor op lhs rhs
 
-    inner :: P Predicate
-    inner = fmap Single comparison'
+    inner :: [Int] -> P Predicate
+    inner inputs = fmap Single $ comparison' inputs
 
-    outputList :: P IntersectOutput
-    outputList = do
+    outputList :: [Int] -> P IntersectOutput
+    outputList inputs = do
         lift $ string "Output [ "
-        outputs <- fmap IntersectOutput $ indexedColumn `sepBy1` lift (skipSpace *> string ", ")
+        outputs <- fmap IntersectOutput $ indexedColumn inputs `sepBy1` lift (skipSpace *> string ", ")
         lift $ string " ]"
         pure outputs
 
@@ -651,8 +703,8 @@ except = do
     lift $ string "Except "
     inputs <- inputIds
     unless (length inputs == 2) $ unexpected "Wrong number of inputs for Except"
-    arg <- eitherP (predicate inner) exceptCol
-    ol <- outputList
+    arg <- eitherP (predicate $ inner inputs) $ exceptCol inputs
+    ol <- outputList inputs
     let prevOutputs1 = Set.fromList $ HashMap.lookupDefault [] (head inputs) qsOutputs
         prevOutputs2 = Set.fromList $ HashMap.lookupDefault [] (head $ tail inputs) qsOutputs
         prevOutputs = Set.union prevOutputs1 prevOutputs2
@@ -663,34 +715,34 @@ except = do
     modify' (\s -> s{qsOutputs = HashMap.insert qsCurrentIdx outputsText qsOutputs})
     pure $ Except inputs arg ol
   where
-    comparable' :: P Comparable
-    comparable' = fmap IC indexedColumn <|> constNull
+    comparable' :: [Int] -> P Comparable
+    comparable' inputs = fmap IC (indexedColumn inputs) <|> constNull
 
-    comparison' :: P Comparison
-    comparison' = do
-        lhs <- fmap IC indexedColumn
+    comparison' :: [Int] -> P Comparison
+    comparison' inputs = do
+        lhs <- fmap IC $ indexedColumn inputs
         spaces
         op <- comparisonOp
         spaces
-        rhs <- comparable'
+        rhs <- comparable' inputs
         pure $ opToConstructor op lhs rhs
 
-    inner :: P Predicate
-    inner =
-        fmap Single comparison'
+    inner :: [Int] -> P Predicate
+    inner inputs =
+        fmap Single (comparison' inputs)
             `chainl1` lift (skipSpace *> (Conjunction <$ string "AND" <|> Disjunction <$ string "OR") <* skipSpace)
 
-    exceptCol :: P IndexedColumn
-    exceptCol = do
+    exceptCol :: [Int] -> P IndexedColumn
+    exceptCol inputs = do
         lift $ string "ExceptColumns [ "
-        col <- indexedColumn
+        col <- indexedColumn inputs
         lift $ string " ] "
         pure col
 
-    outputList :: P ExceptOutput
-    outputList = do
+    outputList :: [Int] -> P ExceptOutput
+    outputList inputs = do
         lift $ string "Output [ "
-        outputs <- fmap ExceptOutput $ (lift (string "1 AS One") `eitherP` indexedColumn) `sepBy1` lift (skipSpace *> string ", ")
+        outputs <- fmap ExceptOutput $ (lift (string "1 AS One") `eitherP` indexedColumn inputs) `sepBy1` lift (skipSpace *> string ", ")
         lift $ string " ]"
         pure outputs
 
@@ -700,7 +752,7 @@ union = do
     lift $ string "Union "
     inputs <- inputIds
     unless (length inputs == 2) $ unexpected "Wrong number of inputs for Union"
-    ol <- outputList
+    ol <- outputList inputs
     let prevOutputs1 = Set.fromList $ HashMap.lookupDefault [] (head inputs) qsOutputs
         prevOutputs2 = Set.fromList $ HashMap.lookupDefault [] (head $ tail inputs) qsOutputs
         prevOutputs = Set.union prevOutputs1 prevOutputs2
@@ -710,10 +762,10 @@ union = do
     modify' (\s -> s{qsOutputs = HashMap.insert qsCurrentIdx outputsText qsOutputs})
     pure $ Union inputs ol
   where
-    outputList :: P UnionOutput
-    outputList = do
+    outputList :: [Int] -> P UnionOutput
+    outputList inputs = do
         lift $ string "Output [ "
-        outputs <- fmap UnionOutput $ indexedColumn `sepBy1` lift (skipSpace *> string ", ")
+        outputs <- fmap UnionOutput $ indexedColumn inputs `sepBy1` lift (skipSpace *> string ", ")
         lift $ string " ]"
         pure outputs
 
@@ -750,9 +802,25 @@ checkParser p = parse (fst <$> evalRWST p testEnv emptyQplState)
 testEnv :: SqlSchema
 testEnv =
     SqlSchema
-        { peDbId = "car_1"
-        , peTableNames = HashMap.fromList [("0", "continents"), ("1", "countries"), ("2", "car_makers"), ("3", "model_list"), ("4", "car_names"), ("5", "cars_data")]
-        , peColumnNames = HashMap.fromList [("1", "ContId"), ("2", "Continent"), ("3", "CountryId"), ("4", "CountryName"), ("5", "Continent"), ("6", "Id"), ("7", "Maker"), ("8", "FullName"), ("9", "Country"), ("10", "ModelId"), ("11", "Maker"), ("12", "Model"), ("13", "MakeId"), ("14", "Model"), ("15", "Make"), ("16", "Id"), ("17", "MPG"), ("18", "Cylinders"), ("19", "Edispl"), ("20", "Horsepower"), ("21", "Weight"), ("22", "Accelerate"), ("23", "Year")]
-        , peColumnToTable = HashMap.fromList [("1", "0"), ("2", "0"), ("3", "1"), ("4", "1"), ("5", "1"), ("6", "2"), ("7", "2"), ("8", "2"), ("9", "2"), ("10", "3"), ("11", "3"), ("12", "3"), ("13", "4"), ("14", "4"), ("15", "4"), ("16", "5"), ("17", "5"), ("18", "5"), ("19", "5"), ("20", "5"), ("21", "5"), ("22", "5"), ("23", "5")]
-        , peTableToColumns = HashMap.fromList [("0", ["1", "2"]), ("1", ["3", "4", "5"]), ("2", ["6", "7", "8", "9"]), ("3", ["10", "11", "12"]), ("4", ["13", "14", "15"]), ("5", ["16", "17", "18", "19", "20", "21", "22", "23"])]
+        { peDbId = "concert_singer"
+        , peTableNames = HashMap.fromList [("0", "stadium"), ("1", "singer"), ("2", "concert"), ("3", "singer_in_concert")]
+        , peColumnNames = HashMap.fromList [("1", "Stadium_ID"), ("2", "Location"), ("3", "Name"), ("4", "Capacity"), ("5", "Highest"), ("6", "Lowest"), ("7", "Average"), ("8", "Singer_ID"), ("9", "Name"), ("10", "Country"), ("11", "Song_Name"), ("12", "Song_release_year"), ("13", "Age"), ("14", "Is_male"), ("15", "concert_ID"), ("16", "concert_Name"), ("17", "Theme"), ("18", "Stadium_ID"), ("19", "Year"), ("20", "concert_ID"), ("21", "Singer_ID")]
+        , peColumnTypes = HashMap.fromList [("1", TNumber), ("2", TText), ("3", TText), ("4", TNumber), ("5", TNumber), ("6", TNumber), ("7", TNumber), ("8", TNumber), ("9", TText), ("10", TText), ("11", TText), ("12", TText), ("13", TNumber), ("14", TOthers), ("15", TNumber), ("16", TText), ("17", TText), ("18", TText), ("19", TText), ("20", TNumber), ("21", TText)]
+        , peColumnToTable = HashMap.fromList [("1", "0"), ("2", "0"), ("3", "0"), ("4", "0"), ("5", "0"), ("6", "0"), ("7", "0"), ("8", "1"), ("9", "1"), ("10", "1"), ("11", "1"), ("12", "1"), ("13", "1"), ("14", "1"), ("15", "2"), ("16", "2"), ("17", "2"), ("18", "2"), ("19", "2"), ("20", "3"), ("21", "3")]
+        , peTableToColumns = HashMap.fromList [("0", ["1", "2", "3", "4", "5", "6", "7"]), ("1", ["8", "9", "10", "11", "12", "13", "14"]), ("2", ["15", "16", "17", "18", "19"]), ("3", ["20", "21"])]
+        , peForeignKeys = HashMap.fromList [("18", "1"), ("21", "8"), ("20", "15")]
+        , pePrimaryKeys = ["1", "8", "15", "20"]
+        }
+
+testEnv2 :: SqlSchema
+testEnv2 =
+    SqlSchema
+        { peDbId = "world_1"
+        , peTableNames = HashMap.fromList [("0", "city"), ("1", "sqlite_sequence"), ("2", "country"), ("3", "countrylanguage")]
+        , peColumnNames = HashMap.fromList [("1", "ID"), ("2", "Name"), ("3", "CountryCode"), ("4", "District"), ("5", "Population"), ("6", "name"), ("7", "seq"), ("8", "Code"), ("9", "Name"), ("10", "Continent"), ("11", "Region"), ("12", "SurfaceArea"), ("13", "IndepYear"), ("14", "Population"), ("15", "LifeExpectancy"), ("16", "GNP"), ("17", "GNPOld"), ("18", "LocalName"), ("19", "GovernmentForm"), ("20", "HeadOfState"), ("21", "Capital"), ("22", "Code2"), ("23", "CountryCode"), ("24", "Language"), ("25", "IsOfficial"), ("26", "Percentage")]
+        , peColumnTypes = HashMap.fromList [("1", TNumber), ("2", TText), ("3", TText), ("4", TText), ("5", TNumber), ("6", TText), ("7", TText), ("8", TText), ("9", TText), ("10", TText), ("11", TText), ("12", TNumber), ("13", TNumber), ("14", TNumber), ("15", TNumber), ("16", TNumber), ("17", TNumber), ("18", TText), ("19", TText), ("20", TText), ("21", TNumber), ("22", TText), ("23", TText), ("24", TText), ("25", TText), ("26", TNumber)]
+        , peColumnToTable = HashMap.fromList [("1", "0"), ("2", "0"), ("3", "0"), ("4", "0"), ("5", "0"), ("6", "1"), ("7", "1"), ("8", "2"), ("9", "2"), ("10", "2"), ("11", "2"), ("12", "2"), ("13", "2"), ("14", "2"), ("15", "2"), ("16", "2"), ("17", "2"), ("18", "2"), ("19", "2"), ("20", "2"), ("21", "2"), ("22", "2"), ("23", "3"), ("24", "3"), ("25", "3"), ("26", "3")]
+        , peTableToColumns = HashMap.fromList [("0", ["1", "2", "3", "4", "5"]), ("1", ["6", "7"]), ("2", ["8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22"]), ("3", ["23", "24", "25", "26"])]
+        , peForeignKeys = HashMap.fromList [("3", "8"), ("23", "8")]
+        , pePrimaryKeys = ["1", "8", "23"]
         }

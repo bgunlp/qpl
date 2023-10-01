@@ -29,7 +29,7 @@ import Data.Text qualified as T
 import Debug.Trace (trace)
 import GHC.Generics
 import Network.Wai.Handler.Warp
-import Parse (Qpl, SqlSchema (peDbId), mkQplParser)
+import Parse (ColumnType, Qpl, SqlSchema (peDbId), mkQplParser)
 import Servant
 import Text.Parser.Char (alphaNum, spaces)
 import Text.Parser.Combinators (Parsing (eof, unexpected))
@@ -127,6 +127,12 @@ instance ToJSON BatchFeedResult where
     toJSON = genericToJSON defaultOptions{fieldLabelModifier = camelTo2 '_' . lowerFirst . drop 3}
 
 data PartialParse = PartialParse !Text !(Atto.Result Qpl)
+
+instance FromJSON ColumnType where
+    parseJSON = genericParseJSON defaultOptions{constructorTagModifier = lowerFirst . tail}
+
+instance ToJSON ColumnType where
+    toJSON = genericToJSON defaultOptions{constructorTagModifier = lowerFirst . tail}
 
 instance FromJSON SqlSchema where
     parseJSON = genericParseJSON defaultOptions{fieldLabelModifier = camelTo2 '_' . lowerFirst . drop 2}

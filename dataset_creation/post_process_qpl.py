@@ -47,7 +47,7 @@ def post_process(flat_qpl: List[str]) -> List[str]:
         assigned_top_bottom = set()
         if m := re.match(r"((#\d+)|(\w+))\.(\w+) = \1\.\4", predicate):
             return f"#{ins[0]}.{m.group(4)} = #{ins[1]}.{m.group(4)}"
-        for comp in re.split(r"(<>|>=|<=|=|>|<|IS NULL OR|IS|OR|AND)", predicate):
+        for comp in re.split(r"(<>|>=|<=|=|>|<|IS NULL OR|IS| OR|AND)", predicate):
             comp = comp.strip()
             first_input_outputs = extract_outputs(flat_qpl[ins[0] - 1])
             second_input_outputs = extract_outputs(flat_qpl[ins[1] - 1])
@@ -76,6 +76,7 @@ def post_process(flat_qpl: List[str]) -> List[str]:
                     second_input_outputs.remove(k)
                 elif m := re.match(r"(T|B)\.(\w+)", comp):
                     (_, col) = m.groups()
+                    col = "Count_Star" if col == "countstar" else col
                     if ins[0] not in assigned_top_bottom:
                         new_components.append(f"#{ins[0]}.{col}")
                         assigned_top_bottom.add(ins[0])
@@ -169,6 +170,10 @@ def post_process(flat_qpl: List[str]) -> List[str]:
 
     def replace_fqs_and_aggs(predicate: str, ins: List[int]) -> str:
         new_components = []
+        is_negation = False
+        if m := re.match(r"NOT \((.*)\)", predicate):
+            (predicate,) = m.groups()
+            is_negation = True
         for comp in predicate.split():
             if comp == "countstar":
                 new_components.append("Count_Star")
@@ -180,6 +185,8 @@ def post_process(flat_qpl: List[str]) -> List[str]:
                 new_components.append(f"{agg.title()}_{col}")
             else:
                 new_components.append(comp)
+        if is_negation:
+            return f"NOT ({' '.join(new_components)})"
         return " ".join(new_components)
 
     def replace_order_by(order_by: List[str], ins: List[int]) -> List[str]:
@@ -305,8 +312,15 @@ def post_process(flat_qpl: List[str]) -> List[str]:
             predicate = opts.get("Predicate")
             except_col = opts.get("ExceptColumns")
             if predicate:
-                indexed_predicate = index_predicate(predicate, ins)
-                args[args.index(predicate)] = indexed_predicate
+                indexed_predicate = [
+                    index_predicate(p, ins) for p in predicate.split(" , ")
+                ]
+                indexed_predicate = [
+                    ip
+                    for ip in indexed_predicate
+                    if not re.match(r"(#\d+\.\w+) = \1", ip)
+                ]
+                args[args.index(predicate)] = indexed_predicate[0]
             elif except_col:
                 args[args.index(except_col)] = " , ".join(
                     index_output_list(except_col.split(" , "), ins)
@@ -388,8 +402,10 @@ def post_process(flat_qpl: List[str]) -> List[str]:
         elif op == "Join":
             predicate = opts.get("Predicate")
             if predicate:
-                indexed_predicate = index_predicate(predicate, ins)
-                args[args.index(predicate)] = indexed_predicate
+                indexed_predicate = [
+                    index_predicate(p, ins) for p in predicate.split(" , ")
+                ]
+                args[args.index(predicate)] = " AND ".join(indexed_predicate)
             if not output_list:
                 output_list = []
                 first_input_outputs = extract_outputs(flat_qpl[ins[0] - 1])
@@ -434,7 +450,7 @@ def post_process(flat_qpl: List[str]) -> List[str]:
                     if agg := g["agg"]:
                         if g["distinct"]:
                             raise ValueError(g)
-                        new_output_list.append(f"{agg.title()}_({g['col']})")
+                        new_output_list.append(f"{agg.title()}_{g['col']}")
                     else:
                         new_output_list.append("Count_Star")
                 else:
@@ -465,7 +481,7 @@ def post_process(flat_qpl: List[str]) -> List[str]:
                         if agg := g["agg"]:
                             if g["distinct"]:
                                 raise ValueError(g)
-                            new_output_list.append(f"{agg.title()}_({g['col']})")
+                            new_output_list.append(f"{agg.title()}_{g['col']}")
                         else:
                             new_output_list.append("Count_Star")
                     else:
@@ -608,6 +624,10 @@ def main():
             ex["qpl"] = manual_fixes[id_]
         else:
             db_id, qpl = ex["qpl"].split(" | ")
+            if db_id == "hr_1":
+                qpl = qpl.replace("<> 'null'", "IS NOT NULL").replace(
+                    "= 'null'", "IS NULL"
+                )
             try:
                 result = post_process(qpl.split(" ; "))
             except AssertionError as e:

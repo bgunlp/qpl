@@ -6,17 +6,15 @@ from typing import List
 
 import pymssql
 import regex as re
-from evaluation import Evaluator, Schema, get_schema, get_sql
 from tqdm.auto import tqdm
+
+from evaluation import Evaluator, Schema, get_schema, get_sql
 
 AFTER_FROM_KEYWORDS = ["where", "order", "group"]
 HASH_JOIN_OPT = "OPTION (HASH JOIN, ORDER GROUP)"
 MERGE_JOIN_OPT = "OPTION (MERGE JOIN, ORDER GROUP)"
 LOOP_JOIN_OPT = "OPTION (LOOP JOIN, ORDER GROUP)"
 JOIN_OPT = HASH_JOIN_OPT
-
-
-
 
 
 MANUAL_FIXES = {

@@ -2,14 +2,13 @@ package com.beneyal.qpl
 
 import cats.*
 import cats.data.*
-import cats.syntax.all.*
 import com.beneyal.qpl.domain.*
 import com.beneyal.qpl.reading.*
 import scopt.OParser
 import zio.*
 import zio.json.*
 
-import java.nio.file.{Path, Paths}
+import java.nio.file.Path
 
 object plantoqpl extends ZIOAppDefault {
   import DefinedValue.*
@@ -39,27 +38,27 @@ object plantoqpl extends ZIOAppDefault {
     def tableSpool: Operation = Operation("TableSpool", Chunk.empty)
   }
 
-  final case class FlatQplLine(idx: Int, ins: Chunk[Int], operation: Operation)
+  final case class QplLine(idx: Int, ins: Chunk[Int], operation: Operation)
 
-  final case class FlatQplState(
+  final case class QplState(
       currentIdx: Int,
       outs: Map[Int, Chunk[String]]
   )
 
-  object FlatQplState {
-    def empty: FlatQplState = FlatQplState(1, Map.empty)
+  object QplState {
+    def empty: QplState = QplState(1, Map.empty)
   }
 
-  def toFlatQpl(si: SpiderInstance): String = {
-    def recur(op: Operation, isRoot: Boolean = false): State[FlatQplState, Chunk[FlatQplLine]] = {
+  def toQpl(si: SpiderInstance): String = {
+    def recur(op: Operation, isRoot: Boolean = false): State[QplState, Chunk[QplLine]] = {
       op.name match {
         case "Scan" =>
           for {
-            state <- State.get[FlatQplState]
-            _ <- State.set[FlatQplState](
-              FlatQplState(state.currentIdx + 1, state.outs.updated(state.currentIdx, op.outs))
+            state <- State.get[QplState]
+            _ <- State.set[QplState](
+              QplState(state.currentIdx + 1, state.outs.updated(state.currentIdx, op.outs))
             )
-          } yield Chunk(FlatQplLine(state.currentIdx, Chunk.empty, op))
+          } yield Chunk(QplLine(state.currentIdx, Chunk.empty, op))
         case "Aggregate" =>
           val outs = if (op.ins.head.name == "Sort" && op.ins.head.ins.head.name == "Scan") {
             op.outs.map {
@@ -71,15 +70,15 @@ object plantoqpl extends ZIOAppDefault {
           }
           for {
             inner <- recur(op.ins.head)
-            state <- State.get[FlatQplState]
-            _ <- State.set[FlatQplState](
-              FlatQplState(state.currentIdx + 1, state.outs.updated(state.currentIdx, outs))
+            state <- State.get[QplState]
+            _ <- State.set[QplState](
+              QplState(state.currentIdx + 1, state.outs.updated(state.currentIdx, outs))
             )
-          } yield inner :+ FlatQplLine(state.currentIdx, Chunk(state.currentIdx - 1), op.copy(outs = outs))
+          } yield inner :+ QplLine(state.currentIdx, Chunk(state.currentIdx - 1), op.copy(outs = outs))
         case "Filter" =>
           for {
             inner <- recur(op.ins.head)
-            state <- State.get[FlatQplState]
+            state <- State.get[QplState]
             prevIdx  = state.currentIdx - 1
             prevOuts = state.outs(prevIdx)
             outs = op.outs.map {
@@ -98,10 +97,10 @@ object plantoqpl extends ZIOAppDefault {
                 )
               case opt => opt
             }
-            _ <- State.set[FlatQplState](
-              FlatQplState(state.currentIdx + 1, state.outs.updated(state.currentIdx, outs))
+            _ <- State.set[QplState](
+              QplState(state.currentIdx + 1, state.outs.updated(state.currentIdx, outs))
             )
-          } yield inner :+ FlatQplLine(
+          } yield inner :+ QplLine(
             state.currentIdx,
             Chunk(state.currentIdx - 1),
             op.copy(outs = outs, options = opts)
@@ -110,11 +109,11 @@ object plantoqpl extends ZIOAppDefault {
           val isDistinct = op.options.exists { case Opt("Distinct", _) => true; case _ => false }
           for {
             inner <- recur(op.ins.head)
-            state <- State.get[FlatQplState]
+            state <- State.get[QplState]
             _ <-
               if (isRoot) {
-                State.set[FlatQplState](
-                  FlatQplState(state.currentIdx + 1, state.outs.updated(state.currentIdx, op.outs))
+                State.set[QplState](
+                  QplState(state.currentIdx + 1, state.outs.updated(state.currentIdx, op.outs))
                 )
               } else {
                 State.pure(())
@@ -133,50 +132,50 @@ object plantoqpl extends ZIOAppDefault {
                 val newLast = last.copy(operation = lastOp.copy(outs = op.outs, options = newOpts))
                 inner.init :+ newLast
               } else {
-                inner :+ FlatQplLine(state.currentIdx, Chunk(state.currentIdx - 1), op)
+                inner :+ QplLine(state.currentIdx, Chunk(state.currentIdx - 1), op)
               }
             } else if (isDistinct) {
               val init  = inner.init
               val op    = inner.last.operation
               val newOp = op.copy(options = op.options :+ Opt("Distinct", "true"))
-              init :+ FlatQplLine(inner.last.idx, inner.last.ins, newOp)
+              init :+ QplLine(inner.last.idx, inner.last.ins, newOp)
             } else {
               inner
             }
         case "Top" =>
           for {
             inner <- recur(op.ins.head)
-            state <- State.get[FlatQplState]
+            state <- State.get[QplState]
             prevIdx  = state.currentIdx - 1
             prevOuts = state.outs(prevIdx)
             outs = op.outs.map {
               case s"COUNT($col)" if prevOuts.contains(s"COUNT(DISTINCT $col)") => s"COUNT(DISTINCT $col)"
               case s                                                            => s
             }
-            _ <- State.set[FlatQplState](
-              FlatQplState(state.currentIdx + 1, state.outs.updated(state.currentIdx, outs))
+            _ <- State.set[QplState](
+              QplState(state.currentIdx + 1, state.outs.updated(state.currentIdx, outs))
             )
-          } yield inner :+ FlatQplLine(state.currentIdx, Chunk(state.currentIdx - 1), op.copy(outs = outs))
+          } yield inner :+ QplLine(state.currentIdx, Chunk(state.currentIdx - 1), op.copy(outs = outs))
         case "TopSort" =>
           for {
             inner <- recur(op.ins.head)
-            state <- State.get[FlatQplState]
+            state <- State.get[QplState]
             prevIdx  = state.currentIdx - 1
             prevOuts = state.outs(prevIdx)
             outs = op.outs.map {
               case s"COUNT($col)" if prevOuts.contains(s"COUNT(DISTINCT $col)") => s"COUNT(DISTINCT $col)"
               case s                                                            => s
             }
-            _ <- State.set[FlatQplState](
-              FlatQplState(state.currentIdx + 1, state.outs.updated(state.currentIdx, outs))
+            _ <- State.set[QplState](
+              QplState(state.currentIdx + 1, state.outs.updated(state.currentIdx, outs))
             )
-          } yield inner :+ FlatQplLine(state.currentIdx, Chunk(state.currentIdx - 1), op.copy(outs = outs))
+          } yield inner :+ QplLine(state.currentIdx, Chunk(state.currentIdx - 1), op.copy(outs = outs))
         case "Join" | "Intersect" | "Except" | "Union" =>
           for {
             top    <- recur(op.ins(0))
-            s1     <- State.get[FlatQplState]
+            s1     <- State.get[QplState]
             bottom <- recur(op.ins(1))
-            s2     <- State.get[FlatQplState]
+            s2     <- State.get[QplState]
             outs = op.outs
               .map {
                 case s"COUNT($col)"
@@ -199,10 +198,10 @@ object plantoqpl extends ZIOAppDefault {
               } else {
                 op.options
               }
-            _ <- State.set[FlatQplState](
-              FlatQplState(s2.currentIdx + 1, s2.outs.updated(s2.currentIdx, outs))
+            _ <- State.set[QplState](
+              QplState(s2.currentIdx + 1, s2.outs.updated(s2.currentIdx, outs))
             )
-          } yield (top ++ bottom) :+ FlatQplLine(
+          } yield (top ++ bottom) :+ QplLine(
             s2.currentIdx,
             Chunk(s1.currentIdx - 1, s2.currentIdx - 1),
             op.copy(options = opts, outs = outs)
@@ -211,7 +210,7 @@ object plantoqpl extends ZIOAppDefault {
       }
     }
 
-    val lines = recur(toOperation(si), true).run(FlatQplState.empty).value._2.map { line =>
+    val lines = recur(toOperation(si), true).run(QplState.empty).value._2.map { line =>
       val idx     = line.idx
       val ins     = line.ins
       val op      = line.operation
@@ -231,8 +230,11 @@ object plantoqpl extends ZIOAppDefault {
     s"${si.db.name} | ${lines.mkString(" ; ")}"
   }
 
-  def toOperation(si: SpiderInstance): Operation =
-    toCR(si.ep.relop).run(si.ep.getInitialEnv).value._2
+  def toOperation(si: SpiderInstance): Operation = {
+    val (env, result) = toCR(si.ep.relop).run(si.ep.getInitialEnv).value
+    pprint.pprintln(env)
+    result
+  }
 
   extension [S, A](xs: Chunk[State[S, A]]) {
     def sequence: State[S, Chunk[A]] =
@@ -294,7 +296,7 @@ object plantoqpl extends ZIOAppDefault {
           Intrinsic(functionName, recur(lhs, alias), recur(rhs, alias))
         case Logical(operation, scalarOperators) =>
           if (operation == LogicalOperation.ISNULL) Logical(operation, scalarOperators)
-          Logical(operation, Chunk(recur(scalarOperators(0), Some("T")), recur(scalarOperators(1), Some("B"))))
+          else Logical(operation, Chunk(recur(scalarOperators(0), Some("T")), recur(scalarOperators(1), Some("B"))))
       }
     }
     recur(p, None)
@@ -316,6 +318,11 @@ object plantoqpl extends ZIOAppDefault {
           inner <- toCR(relop)
           _     <- State.modify[Env](addDefinedValuesToEnv(definedValues))
           env   <- State.get[Env]
+          isConvertOp = definedValues.exists {
+            case Assignment(columnReference, Convert(_)) => true
+            case _                                       => false
+          }
+          _                 = pprint.pprintln(definedValues)
           derefedOutputList = outputList.map(getOrDeref(env))
           aggPat            = """MIN|MAX|COUNT|SUM|AVG""".r
           groupBy = Opt(
@@ -327,7 +334,7 @@ object plantoqpl extends ZIOAppDefault {
           ifs           = definedValues.collect { case Assignment(columnReference, if_ : If) => if_ }
           finalResults  = ifs.map(toCR(env))
         } yield
-          if (inner.name == "Aggregate") inner.copy(outs = derefedOutputList)
+          if (inner.name == "Aggregate" || isConvertOp) inner.copy(outs = derefedOutputList)
           else if (arithColumns.nonEmpty) {
             val newOutputList = relop.outputList.filterNot(arithColumns.contains(_)).map(getOrDeref(env))
             inner.copy(outs = newOutputList ++ arithmeticOps.map(toCR(env)))
@@ -557,12 +564,23 @@ object plantoqpl extends ZIOAppDefault {
           innerWithOutputList = inner.copy(outs = if (inner.outs.isEmpty) Chunk("1") else inner.outs)
           _   <- State.modify[Env](addDefinedValuesToEnv(definedValues))
           env <- State.get[Env]
+          _                 = pprint.pprintln(env)
           derefedOutputList = outputList.map(getOrDeref(env))
+          _                 = pprint.pprintln(derefedOutputList)
         } yield Operation(
           "Aggregate",
           derefedOutputList,
           Chunk(innerWithOutputList),
-          (if (groupBy.nonEmpty) Chunk(Opt("GroupBy", groupBy.map(_.column)))
+          (if (groupBy.nonEmpty)
+             Chunk(
+               Opt(
+                 "GroupBy",
+                 groupBy.map(_.column).map(env.deref).map {
+                   case s"$table.$col" => col
+                   case s              => s
+                 }
+               )
+             )
            else Chunk.empty)
         )
       case TableScan(ordered, obj, predicate, definedValues) =>
@@ -655,16 +673,28 @@ object plantoqpl extends ZIOAppDefault {
         else if (isSum(ifExpr)) toSum(ifExpr, env)
         else if (isCountColumn(ifExpr)) toCountColumn(ifExpr, env)
         else if (isCountStar(ifExpr)) "countstar"
-        else "???"
+        else if (isAssertion(ifExpr)) toAssertion(ifExpr, env)
+        else ???
       case Identifier(columnReference) =>
         columnReference.scalarOperator
           .map(toCR(env))
           .map(env.deref)
-          .getOrElse(env.deref(columnReference.strip.toString))
+          .getOrElse {
+            columnReference match {
+              case ColumnReference(_, column, _, Some(table), _, _) => s"$table.${env.deref(column)}"
+              case ColumnReference(_, column, _, None, _, _)        => env.deref(column)
+            }
+          }
       case Intrinsic(functionName, lhs, rhs) =>
+        println(s"functionName = $functionName, rhs = $rhs")
         s"${toCR(env)(lhs)} $functionName ${toCR(env)(rhs)}"
       case Logical(operation, scalarOperators) =>
-        if (operation == LogicalOperation.ISNULL || operation == LogicalOperation.NOT)
+        if (operation == LogicalOperation.NOT)
+          scalarOperators match {
+            case Chunk(Intrinsic("like", lhs, rhs)) => s"${toCR(env)(lhs)} NOT LIKE ${toCR(env)(rhs)}"
+            case _                                  => s"${toCR(env)(scalarOperators(0))} ${operation.toString}"
+          }
+        else if (operation == LogicalOperation.ISNULL)
           s"${toCR(env)(scalarOperators(0))} ${operation.toString}"
         else
           s"${toCR(env)(scalarOperators(0))} ${operation.toString} ${toCR(env)(scalarOperators(1))}"
@@ -797,6 +827,17 @@ object plantoqpl extends ZIOAppDefault {
     }
   }
 
+  def isAssertion(ifExpr: If): Boolean = {
+    pprint.pprintln(ifExpr)
+    ifExpr match {
+      case If(_, Const("0"), Const("NULL")) => true
+      case _                                => false
+    }
+  }
+
+  def toAssertion(ifExpr: If, env: Env): String =
+    s"NOT (${toCR(env)(ifExpr.condition)})"
+
   final case class QplInstance(id: String, question: String, query: String, qpl: String)
 
   object QplInstance {
@@ -806,7 +847,7 @@ object plantoqpl extends ZIOAppDefault {
   def writeQplsToJson(instances: Chunk[SpiderInstance], outputPath: Path): Task[Unit] =
     for {
       qpls <- ZIO.foreach(instances) { ins =>
-        ZIO.attempt(toFlatQpl(ins)).catchAll(_ => ZIO.succeed("")).map(QplInstance(ins.id, ins.question, ins.query, _))
+        ZIO.attempt(toQpl(ins)).catchAll(_ => ZIO.succeed("")).map(QplInstance(ins.id, ins.question, ins.query, _))
       }
       json = qpls.filter(_.qpl.nonEmpty).toJsonPretty
       _ <- ZIO.writeFile(outputPath, json)
@@ -830,7 +871,7 @@ object plantoqpl extends ZIOAppDefault {
     )
   }
 
-  def run = for {
+  val program = for {
     args <- getArgs.flatMap(args => ZIO.fromOption(OParser.parse(cmdLineParser, args, CommandLineArgs())))
     paths <- ZIO.fromOption(for {
       s <- args.spiderPath
@@ -842,4 +883,6 @@ object plantoqpl extends ZIOAppDefault {
     instances <- readDataset(datasetPath, tablesPath)
     _         <- writeQplsToJson(instances, outputPath)
   } yield ()
+
+  override def run = program
 }

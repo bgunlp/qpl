@@ -67,10 +67,10 @@ def flat_qpl_to_cte(flat_qpl: List[str], db_id: str) -> str:
                     if " as " not in out.lower():
                         group_by.add(out)
                 if group_by:
-                    for g in gb.split(",")[::-1]:
-                        g = g.strip()
-                        if g not in output_list:
-                            output_list = [g] + output_list
+                    # for g in gb.split(",")[::-1]:
+                    #     g = g.strip()
+                    #     if g not in output_list:
+                    #         output_list = [g] + output_list
                     cte = CTE(
                         f"Aggregate_{idx}",
                         f"SELECT {', '.join(output_list)} FROM {i2c[i]} GROUP BY {', '.join(group_by)}",
@@ -223,40 +223,49 @@ def flat_qpl_to_cte(flat_qpl: List[str], db_id: str) -> str:
                         f"SELECT {', '.join(replaced_output_list)} FROM {i2c[lhs]} WHERE {rhs_pred_col} IN (SELECT {lhs_pred_col} FROM {i2c[rhs]})",
                     )
                 else:
-                    raise AssertionError("Intersect without predicate")
-                    # replaced_output_list = []
-                    # for out in output_list:
-                    #     if m := re.match(r"#(?P<i>\d+)\.(?P<col>\w+)", out):
-                    #         g = m.groupdict()
-                    #         col = g["col"]
-                    #         replaced_output_list.append(col)
-                    #     elif out == "1 AS One":
-                    #         replaced_output_list.append(out)
-                    #     else:
-                    #         raise AssertionError(f"Don't know how to handle {out = }")
-                    # cte = CTE(
-                    #     f"Intersect_{idx}",
-                    #     f"SELECT {', '.join(replaced_output_list)} FROM {i2c[lhs]} INTERSECT SELECT {', '.join(replaced_output_list)} FROM {i2c[rhs]}",
-                    # )
+                    replaced_output_list = []
+                    for out in output_list:
+                        if m := re.match(r"#(?P<i>\d+)\.(?P<col>\w+)", out):
+                            g = m.groupdict()
+                            i = int(g["i"])
+                            col = g["col"]
+                            replaced_output_list.append(f"{i2c[i]}.{col}")
+                        elif out == "1 AS One":
+                            replaced_output_list.append(out)
+                        else:
+                            raise AssertionError(f"Don't know how to handle {out = }")
+                    cte = CTE(
+                        f"Intersect_{idx}",
+                        f"SELECT {', '.join(replaced_output_list)} FROM {i2c[lhs]} INTERSECT SELECT {', '.join(replaced_output_list)} FROM {i2c[rhs]}",
+                    )
             elif op == "Join":
                 lhs, rhs = ins
                 predicate = opts.get("Predicate")
                 distinct = "DISTINCT " if opts.get("Distinct") else ""
                 if predicate:
-                    if m := re.match(
-                        r"(#(?P<lhs_table>\d+)\.(?P<lhs_col>\w+)) (?P<op>(<|<=|>|>=|=)) (#(?P<rhs_table>\d+)\.(?P<rhs_col>\w+))",
-                        predicate,
-                    ):
-                        groups = m.groupdict()
-                        pred_op = groups["op"]
-                        predicate_ins = [
-                            int(i) for i in (groups["lhs_table"], groups["rhs_table"])
+                    pred_pat = r"(#(?P<lhs_table>\d+)\.(?P<lhs_col>\w+)) (?P<op>(<|<=|>|>=|=)) (#(?P<rhs_table>\d+)\.(?P<rhs_col>\w+))"
+                    if m := re.match(f"({pred_pat})( AND {pred_pat})*", predicate):
+                        captures = m.capturesdict()
+                        n = len(next(iter(captures.values())))
+                        pred_components = [
+                            {key: captures[key][i] for key in captures}
+                            for i in range(n)
                         ]
-                        lhs_pred_col = groups["lhs_col"]
-                        rhs_pred_col = groups["rhs_col"]
-                        assert set(predicate_ins) <= set(
-                            ins
-                        ), "Join uses columns in predicate that are not direct inputs"
+                        pred_result = []
+                        for groups in pred_components:
+                            pred_op = groups["op"]
+                            predicate_ins = [
+                                int(i)
+                                for i in (groups["lhs_table"], groups["rhs_table"])
+                            ]
+                            lhs_pred_col = groups["lhs_col"]
+                            rhs_pred_col = groups["rhs_col"]
+                            assert set(predicate_ins) <= set(
+                                ins
+                            ), "Join uses columns in predicate that are not direct inputs"
+                            pred_result.append(
+                                f"{i2c[predicate_ins[0]]}.{lhs_pred_col} = {i2c[predicate_ins[1]]}.{rhs_pred_col}"
+                            )
                         replaced_output_list = []
                         for out in output_list:
                             if m := re.match(r"#(?P<i>\d+)\.(?P<col>\w+)", out):
@@ -281,7 +290,7 @@ def flat_qpl_to_cte(flat_qpl: List[str], db_id: str) -> str:
                         if pred_op == "=":
                             cte = CTE(
                                 f"Join_{idx}",
-                                f"SELECT {distinct}{', '.join(replaced_output_list)} FROM {i2c[lhs]} JOIN {i2c[rhs]} ON {i2c[predicate_ins[0]]}.{lhs_pred_col} = {i2c[predicate_ins[1]]}.{rhs_pred_col}",
+                                f"SELECT {distinct}{', '.join(replaced_output_list)} FROM {i2c[lhs]} JOIN {i2c[rhs]} ON {' AND '.join(pred_result)}",
                             )
                         else:
                             replaced_output_list = []

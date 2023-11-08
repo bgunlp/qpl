@@ -5,11 +5,11 @@
   },
   {
     "id": "fdfea30a058eb1515bcf094ea6132c66bcd901c2ecc1be5f888c488c81485f8e",
-    "qpl": "world_1 | #1 = Scan Table [ country ] Output [ Name , Code ] ; #2 = Scan Table [ countrylanguage ] Predicate [ Language = 'english' ] Output [ CountryCode , Language ] ; #3 = Join [ #1 , #2 ] Predicate [ #2.CountryCode = #1.Code ] Distinct [ true ] Output [ #1.Name ] ; #4 = Scan Table [ country ] Output [ Name , Code ] ; #5 = Scan Table [ countrylanguage ] Predicate [ Language = 'dutch' ] Output [ CountryCode , Language ] ; #6 = Join [ #4 , #5 ] Predicate [ #5.CountryCode = #4.Code ] Distinct [ true ] Output [ #4.Name ] ; #7 = Join [ #3 , #6 ] Predicate [ #3.Name = #6.Name ] Distinct [ true ] Output [ #3.Name ] ; #8 = Aggregate [ #7 ] Output [ countstar AS Count_Star ]"
+    "qpl": "world_1 | #1 = Scan Table [ country ] Output [ Name , Code ] ; #2 = Scan Table [ countrylanguage ] Predicate [ Language = 'english' ] Output [ CountryCode , Language ] ; #3 = Join [ #1 , #2 ] Predicate [ #2.CountryCode = #1.Code ] Distinct [ true ] Output [ #1.Name ] ; #4 = Scan Table [ country ] Output [ Name , Code ] ; #5 = Scan Table [ countrylanguage ] Predicate [ Language = 'dutch' ] Output [ CountryCode , Language ] ; #6 = Join [ #4 , #5 ] Predicate [ #5.CountryCode = #4.Code ] Distinct [ true ] Output [ #4.Name ] ; #7 = Intersect [ #3 , #6 ] Predicate [ #3.Name = #6.Name ] Distinct [ true ] Output [ #3.Name ] ; #8 = Aggregate [ #7 ] Output [ countstar AS Count_Star ]"
   },
   {
     "id": "b23e766b20d801d1a7c381585433382250fd7b37aeabd1fa122e67c8d8381468",
-    "qpl": "world_1 | #1 = Scan Table [ country ] Output [ Name , Code ] ; #2 = Scan Table [ countrylanguage ] Predicate [ Language = 'english' ] Output [ CountryCode , Language ] ; #3 = Join [ #1 , #2 ] Predicate [ #2.CountryCode = #1.Code ] Distinct [ true ] Output [ #1.Name ] ; #4 = Scan Table [ country ] Output [ Name , Code ] ; #5 = Scan Table [ countrylanguage ] Predicate [ Language = 'dutch' ] Output [ CountryCode , Language ] ; #6 = Join [ #4 , #5 ] Predicate [ #5.CountryCode = #4.Code ] Distinct [ true ] Output [ #4.Name ] ; #7 = Join [ #3 , #6 ] Predicate [ #3.Name = #6.Name ] Distinct [ true ] Output [ #3.Name ] ; #8 = Aggregate [ #7 ] Output [ countstar AS Count_Star ]"
+    "qpl": "world_1 | #1 = Scan Table [ country ] Output [ Name , Code ] ; #2 = Scan Table [ countrylanguage ] Predicate [ Language = 'english' ] Output [ CountryCode , Language ] ; #3 = Join [ #1 , #2 ] Predicate [ #2.CountryCode = #1.Code ] Distinct [ true ] Output [ #1.Name ] ; #4 = Scan Table [ country ] Output [ Name , Code ] ; #5 = Scan Table [ countrylanguage ] Predicate [ Language = 'dutch' ] Output [ CountryCode , Language ] ; #6 = Join [ #4 , #5 ] Predicate [ #5.CountryCode = #4.Code ] Distinct [ true ] Output [ #4.Name ] ; #7 = Intersect [ #3 , #6 ] Predicate [ #3.Name = #6.Name ] Distinct [ true ] Output [ #3.Name ] ; #8 = Aggregate [ #7 ] Output [ countstar AS Count_Star ]"
   },
   {
     "id": "68c96d827202512a504df23f6ab033cb7b1ac9782afc82257aeab24e8c645959",
@@ -17,11 +17,11 @@
   },
   {
     "id": "1d475eb098ce0ad96f35972c2d26c617cfcc6e15efde805ae7ee5dbca0616181",
-    "qpl": "wta_1 | #1 = Scan Table [ matches ] Distinct [ true ] Output [ winner_rank , winner_name , winner_age ] ; #2 = Top [ #1 ] Rows [ 3 ] OrderBy [ winner_age , winner_name , winner_rank ] Output [ winner_rank , winner_name , winner_age ]"
+    "qpl": "wta_1 | #1 = Scan Table [ matches ] Distinct [ true ] Output [ winner_rank , winner_name , winner_age ] ; #2 = TopSort [ #1 ] Rows [ 3 ] OrderBy [ winner_age ASC , winner_name ASC , winner_rank ASC ] Output [ winner_rank , winner_name , winner_age ]"
   },
   {
     "id": "5f825d0ca7aab228d5c0ae6793b47a6d6044a166df89612088071c3bbdf4a22e",
-    "qpl": "wta_1 | #1 = Scan Table [ matches ] Distinct [ true ] Output [ winner_rank , winner_name , winner_age ] ; #2 = TopSort [ #1 ] Rows [ 3 ] OrderBy [ winner_age , winner_name , winner_rank ] Output [ winner_rank , winner_name , winner_age ]"
+    "qpl": "wta_1 | #1 = Scan Table [ matches ] Distinct [ true ] Output [ winner_rank , winner_name , winner_age ] ; #2 = TopSort [ #1 ] Rows [ 3 ] OrderBy [ winner_age ASC , winner_name ASC , winner_rank ASC ] Output [ winner_rank , winner_name , winner_age ]"
   },
   {
     "id": "a6c5ac5f34c3767df7ecfa7d8e8fa26d6aa081e9ae9a06b31887b21badbbe39f",
@@ -37,19 +37,19 @@
   },
   {
     "id": "e0f60ed999370f8735907bbe27e1dc40ae9fe4e929fb31a12cc67e9f84d28816",
-    "qpl": "world_1 | #1 = Scan Table [ countrylanguage ] Predicate [ Language = 'spanish' ] Output [ CountryCode , Percentage , Language ] ; #2 = Aggregate [ #1 ] GroupBy [ CountryCode ] Output [ CountryCode , MAX(Percentage) as Max_Percentage ]"
+    "qpl": "world_1 | #1 = Scan Table [ countrylanguage ] Predicate [ Language = 'spanish' ] Output [ CountryCode , Percentage , Language ] ; #2 = Aggregate [ #1 ] GroupBy [ CountryCode ] Output [ CountryCode , MAX(Percentage) AS Max_Percentage ]"
   },
   {
     "id": "5cba4e69aae92b9f05c0830dd3c8732a06eb00f0a2fa55052e50eba9644d1333",
-    "qpl": "world_1 | #1 = Scan Table [ country ] Output [ Continent ] ; #2 = Filter [ #1 ] Predicate [ Continent = 'asia' ] Output [ 1 as ONE ] ; #3 = Aggregate [ #2 ] Output [ countstar AS Count_Star ]"
+    "qpl": "world_1 | #1 = Scan Table [ country ] Output [ Continent ] ; #2 = Filter [ #1 ] Predicate [ Continent = 'asia' ] Output [ 1 AS One ] ; #3 = Aggregate [ #2 ] Output [ countstar AS Count_Star ]"
   },
   {
     "id": "5ff7298e82e25f73402caec694fb894b9528e6e8552ae504972b448f45281a6b",
-    "qpl": "world_1 | #1 = Scan Table [ countrylanguage ] Predicate [ Language = 'spanish' ] Output [ CountryCode , Percentage , Language ] ; #2 = Aggregate [ #1 ] GroupBy [ CountryCode ] Output [ CountryCode , MAX(Percentage) as Max_Percentage ]"
+    "qpl": "world_1 | #1 = Scan Table [ countrylanguage ] Predicate [ Language = 'spanish' ] Output [ CountryCode , Percentage , Language ] ; #2 = Aggregate [ #1 ] GroupBy [ CountryCode ] Output [ CountryCode , MAX(Percentage) AS Max_Percentage ]"
   },
   {
     "id": "52dc4eb9635d36ed792f4224850acccdee7af499d06a3a62e4d20a8fe807686a",
-    "qpl": "world_1 | #1 = Scan Table [ country ] Output [ Continent ] ; #2 = Filter [ #1 ] Predicate [ Continent = 'asia' ] Output [ 1 as ONE ] ; #3 = Aggregate [ #2 ] Output [ countstar AS Count_Star ]"
+    "qpl": "world_1 | #1 = Scan Table [ country ] Output [ Continent ] ; #2 = Filter [ #1 ] Predicate [ Continent = 'asia' ] Output [ 1 AS One ] ; #3 = Aggregate [ #2 ] Output [ countstar AS Count_Star ]"
   },
   {
     "id": "086087399d35549efbe7ca776ed64b5eb84b62ea11f7dc4585b96c2c26eb7d5a",
@@ -105,7 +105,7 @@
   },
   {
     "id": "bd844dd1bbe595ee1aa0d5da9010030323680dc2b4a5b47d15a2dd2bd4796d8b",
-    "qpl": "student_transcripts_tracking | #1 = Scan Table [ Transcripts ] Output [ transcript_id , transcript_date ] ; #2 = Scan Table [ Transcript_Contents ] Output [ transcript_id ] ; #3 = Aggregate [ #2 ] GroupBy [ transcript_id ] Output [ countstar AS Count_Star , transcript_id ] ; #4 = Join [ #1 , #3 ] Predicate [ #3.transcript_id = #1.transcript_id ] Output [ #1.transcript_date , Count_Star , #3.transcript_id ] ; #5 = TopSort [ #4 ] Rows [ 1 ] OrderBy [ Count_Star ASC ] WithTies [ true ] Output [ transcript_id , transcript_date ]"
+    "qpl": "student_transcripts_tracking | #1 = Scan Table [ Transcripts ] Output [ transcript_id , transcript_date ] ; #2 = Scan Table [ Transcript_Contents ] Output [ transcript_id ] ; #3 = Aggregate [ #2 ] GroupBy [ transcript_id ] Output [ countstar AS Count_Star , transcript_id ] ; #4 = Join [ #1 , #3 ] Predicate [ #3.transcript_id = #1.transcript_id ] Output [ #1.transcript_date , #3.Count_Star , #3.transcript_id ] ; #5 = TopSort [ #4 ] Rows [ 1 ] OrderBy [ Count_Star ASC ] WithTies [ true ] Output [ transcript_id , transcript_date ]"
   },
   {
     "id": "587e9458cada672d2d3927d405dbd2f9bca706e71eb19a1a0e6d26d029033252",
@@ -117,7 +117,7 @@
   },
   {
     "id": "b4b4ae10d25e46d7369817827ed4141e9c701e7046aefa27d6f88b73baff0a32",
-    "qpl": "student_transcripts_tracking | #1 = Scan Table [ Transcripts ] Output [ transcript_id , transcript_date ] ; #2 = Scan Table [ Transcript_Contents ] Output [ transcript_id ] ; #3 = Aggregate [ #2 ] GroupBy [ transcript_id ] Output [ countstar AS Count_Star , transcript_id ] ; #4 = Join [ #1 , #3 ] Predicate [ #3.transcript_id = #1.transcript_id ] Output [ #1.transcript_date , Count_Star , #3.transcript_id ] ; #5 = TopSort [ #4 ] Rows [ 1 ] OrderBy [ Count_Star ASC ] WithTies [ true ] Output [ transcript_id , transcript_date ]"
+    "qpl": "student_transcripts_tracking | #1 = Scan Table [ Transcripts ] Output [ transcript_id , transcript_date ] ; #2 = Scan Table [ Transcript_Contents ] Output [ transcript_id ] ; #3 = Aggregate [ #2 ] GroupBy [ transcript_id ] Output [ countstar AS Count_Star , transcript_id ] ; #4 = Join [ #1 , #3 ] Predicate [ #3.transcript_id = #1.transcript_id ] Output [ #1.transcript_date , #3.Count_Star , #3.transcript_id ] ; #5 = TopSort [ #4 ] Rows [ 1 ] OrderBy [ Count_Star ASC ] WithTies [ true ] Output [ transcript_id , transcript_date ]"
   },
   {
     "id": "bff2974c43a128f711181e493e2036cb2b26cb7aa8f12d9009b047620bef2c21",
@@ -133,7 +133,7 @@
   },
   {
     "id": "c08c23e7cc708242ee88a3d2b2b77fcc6eba87f51093769a204df2c410d443ae",
-    "qpl": "battle_death | #1 = Scan Table [ ship ] Output [ lost_in_battle , id ] ; #2 = Scan Table [ battle ] Output [ name , id ] ; #3 = Join [ #1 , #2 ] Predicate [ #1.lost_in_battle = #2.id ] Output [ #2.id , #2.name ] ; #4 = Scan Table [ death ] Output [ caused_by_ship_id , killed ] ; #5 = Join [ #3 , #4 ] Predicate [ #3.id = #4.caused_by_ship_id ] Output [ #3.id , #3.name , #4.killed ] ; #6 = Aggregate [ #5 ] GroupBy [ id ] Output [ SUM(killed) AS Sum_killed , name , id ] ; #7 = Filter [ #6 ] Predicate [ Sum_killed > 10 ] Output [ name , id ]"
+    "qpl": "battle_death | #1 = Scan Table [ ship ] Output [ lost_in_battle , id ] ; #2 = Scan Table [ battle ] Output [ name , id ] ; #3 = Join [ #1 , #2 ] Predicate [ #1.lost_in_battle = #2.id ] Output [ #1.id , #2.name ] ; #4 = Scan Table [ death ] Output [ caused_by_ship_id , killed ] ; #5 = Join [ #3 , #4 ] Predicate [ #3.id = #4.caused_by_ship_id ] Output [ #3.id , #3.name , #4.killed ] ; #6 = Aggregate [ #5 ] GroupBy [ id ] Output [ SUM(killed) AS Sum_killed , name , id ] ; #7 = Filter [ #6 ] Predicate [ Sum_killed > 10 ] Output [ name , id ]"
   },
   {
     "id": "5f6c5c97e4535a57a648be9149e33db7045c08bc96516c2e753c41f04e1e2583",
@@ -141,19 +141,19 @@
   },
   {
     "id": "ad21629f0a4e48341926c3e116c4f3ae3e68f41715b9f118146b1b81010b5be1",
-    "qpl": "car_1 | #1 = Scan Table [ cars_data ] Output [ Year ] ; #2 = Aggregate [ #1 ] Output [ MIN(Year) as Min_Year ] ; #3 = Scan Table [ cars_data ] Output [ Id , Year ] ; #4 = Join [ #2, #3 ] Predicate [ #3.Year = #2.Min_Year ] Output [ #3.Id , #3.Year ] ; #5 = Scan Table [ car_names ] Output [ Make , MakeId ] ; #6 = Join [ #4 , #5 ] Predicate [ #5.MakeId = #4.Id ] Output [ #4.Year , #5.Make ]"
+    "qpl": "car_1 | #1 = Scan Table [ cars_data ] Output [ Year ] ; #2 = Aggregate [ #1 ] Output [ MIN(Year) AS Min_Year ] ; #3 = Scan Table [ cars_data ] Output [ Id , Year ] ; #4 = Join [ #2, #3 ] Predicate [ #3.Year = #2.Min_Year ] Output [ #3.Id , #3.Year ] ; #5 = Scan Table [ car_names ] Output [ Make , MakeId ] ; #6 = Join [ #4 , #5 ] Predicate [ #5.MakeId = #4.Id ] Output [ #4.Year , #5.Make ]"
   },
   {
     "id": "71b8e3eee7e7618b7730a3dc215c5d838411a0a424df17b4823a8f1ed6b56062",
-    "qpl": "car_1 | #1 = Scan Table [ cars_data ] Output [ Year ] ; #2 = Aggregate [ #1 ] Output [ MIN(Year) as Min_Year ] ; #3 = Scan Table [ cars_data ] Output [ Id , Year ] ; #4 = Join [ #2, #3 ] Predicate [ #3.Year = #2.Min_Year ] Output [ #3.Id , #3.Year ] ; #5 = Scan Table [ car_names ] Output [ Make , MakeId ] ; #6 = Join [ #4 , #5 ] Predicate [ #5.MakeId = #4.Id ] Output [ #4.Year , #5.Make ]"
+    "qpl": "car_1 | #1 = Scan Table [ cars_data ] Output [ Year ] ; #2 = Aggregate [ #1 ] Output [ MIN(Year) AS Min_Year ] ; #3 = Scan Table [ cars_data ] Output [ Id , Year ] ; #4 = Join [ #2, #3 ] Predicate [ #3.Year = #2.Min_Year ] Output [ #3.Id , #3.Year ] ; #5 = Scan Table [ car_names ] Output [ Make , MakeId ] ; #6 = Join [ #4 , #5 ] Predicate [ #5.MakeId = #4.Id ] Output [ #4.Year , #5.Make ]"
   },
   {
     "id": "7e07965719bdc4b883c84663dcc9b66ffdf2d7e962e4fcf8cebbdc95bad61b70",
-    "qpl": "car_1 | #1 = Scan Table [ car_makers ] Output [ FullName , Id ] ; #2 = Scan Table [ model_list ] Output [ Model , Maker ] ; #3 = Scan Table [ car_names ] Output [ Model , MakeId ] ; #4 = Scan Table [ cars_data ] Output [ Weight , Id ] ; #5 = Join [ #3 , #4 ] Predicate [ #4.Id = #3.MakeId ] Output [ #3.Model , #4.Weight ] ; #6 = Join [ #2 , #5 ] Predicate [ #5.Model = #2.Model ] Output [ #2.Model , #2.Maker , #5.Weight ] ; #7 = Join [ #1 , #6 ] Predicate [ #6.Maker = #1.Id ] Output [ #6.Model , #6.Weight , #1.FullName ] ; #8 = Filter [ #7 ] Predicate [ Weight > 3500 Or FullName = 'General Motors' ] Distinct [ true ] Output [ Model ]"
+    "qpl": "car_1 | #1 = Scan Table [ car_makers ] Output [ FullName , Id ] ; #2 = Scan Table [ model_list ] Output [ Model , Maker ] ; #3 = Scan Table [ car_names ] Output [ Model , MakeId ] ; #4 = Scan Table [ cars_data ] Output [ Weight , Id ] ; #5 = Join [ #3 , #4 ] Predicate [ #4.Id = #3.MakeId ] Output [ #3.Model , #4.Weight ] ; #6 = Join [ #2 , #5 ] Predicate [ #5.Model = #2.Model ] Output [ #2.Model , #2.Maker , #5.Weight ] ; #7 = Join [ #1 , #6 ] Predicate [ #6.Maker = #1.Id ] Output [ #6.Model , #6.Weight , #1.FullName ] ; #8 = Filter [ #7 ] Predicate [ Weight > 3500 OR FullName = 'General Motors' ] Distinct [ true ] Output [ Model ]"
   },
   {
     "id": "869d090908c20d389878b3c1a8c760b86d77771817c2396a1fe57ce4f1537348",
-    "qpl": "car_1 | #1 = Scan Table [ car_makers ] Output [ FullName , Id ] ; #2 = Scan Table [ model_list ] Output [ Model , Maker ] ; #3 = Scan Table [ car_names ] Output [ Model , MakeId ] ; #4 = Scan Table [ cars_data ] Output [ Weight , Id ] ; #5 = Join [ #3 , #4 ] Predicate [ #4.Id = #3.MakeId ] Output [ #3.Model , #4.Weight ] ; #6 = Join [ #2 , #5 ] Predicate [ #5.Model = #2.Model ] Output [ #2.Model , #2.Maker , #5.Weight ] ; #7 = Join [ #1 , #6 ] Predicate [ #6.Maker = #1.Id ] Output [ #6.Model , #6.Weight , #1.FullName ] ; #8 = Filter [ #7 ] Predicate [ Weight > 3500 Or FullName = 'General Motors' ] Distinct [ true ] Output [ Model ]"
+    "qpl": "car_1 | #1 = Scan Table [ car_makers ] Output [ FullName , Id ] ; #2 = Scan Table [ model_list ] Output [ Model , Maker ] ; #3 = Scan Table [ car_names ] Output [ Model , MakeId ] ; #4 = Scan Table [ cars_data ] Output [ Weight , Id ] ; #5 = Join [ #3 , #4 ] Predicate [ #4.Id = #3.MakeId ] Output [ #3.Model , #4.Weight ] ; #6 = Join [ #2 , #5 ] Predicate [ #5.Model = #2.Model ] Output [ #2.Model , #2.Maker , #5.Weight ] ; #7 = Join [ #1 , #6 ] Predicate [ #6.Maker = #1.Id ] Output [ #6.Model , #6.Weight , #1.FullName ] ; #8 = Filter [ #7 ] Predicate [ Weight > 3500 OR FullName = 'General Motors' ] Distinct [ true ] Output [ Model ]"
   },
   {
     "id": "a9ff32fcd6bd92e2683cd5b35a991b73751f44afc13e6146cc8b4a68a61dcc1c",
@@ -165,7 +165,7 @@
   },
   {
     "id": "cb384f0755ee64aadab7999c2dfdc55442be5549699fa4be5be6b2bc0a111457",
-    "qpl": "dog_kennels | #1 = Scan Table [ owners ] Output [ owner_id , last_name ] ; #2 = Scan Table [ dogs ] Output [ owner_id , age ] ; #3 = Filter [ #2 ] Predicate [ age IS NOT NULL ] Output [ owner_id , age ] ; #4 = TopSort [ #3 ] Rows [ 1 ] OrderBy [ age DESC ] WithTies [ True ] Output [ age, owner_id ] ; #5 = Join [ #1 , #4 ] Predicate [ #4.owner_id = #1.owner_id ] Output [ #1.last_name ]"
+    "qpl": "dog_kennels | #1 = Scan Table [ owners ] Output [ owner_id , last_name ] ; #2 = Scan Table [ dogs ] Output [ owner_id , age ] ; #3 = Filter [ #2 ] Predicate [ age IS NOT NULL ] Output [ owner_id , age ] ; #4 = TopSort [ #3 ] Rows [ 1 ] OrderBy [ age DESC ] WithTies [ true ] Output [ age, owner_id ] ; #5 = Join [ #1 , #4 ] Predicate [ #4.owner_id = #1.owner_id ] Output [ #1.last_name ]"
   },
   {
     "id": "1f310f5bbbc32f27959b1948e0a2b55cc6d6ab439f95fa18d2a151873b24edf2",
@@ -457,18 +457,150 @@
   },
   {
     "id": "34ae116d68862a3d031e45083c8c14f67053408224f2484c61530216d7152422",
-    "qpl": "tvshow | #1 = Scan Table [ TV_Channel ] Output [ id , country ] ; #2 = Aggregate [ #1 ] GroupBy [ country ] Output [ countstar as Count_Star , country ] ; #3 = Filter [ #2 ] Predicate [ Count_Star > 2 ] Output [ country ] ; #4 = Join [ #1 , #3 ] Predicate [ #1.country = #3.country ] Output [ #1.id ]"
+    "qpl": "tvshow | #1 = Scan Table [ TV_Channel ] Output [ id , country ] ; #2 = Aggregate [ #1 ] GroupBy [ country ] Output [ countstar AS Count_Star , country ] ; #3 = Filter [ #2 ] Predicate [ Count_Star > 2 ] Output [ country ] ; #4 = Intersect [ #1 , #3 ] Predicate [ #1.country = #3.country ] Output [ #1.id ]"
   },
   {
     "id": "4030ca9a53a02732ea943743b6fe00d6d8750e215cf82b9ad4d9d63fd796c938",
-    "qpl": "tvshow | #1 = Scan Table [ TV_Channel ] Output [ id , country ] ; #2 = Aggregate [ #1 ] GroupBy [ country ] Output [ countstar as Count_Star , country ] ; #3 = Filter [ #2 ] Predicate [ Count_Star > 2 ] Output [ country ] ; #4 = Join [ #1 , #3 ] Predicate [ #1.country = #3.country ] Output [ #1.id ]"
+    "qpl": "tvshow | #1 = Scan Table [ TV_Channel ] Output [ id , country ] ; #2 = Aggregate [ #1 ] GroupBy [ country ] Output [ countstar AS Count_Star , country ] ; #3 = Filter [ #2 ] Predicate [ Count_Star > 2 ] Output [ country ] ; #4 = Intersect [ #1 , #3 ] Predicate [ #1.country = #3.country ] Output [ #1.id ]"
   },
   {
     "id": "a2cf4e35c9235fe7fe8b7f23cd46ecbf8798764d9afd5799468de4112f0a8b3d",
-    "qpl": "cre_Doc_Template_Mgt | #1 = Scan Table [ Paragraphs ] Output [ Document_ID ] ; #2 = Aggregate [ #1 ] GroupBy [ Document_ID ] Output [ Document_ID , countstar AS Count_Star ] ; #3 = Sort [ #2 ] OrderBy [ Document_ID ] Output [ Document_ID , Count_Star ]"
+    "qpl": "cre_Doc_Template_Mgt | #1 = Scan Table [ Paragraphs ] Output [ Document_ID ] ; #2 = Aggregate [ #1 ] GroupBy [ Document_ID ] Output [ Document_ID , countstar AS Count_Star ] ; #3 = Sort [ #2 ] OrderBy [ Document_ID ASC ] Output [ Document_ID , Count_Star ]"
   },
   {
     "id": "8b9d043a303b43c1a782650d2ce723fe3dcd74a534ba49ee19d1b194d80acc7b",
-    "qpl": "cre_Doc_Template_Mgt | #1 = Scan Table [ Paragraphs ] Output [ Document_ID ] ; #2 = Aggregate [ #1 ] GroupBy [ Document_ID ] Output [ Document_ID , countstar AS Count_Star ] ; #3 = Sort [ #2 ] OrderBy [ Document_ID ] Output [ Document_ID , Count_Star ]"
+    "qpl": "cre_Doc_Template_Mgt | #1 = Scan Table [ Paragraphs ] Output [ Document_ID ] ; #2 = Aggregate [ #1 ] GroupBy [ Document_ID ] Output [ Document_ID , countstar AS Count_Star ] ; #3 = Sort [ #2 ] OrderBy [ Document_ID ASC ] Output [ Document_ID , Count_Star ]"
+  },
+  {
+    "id": "5c61e85b2ff5cd14b865b09f64f10986de9093ff1ecd8910423dc80bd72b86ba",
+    "qpl": "world_1 | #1 = Scan Table [ countrylanguage ] Predicate [ Language = 'French' ] Output [ Language , CountryCode ] ; #2 = Scan Table [ country ] Output [ Name , Code ] ; #3 = Join [ #1 , #2 ] Predicate [ #1.CountryCode = #2.Code ] Output [ #2.Code , #2.Name ] ; #4 = Scan Table [ country ] Output [ Name , Code ] ; #5 = Intersect [ #3 , #4 ] Predicate [ #3.Name = #4.Name ] Output [ #3.Code , #3.Name ] ; #6 = Scan Table [ countrylanguage ] Predicate [ Language = 'English' ] Output [ Language , CountryCode ] ; #7 = Join [ #5 , #6 ] Predicate [ #5.Code = #6.CountryCode ] Distinct [ true ] Output [ #5.Code , #5.Name ] ; #8 = Aggregate [ #7 ] GroupBy [ Name ] Output [ Name ]"
+  },
+  {
+    "id": "fe1e4fc69d4dfc7f14ea8c7ccb0d3d686be08850c06a3118dbb5c2c166fec18d",
+    "qpl": "world_1 | #1 = Scan Table [ countrylanguage ] Predicate [ Language = 'French' ] Output [ Language , CountryCode ] ; #2 = Scan Table [ country ] Output [ Name , Code ] ; #3 = Join [ #1 , #2 ] Predicate [ #1.CountryCode = #2.Code ] Output [ #2.Code , #2.Name ] ; #4 = Scan Table [ country ] Output [ Name , Code ] ; #5 = Intersect [ #3 , #4 ] Predicate [ #3.Name = #4.Name ] Output [ #3.Code , #3.Name ] ; #6 = Scan Table [ countrylanguage ] Predicate [ Language = 'English' ] Output [ Language , CountryCode ] ; #7 = Join [ #5 , #6 ] Predicate [ #5.Code = #6.CountryCode ] Distinct [ true ] Output [ #5.Code , #5.Name ] ; #8 = Aggregate [ #7 ] GroupBy [ Name ] Output [ Name ]"
+  },
+  {
+    "id": "cf7eea7b6f50c57390d38c86939bf535a224b057c31c25a666208629c5ce7a00",
+    "qpl": "world_1 | #1 = Scan Table [ countrylanguage ] Predicate [ Language = 'French' ] Output [ Language , IsOfficial , CountryCode ] ; #2 = Filter [ #1 ] Predicate [ IsOfficial = 'T' ] Output [ CountryCode ] ; #3 = Scan Table [ country ] Output [ Name , Code ] ; #4 = Join [ #2 , #3 ] Predicate [ #2.CountryCode = #3.Code ] Output [ #3.Code , #3.Name ] ; #5 = Scan Table [ country ] Output [ Name , Code ] ; #6 = Intersect [ #4 , #5 ] Predicate [ #4.Name = #5.Name ] Output [ #4.Name , #4.Code ] ; #7 = Scan Table [ countrylanguage ] Predicate [ Language = 'English' ] Output [ Language , IsOfficial , CountryCode ] ; #8 = Filter [ #7 ] Predicate [ IsOfficial = 'T' ] Output [ CountryCode ] ; #9 = Join [ #6 , #8 ] Predicate [ #6.Code = #8.CountryCode ] Distinct [ true ] Output [ #6.Code , #6.Name ] ; #10 = Aggregate [ #9 ] GroupBy [ Name ] Output [ Name ]"
+  },
+  {
+    "id": "dc5f3fb7030d664528f7de029349056a952430b2c758a96323474d603b11c727",
+    "qpl": "world_1 | #1 = Scan Table [ countrylanguage ] Predicate [ Language = 'French' ] Output [ Language , IsOfficial , CountryCode ] ; #2 = Filter [ #1 ] Predicate [ IsOfficial = 'T' ] Output [ CountryCode ] ; #3 = Scan Table [ country ] Output [ Name , Code ] ; #4 = Join [ #2 , #3 ] Predicate [ #2.CountryCode = #3.Code ] Output [ #3.Code , #3.Name ] ; #5 = Scan Table [ country ] Output [ Name , Code ] ; #6 = Intersect [ #4 , #5 ] Predicate [ #4.Name = #5.Name ] Output [ #4.Name , #4.Code ] ; #7 = Scan Table [ countrylanguage ] Predicate [ Language = 'English' ] Output [ Language , IsOfficial , CountryCode ] ; #8 = Filter [ #7 ] Predicate [ IsOfficial = 'T' ] Output [ CountryCode ] ; #9 = Join [ #6 , #8 ] Predicate [ #6.Code = #8.CountryCode ] Distinct [ true ] Output [ #6.Code , #6.Name ] ; #10 = Aggregate [ #9 ] GroupBy [ Name ] Output [ Name ]"
+  },
+  {
+    "id": "fefb38b1e47ce56411e8d791f7aff3e81d9c58f99f39beffa4c2b2146f8950a6",
+    "qpl": "car_1 | #1 = Scan Table [ model_list ] Output [ Maker ] ; #2 = Aggregate [ #1 ] GroupBy [ Maker ] Output [ countstar AS Count_Star , Maker ] ; #3 = Scan Table [ car_makers ] Output [ Maker , Id ] ; #4 = Join [ #2 , #3 ] Predicate [ #2.Maker = #3.Id ] Output [ #3.Id , #2.Count_Star , #3.Maker ] ; #5 = Filter [ #4 ] Predicate [ Count_Star >= 2 ] Output [ Maker , Id ] ; #6 = Scan Table [ model_list ] Output [ Model , Maker ] ; #7 = Scan Table [ car_names ] Output [ Model ] ; #8 = Join [ #6 , #7 ] Predicate [ #6.Model = #7.Model ] Output [ #6.Maker ] ; #9 = Aggregate [ #8 ] GroupBy [ Maker ] Output [ countstar AS Count_Star , Maker ] ; #10 = Scan Table [ car_makers ] Output [ Maker , Id ] ; #11 = Join [ #9 , #10 ] Predicate [ #9.Maker = #10.Id ] Output [ #10.Maker , #10.Id , #9.Count_Star ] ; #12 = Filter [ #11 ] Predicate [ Count_Star > 3 ] Output [ Maker , Id ] ; #13 = Intersect [ #5 , #12 ] Predicate [ #5.Id = #12.Id ] Output [ #5.Maker , #5.Id ]"
+  },
+  {
+    "id": "29238520da091881c4e7a017b6177cb764df61f4b23ba7e2bdb8786955bd3ad8",
+    "qpl": "car_1 | #1 = Scan Table [ model_list ] Output [ Maker ] ; #2 = Aggregate [ #1 ] GroupBy [ Maker ] Output [ countstar AS Count_Star , Maker ] ; #3 = Scan Table [ car_makers ] Output [ Maker , Id ] ; #4 = Join [ #2 , #3 ] Predicate [ #2.Maker = #3.Id ] Output [ #3.Id , #2.Count_Star , #3.Maker ] ; #5 = Filter [ #4 ] Predicate [ Count_Star >= 2 ] Output [ Maker , Id ] ; #6 = Scan Table [ model_list ] Output [ Model , Maker ] ; #7 = Scan Table [ car_names ] Output [ Model ] ; #8 = Join [ #6 , #7 ] Predicate [ #6.Model = #7.Model ] Output [ #6.Maker ] ; #9 = Aggregate [ #8 ] GroupBy [ Maker ] Output [ countstar AS Count_Star , Maker ] ; #10 = Scan Table [ car_makers ] Output [ Maker , Id ] ; #11 = Join [ #9 , #10 ] Predicate [ #9.Maker = #10.Id ] Output [ #10.Maker , #10.Id , #9.Count_Star ] ; #12 = Filter [ #11 ] Predicate [ Count_Star > 3 ] Output [ Maker , Id ] ; #13 = Intersect [ #5 , #12 ] Predicate [ #5.Id = #12.Id ] Output [ #5.Maker , #5.Id ]"
+  },
+  {
+    "id": "e7fa49f48a55a6740d820f492068aa57459e259a43736e37fae64d5f0bd93201",
+    "qpl": "assets_maintenance | #1 = Scan Table [ Asset_Parts ] Output [ asset_id ] ; #2 = Aggregate [ #1 ] GroupBy [ asset_id ] Output [ asset_id , countstar AS Count_Star ] ; #3 = Scan Table [ Assets ] Output [ asset_id , asset_details ] ; #4 = Join [ #2 , #3 ] Predicate [ #2.asset_id = #3.asset_id ] Output [ #2.Count_Star , #3.asset_id , #3.asset_details ] ; #5 = Filter [ #4 ] Predicate [ Count_Star = 2 ] Output [ asset_id , asset_details ] ; #6 = Scan Table [ Fault_Log ] Output [ asset_id ] ; #7 = Aggregate [ #6 ] GroupBy [ asset_id ] Output [ asset_id , countstar AS Count_Star ] ; #8 = Scan Table [ Assets ] Output [ asset_id , asset_details ] ; #9 = Join [ #7 , #8 ] Predicate [ #7.asset_id = #8.asset_id ] Output [ #8.asset_details , #8.asset_id , #7.Count_Star ] ; #10 = Filter [ #9 ] Predicate [ Count_Star < 2 ] Output [ asset_id , asset_details ] ; #11 = Intersect [ #5 , #10 ] Output [ #5.asset_id , #5.asset_details ]"
+  },
+  {
+    "id": "4a37f5cd60a1da87a69bc4520bf308e8e8d0a4b66ed27ff29135bc778a3d94b9",
+    "qpl": "baseball_1 | #1 = Scan Table [ player_award ] Predicate [ year = 1961 ] Output [ year ] ; #2 = Top [ #1 ] Rows [ 1 ] Output [ year ] ; #3 = Scan Table [ player ] Output [ name_first , name_last ] ; #4 = Join [ #2 , #3 ] Distinct [ true ] Output [ #3.name_last , #3.name_first ] ; #5 = Scan Table [ player_award ] Predicate [ year = 1960 ] Output [ year ] ; #6 = Top [ #5 ] Rows [ 1 ] Output [ year ] ; #7 = Scan Table [ player ] Output [ name_first , name_last ] ; #8 = Join [ #6 , #7 ] Distinct [ true ] Output [ #7.name_first , #7.name_last ] ; #9 = Intersect [ #4 , #8 ] Predicate [ #4.name_first = #8.name_first ] Distinct [ true ] Output [ #4.name_first , #4.name_last ]"
+  },
+  {
+    "id": "da6a560fa34c473a0da1aede9d5e5dc87ce0e37c013cbf2067631a80305c1dda",
+    "qpl": "baseball_1 | #1 = Scan Table [ player_award ] Predicate [ year = 1961 ] Output [ year ] ; #2 = Top [ #1 ] Rows [ 1 ] Output [ year ] ; #3 = Scan Table [ player ] Output [ name_first , name_last ] ; #4 = Join [ #2 , #3 ] Distinct [ true ] Output [ #3.name_last , #3.name_first ] ; #5 = Scan Table [ player_award ] Predicate [ year = 1960 ] Output [ year ] ; #6 = Top [ #5 ] Rows [ 1 ] Output [ year ] ; #7 = Scan Table [ player ] Output [ name_first , name_last ] ; #8 = Join [ #6 , #7 ] Distinct [ true ] Output [ #7.name_first , #7.name_last ] ; #9 = Intersect [ #4 , #8 ] Predicate [ #4.name_first = #8.name_first ] Distinct [ true ] Output [ #4.name_first , #4.name_last ]"
+  },
+  {
+    "id": "d28af572f3775b55553091efb2080cfcef91c47cdd8ab3481ec8023acc15627e",
+    "qpl": "college_2 | #1 = Scan Table [ course ] Predicate [ dept_name = 'Statistics' ] Output [ title , dept_name ] ; #2 = Scan Table [ course ] Predicate [ dept_name = 'Psychology' ] Output [ course_id , title , dept_name ] ; #3 = Intersect [ #1 , #2 ] Predicate [ #1.title = #2.title ] Distinct [ true ] Output [ #1.title , #2.course_id ] ; #4 = Aggregate [ #3 ] GroupBy [ title ] Output [ title ]"
+  },
+  {
+    "id": "10c0ab16acf669bd4768f34a68f318897532f47a26f2c4ba2ec522518929eb49",
+    "qpl": "college_2 | #1 = Scan Table [ course ] Predicate [ dept_name = 'Statistics' ] Output [ title , dept_name ] ; #2 = Scan Table [ course ] Predicate [ dept_name = 'Psychology' ] Output [ course_id , title , dept_name ] ; #3 = Intersect [ #1 , #2 ] Predicate [ #1.title = #2.title ] Distinct [ true ] Output [ #1.title , #2.course_id ] ; #4 = Aggregate [ #3 ] GroupBy [ title ] Output [ title ]"
+  },
+  {
+    "id": "5eb6fd6dfda70759cd2709301437fecccf0ac6eb96ec869d30947727e80dd723",
+    "qpl": "cre_Docs_and_Epenses | #1 = Scan Table [ Documents_with_Expenses ] Predicate [ Budget_Type_Code = 'SF' ] Output [ Budget_Type_Code , Document_ID ] ; #2 = Scan Table [ Documents ] Output [ Document_Date , Document_ID ] ; #3 = Join [ #1 , #2 ] Predicate [ #1.Document_ID = #2.Document_ID ] Output [ #2.Document_ID , #2.Document_Date ] ; #4 = Scan Table [ Documents ] Output [ Document_Date , Document_ID ] ; #5 = Intersect [ #3 , #4 ] Predicate [ #3.Document_Date = #4.Document_Date ] Output [ #3.Document_Date , #3.Document_ID ] ; #6 = Scan Table [ Documents_with_Expenses ] Predicate [ Budget_Type_Code = 'GV' ] Output [ Budget_Type_Code , Document_ID ] ; #7 = Join [ #5 , #6 ] Predicate [ #5.Document_ID = #6.Document_ID ] Distinct [ true ] Output [ #5.Document_ID , #5.Document_Date ] ; #8 = Aggregate [ #7 ] GroupBy [ Document_Date ] Output [ Document_Date ]"
+  },
+  {
+    "id": "79136ffecb05a116dec12e892dfda6c30580434c3d55dd620b0e1de3626d3580",
+    "qpl": "cre_Docs_and_Epenses | #1 = Scan Table [ Documents_with_Expenses ] Predicate [ Budget_Type_Code = 'SF' ] Output [ Budget_Type_Code , Document_ID ] ; #2 = Scan Table [ Documents ] Output [ Document_Date , Document_ID ] ; #3 = Join [ #1 , #2 ] Predicate [ #1.Document_ID = #2.Document_ID ] Output [ #2.Document_ID , #2.Document_Date ] ; #4 = Scan Table [ Documents ] Output [ Document_Date , Document_ID ] ; #5 = Intersect [ #3 , #4 ] Predicate [ #3.Document_Date = #4.Document_Date ] Output [ #3.Document_Date , #3.Document_ID ] ; #6 = Scan Table [ Documents_with_Expenses ] Predicate [ Budget_Type_Code = 'GV' ] Output [ Budget_Type_Code , Document_ID ] ; #7 = Join [ #5 , #6 ] Predicate [ #5.Document_ID = #6.Document_ID ] Distinct [ true ] Output [ #5.Document_ID , #5.Document_Date ] ; #8 = Aggregate [ #7 ] GroupBy [ Document_Date ] Output [ Document_Date ]"
+  },
+  {
+    "id": "6d164ab354bb59abf06c3c4b4b1bac01c58e6277a90fd3e436ff24bf815aa1d2",
+    "qpl": "customers_and_addresses | #1 = Scan Table [ Customers ] Output [ payment_method ] ; #2 = Aggregate [ #1 ] GroupBy [ payment_method ] Output [ payment_method , countstar AS Count_Star ] ; #3 = TopSort [ #2 ] Rows [ 1 ] OrderBy [ Count_Star DESC ] Output [ payment_method , Count_Star ] ; #4 = Scan Table [ Customers ] Output [ payment_method , customer_name ] ; #5 = Intersect [ #3 , #4 ] Predicate [ #3.payment_method = #4.payment_method ] Output [ #4.customer_name ]"
+  },
+  {
+    "id": "a1b2696411abc0ce8efce75972e56c727de2d512e4c789c4be2d382dbac45a1f",
+    "qpl": "customers_and_addresses | #1 = Scan Table [ Customers ] Output [ payment_method ] ; #2 = Aggregate [ #1 ] GroupBy [ payment_method ] Output [ payment_method , countstar AS Count_Star ] ; #3 = TopSort [ #2 ] Rows [ 1 ] OrderBy [ Count_Star DESC ] Output [ payment_method , Count_Star ] ; #4 = Scan Table [ Customers ] Output [ payment_method , customer_name ] ; #5 = Intersect [ #3 , #4 ] Predicate [ #3.payment_method = #4.payment_method ] Output [ #4.customer_name ]"
+  },
+  {
+    "id": "08b9292cf2157e64aa1856a32f7b099d7d5cfbb4ccfa72806707aadd01c2e7a4",
+    "qpl": "formula_1 | #1 = Scan Table [ races ] Predicate [ name = 'Chinese Grand Prix' ] Output [ raceId , name ] ; #2 = Scan Table [ results ] Output [ raceId , driverId ] ; #3 = Join [ #1 , #2 ] Predicate [ #1.raceId = #2.raceId ] Distinct [ true ] Output [ #2.driverId ] ; #4 = Scan Table [ drivers ] Output [ forename , driverId ] ; #5 = Join [ #3 , #4 ] Predicate [ #3.driverId = #4.driverId ] Output [ #4.forename , #3.driverId ] ; #6 = Scan Table [ races ] Predicate [ name = 'Australian Grand Prix' ] Output [ raceId , name ] ; #7 = Scan Table [ results ] Output [ raceId , driverId ] ; #8 = Join [ #6 , #7 ] Predicate [ #6.raceId = #7.raceId ] Distinct [ true ] Output [ #7.driverId ] ; #9 = Scan Table [ drivers ] Output [ forename , driverId ] ; #10 = Join [ #8 , #9 ] Predicate [ #8.driverId = #9.driverId ] Output [ #9.forename , #8.driverId ] ; #11 = Intersect [ #5 , #10 ] Output [ #5.forename , #5.driverId ]"
+  },
+  {
+    "id": "dcbf8ed9aaeb5625b4d975f8c1409f8d5008048c15dd4f6fbe00ed170dc5a731",
+    "qpl": "formula_1 | #1 = Scan Table [ races ] Predicate [ name = 'Chinese Grand Prix' ] Output [ raceId , name ] ; #2 = Scan Table [ results ] Output [ raceId , driverId ] ; #3 = Join [ #1 , #2 ] Predicate [ #1.raceId = #2.raceId ] Distinct [ true ] Output [ #2.driverId ] ; #4 = Scan Table [ drivers ] Output [ forename , driverId ] ; #5 = Join [ #3 , #4 ] Predicate [ #3.driverId = #4.driverId ] Output [ #4.forename , #3.driverId ] ; #6 = Scan Table [ races ] Predicate [ name = 'Australian Grand Prix' ] Output [ raceId , name ] ; #7 = Scan Table [ results ] Output [ raceId , driverId ] ; #8 = Join [ #6 , #7 ] Predicate [ #6.raceId = #7.raceId ] Distinct [ true ] Output [ #7.driverId ] ; #9 = Scan Table [ drivers ] Output [ forename , driverId ] ; #10 = Join [ #8 , #9 ] Predicate [ #8.driverId = #9.driverId ] Output [ #9.forename , #8.driverId ] ; #11 = Intersect [ #5 , #10 ] Output [ #5.forename , #5.driverId ]"
+  },
+  {
+    "id": "a34130d4b9381a7d8812877e3acbf91706f6f4d88a00b5cbd2c0cc8ace558e24",
+    "qpl": "formula_1 | #1 = Scan Table [ pitStops ] Output [ driverId ] ; #2 = Aggregate [ #1 ] GroupBy [ driverId ] Output [ countstar AS Count_Star , driverId ] ; #3 = Scan Table [ drivers ] Output [ surname , driverId ] ; #4 = Join [ #2 , #3 ] Predicate [ #2.driverId = #3.driverId ] Output [ #3.surname , #3.driverId , #2.Count_Star ] ; #5 = Filter [ #4 ] Predicate [ Count_Star = 11 ] Output [ surname , driverId ] ; #6 = Scan Table [ drivers ] Output [ surname , driverId ] ; #7 = Intersect [ #5 , #6 ] Output [ #5.surname , #5.driverId ] ; #8 = Scan Table [ results ] Output [ driverId ] ; #9 = Join [ #7 , #8 ] Predicate [ #7.driverId = #8.driverId ] Output [ #7.surname , #7.driverId ] ; #10 = Aggregate [ #9 ] GroupBy [ driverId ] Output [ surname , countstar AS Count_Star , driverId ] ; #11 = Filter [ #10 ] Predicate [ Count_Star > 5 ] Output [ surname , driverId ]"
+  },
+  {
+    "id": "d39d5b34b6457b2e6909e198b3b88b3eb18717cb7488b8915982ac06eda0d7a3",
+    "qpl": "formula_1 | #1 = Scan Table [ pitStops ] Output [ driverId ] ; #2 = Aggregate [ #1 ] GroupBy [ driverId ] Output [ countstar AS Count_Star , driverId ] ; #3 = Scan Table [ drivers ] Output [ surname , driverId ] ; #4 = Join [ #2 , #3 ] Predicate [ #2.driverId = #3.driverId ] Output [ #3.surname , #3.driverId , #2.Count_Star ] ; #5 = Filter [ #4 ] Predicate [ Count_Star = 11 ] Output [ surname , driverId ] ; #6 = Scan Table [ drivers ] Output [ surname , driverId ] ; #7 = Intersect [ #5 , #6 ] Output [ #5.surname , #5.driverId ] ; #8 = Scan Table [ results ] Output [ driverId ] ; #9 = Join [ #7 , #8 ] Predicate [ #7.driverId = #8.driverId ] Output [ #7.surname , #7.driverId ] ; #10 = Aggregate [ #9 ] GroupBy [ driverId ] Output [ surname , countstar AS Count_Star , driverId ] ; #11 = Filter [ #10 ] Predicate [ Count_Star > 5 ] Output [ surname , driverId ]"
+  },
+  {
+    "id": "0568d89956705a5fd819c8c8f400be2dc2e3c1cbcc9adefe5d4ecd468dc0184d",
+    "qpl": "insurance_and_eClaims | #1 = Scan Table [ Claims_Documents ] Output [ Created_Date ] ; #2 = TopSort [ #1 ] Rows [ 1 ] OrderBy [ Created_Date ASC ] Output [ Created_Date ] ; #3 = Scan Table [ Claims_Documents ] Output [ Claim_ID , Created_Date ] ; #4 = Intersect [ #2 , #3 ] Predicate [ #2.Created_Date = #3.Created_Date ] Output [ #3.Claim_ID ] ; #5 = Scan Table [ Claim_Headers ] Output [ Claim_Header_ID , Amount_Claimed ] ; #6 = Join [ #4 , #5 ] Predicate [ #4.Claim_ID = #5.Claim_Header_ID ] Output [ #5.Amount_Claimed ] ; #7 = Aggregate [ #6 ] Output [ SUM(Amount_Claimed) AS Sum_Amount_Claimed ]"
+  },
+  {
+    "id": "a8c9cd25e9fb3e93986f060a0dfae2ed35e3988685f16449dc6befbfc2d3b1a5",
+    "qpl": "insurance_and_eClaims | #1 = Scan Table [ Claims_Documents ] Output [ Created_Date ] ; #2 = TopSort [ #1 ] Rows [ 1 ] OrderBy [ Created_Date ASC ] Output [ Created_Date ] ; #3 = Scan Table [ Claims_Documents ] Output [ Claim_ID , Created_Date ] ; #4 = Intersect [ #2 , #3 ] Predicate [ #2.Created_Date = #3.Created_Date ] Output [ #3.Claim_ID ] ; #5 = Scan Table [ Claim_Headers ] Output [ Claim_Header_ID , Amount_Claimed ] ; #6 = Join [ #4 , #5 ] Predicate [ #4.Claim_ID = #5.Claim_Header_ID ] Output [ #5.Amount_Claimed ] ; #7 = Aggregate [ #6 ] Output [ SUM(Amount_Claimed) AS Sum_Amount_Claimed ]"
+  },
+  {
+    "id": "83996c161501bec8d7c226573eca0e468c2fe6be24cc1fb16ec68e6496c7189b",
+    "qpl": "insurance_fnol | #1 = Scan Table [ Available_Policies ] Output [ policy_type_code ] ; #2 = Aggregate [ #1 ] GroupBy [ policy_type_code ] Output [ countstar AS Count_Star , policy_type_code ] ; #3 = TopSort [ #2 ] Rows [ 1 ] OrderBy [ Count_Star DESC ] Output [ Count_Star , policy_type_code ] ; #4 = Scan Table [ Available_Policies ] Output [ policy_type_code , Customer_Phone ] ; #5 = Intersect [ #3 , #4 ] Predicate [ #3.policy_type_code = #4.policy_type_code ] Output [ #4.Customer_Phone ]"
+  },
+  {
+    "id": "c2fa007d5cc2139a1ba6ddd58c3f0289cc886e75fd33206e475f0d87a5b8123a",
+    "qpl": "insurance_fnol | #1 = Scan Table [ Available_Policies ] Output [ policy_type_code ] ; #2 = Aggregate [ #1 ] GroupBy [ policy_type_code ] Output [ countstar AS Count_Star , policy_type_code ] ; #3 = TopSort [ #2 ] Rows [ 1 ] OrderBy [ Count_Star DESC ] Output [ Count_Star , policy_type_code ] ; #4 = Scan Table [ Available_Policies ] Output [ policy_type_code , Customer_Phone ] ; #5 = Intersect [ #3 , #4 ] Predicate [ #3.policy_type_code = #4.policy_type_code ] Output [ #4.Customer_Phone ]"
+  },
+  {
+    "id": "12261f8d2126a4ae81e898ec9c7497a2b54de11c4ce5d83ca81cc7071d713d11",
+    "qpl": "music_1 | #1 = Scan Table [ files ] Predicate [ formats = 'mp3' ] Output [ formats , f_id ] ; #2 = Scan Table [ song ] Output [ song_name , f_id ] ; #3 = Join [ #1 , #2 ] Predicate [ #1.f_id = #2.f_id ] Output [ #2.song_name ] ; #4 = Scan Table [ song ] Predicate [ resolution < 1000 ] Output [ resolution , song_name ] ; #5 = Intersect [ #3 , #4 ] Predicate [ #3.song_name = #4.song_name ] Output [ #3.song_name ]"
+  },
+  {
+    "id": "b4bfb0cd637999882dbe3e25a7fdbbd489f7832baa779ac46c4065d01899ff14",
+    "qpl": "music_1 | #1 = Scan Table [ files ] Predicate [ formats = 'mp3' ] Output [ formats , f_id ] ; #2 = Scan Table [ song ] Output [ song_name , f_id ] ; #3 = Join [ #1 , #2 ] Predicate [ #1.f_id = #2.f_id ] Output [ #2.song_name ] ; #4 = Scan Table [ song ] Predicate [ resolution < 1000 ] Output [ resolution , song_name ] ; #5 = Intersect [ #3 , #4 ] Predicate [ #3.song_name = #4.song_name ] Output [ #3.song_name ]"
+  },
+  {
+    "id": "522a4013ad350004973d0767465e7e90e71d05e29a91bcaa43444ad5345f0033",
+    "qpl": "product_catalog | #1 = Scan Table [ Catalog_Contents_Additional_Attributes ] Output [ attribute_value ] ; #2 = Aggregate [ #1 ] GroupBy [ attribute_value ] Output [ countstar AS Count_Star , attribute_value ] ; #3 = TopSort [ #2 ] Rows [ 1 ] OrderBy [ Count_Star DESC ] Output [ Count_Star , attribute_value ] ; #4 = Scan Table [ Catalog_Contents_Additional_Attributes ] Output [ catalog_entry_id , attribute_value ] ; #5 = Intersect [ #3 , #4 ] Predicate [ #3.attribute_value = #4.attribute_value ] Output [ #4.catalog_entry_id ] ; #6 = Scan Table [ Catalog_Contents ] Output [ catalog_entry_id , catalog_entry_name ] ; #7 = Join [ #5 , #6 ] Predicate [ #5.catalog_entry_id = #6.catalog_entry_id ] Output [ #6.catalog_entry_name ]"
+  },
+  {
+    "id": "03d0b3e8a8992407ab37fb93ffd6d04a02afc50ed71cd24a9bd70dae3556f8be",
+    "qpl": "product_catalog | #1 = Scan Table [ Catalog_Contents_Additional_Attributes ] Output [ attribute_value ] ; #2 = Aggregate [ #1 ] GroupBy [ attribute_value ] Output [ countstar AS Count_Star , attribute_value ] ; #3 = TopSort [ #2 ] Rows [ 1 ] OrderBy [ Count_Star DESC ] Output [ Count_Star , attribute_value ] ; #4 = Scan Table [ Catalog_Contents_Additional_Attributes ] Output [ catalog_entry_id , attribute_value ] ; #5 = Intersect [ #3 , #4 ] Predicate [ #3.attribute_value = #4.attribute_value ] Output [ #4.catalog_entry_id ] ; #6 = Scan Table [ Catalog_Contents ] Output [ catalog_entry_id , catalog_entry_name ] ; #7 = Join [ #5 , #6 ] Predicate [ #5.catalog_entry_id = #6.catalog_entry_id ] Output [ #6.catalog_entry_name ]"
+  },
+  {
+    "id": "b4de01077a1c2891bb01fd19dbec0f759d611a91e3fde6f73f3a5131710450b2",
+    "qpl": "sakila_1 | #1 = Scan Table [ inventory ] Output [ film_id ] ; #2 = Aggregate [ #1 ] GroupBy [ film_id ] Output [ film_id , countstar AS Count_Star ] ; #3 = Scan Table [ film ] Output [ film_id , title ] ; #4 = Join [ #2 , #3 ] Predicate [ #2.film_id = #3.film_id ] Output [ #3.film_id , #2.Count_Star , #3.title ] ; #5 = Filter [ #4 ] Predicate [ Count_Star < 3 ] Output [ film_id , title ] ; #6 = Scan Table [ film ] Predicate [ rental_rate = 0.99 ] Output [ film_id , title , rental_rate ] ; #7 = Intersect [ #5 , #6 ] Output [ #5.title , #5.film_id ]"
+  },
+  {
+    "id": "021bae5f5daf28744fc4c3ab761dd1f7c3e2d692dd276618ebb3ebb468534fc6",
+    "qpl": "sakila_1 | #1 = Scan Table [ inventory ] Output [ film_id ] ; #2 = Aggregate [ #1 ] GroupBy [ film_id ] Output [ film_id , countstar AS Count_Star ] ; #3 = Scan Table [ film ] Output [ film_id , title ] ; #4 = Join [ #2 , #3 ] Predicate [ #2.film_id = #3.film_id ] Output [ #3.film_id , #2.Count_Star , #3.title ] ; #5 = Filter [ #4 ] Predicate [ Count_Star < 3 ] Output [ film_id , title ] ; #6 = Scan Table [ film ] Predicate [ rental_rate = 0.99 ] Output [ film_id , title , rental_rate ] ; #7 = Intersect [ #5 , #6 ] Output [ #5.title , #5.film_id ]"
+  },
+  {
+    "id": "85ffeeeb263b06b7203435e2eefe99b555e0e4c8ddbf7c5c76b07c11b51ade39",
+    "qpl": "small_bank_1 | #1 = Scan Table [ SAVINGS ] Output [ balance ] ; #2 = Aggregate [ #1 ] Output [ AVG(balance) AS Avg_balance ] ; #3 = Scan Table [ ACCOUNTS ] Output [ name , custid ] ; #4 = Scan Table [ ACCOUNTS ] Output [ name , custid ] ; #5 = Intersect [ #3 , #4 ] Predicate [ #3.name = #4.name ] Output [ #3.custid ] ; #6 = Scan Table [ SAVINGS ] Output [ custid , balance ] ; #7 = Join [ #5 , #6 ] Predicate [ #6.custid = #5.custid ] Output [ #6.balance , #5.custid ] ; #8 = Join [ #2 , #7 ] Predicate [ #7.balance > #2.Avg_balance ] Output [ #7.custid ] ; #9 = Aggregate [ #8 ] GroupBy [ custid ] Output [ custid ] ; #10 = Scan Table [ CHECKING ] Output [ custid , balance ] ; #11 = Join [ #9 , #10 ] Predicate [ #10.custid = #9.custid ] Output [ #10.balance ]"
+  },
+  {
+    "id": "6fb5d97aa26d048c5787c6459a9f6419913afc31894a65a2f6d5423112cb7edc",
+    "qpl": "small_bank_1 | #1 = Scan Table [ SAVINGS ] Output [ balance ] ; #2 = Aggregate [ #1 ] Output [ AVG(balance) AS Avg_balance ] ; #3 = Scan Table [ ACCOUNTS ] Output [ name , custid ] ; #4 = Scan Table [ ACCOUNTS ] Output [ name , custid ] ; #5 = Intersect [ #3 , #4 ] Predicate [ #3.name = #4.name ] Output [ #3.custid ] ; #6 = Scan Table [ SAVINGS ] Output [ custid , balance ] ; #7 = Join [ #5 , #6 ] Predicate [ #6.custid = #5.custid ] Output [ #6.balance , #5.custid ] ; #8 = Join [ #2 , #7 ] Predicate [ #7.balance > #2.Avg_balance ] Output [ #7.custid ] ; #9 = Aggregate [ #8 ] GroupBy [ custid ] Output [ custid ] ; #10 = Scan Table [ CHECKING ] Output [ custid , balance ] ; #11 = Join [ #9 , #10 ] Predicate [ #10.custid = #9.custid ] Output [ #10.balance ]"
+  },
+  {
+    "id": "6bde129f49dafb807bb4ff0c6e786a81b6c5c8d2f3c976b6524ad0785c2bbb96",
+    "qpl": "voter_2 | #1 = Scan Table [ Student ] Predicate [ Advisor = 8741 ] Distinct [ true ] Output [ LName , Advisor ] ; #2 = Scan Table [ Student ] Output [ LName , StuID ] ; #3 = Intersect [ #1 , #2 ] Predicate [ #1.LName = #2.LName ] Output [ #2.StuID , #1.LName ] ; #4 = Scan Table [ Voting_record ] Output [ President_Vote ] ; #5 = Join [ #3 , #4 ] Predicate [ #3.StuID = #4.President_Vote ] Distinct [ true ] Output [ #3.LName ]"
+  },
+  {
+    "id": "8476172904279be6a0e68d118177a9d24ce35964989c8d2a705cb0ced202120f",
+    "qpl": "voter_2 | #1 = Scan Table [ Student ] Predicate [ Advisor = 8741 ] Distinct [ true ] Output [ LName , Advisor ] ; #2 = Scan Table [ Student ] Output [ LName , StuID ] ; #3 = Intersect [ #1 , #2 ] Predicate [ #1.LName = #2.LName ] Output [ #2.StuID , #1.LName ] ; #4 = Scan Table [ Voting_record ] Output [ President_Vote ] ; #5 = Join [ #3 , #4 ] Predicate [ #3.StuID = #4.President_Vote ] Distinct [ true ] Output [ #3.LName ]"
   }
 ]

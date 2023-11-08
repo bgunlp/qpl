@@ -3,7 +3,6 @@ package com.beneyal.qpl
 import scala.xml.*
 import zio.*
 import zio.json.*
-import java.io.IOException
 import java.nio.file.Path
 
 import com.beneyal.qpl.parsing.*

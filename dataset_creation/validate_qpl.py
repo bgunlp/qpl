@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 from collections import Counter
 import pandas as pd
+import numpy as np
 import requests
 
 
@@ -154,11 +155,14 @@ def same_rs(grs, prs, qpl):
     if len(grs) == 0 and len(prs) == 0:
         return True
 
+    if len(grs) == 0 or len(prs) == 0:
+        return False
+
     # Same number of columns
     if len(grs[0]) == len(prs[0]):
         gdf = pd.DataFrame(grs)
         pdf = pd.DataFrame(prs)
-        if (gdf.to_numpy() == pdf.to_numpy()).all():
+        if np.array_equal(gdf.to_numpy(), pdf.to_numpy()):
             return True
 
     # good_keys_prs is a resultset that only includes the keys from prs that are aligned with a key in grs

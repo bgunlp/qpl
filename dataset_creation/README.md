@@ -18,7 +18,6 @@ Assuming you have extracted the Spider dataset to `~/spider`, perform the follow
 2. Generate QPL: `for SPLIT in {train,dev}; do scala-cli run mssql-execution-plans-to-qpl -- -s ~/spider -i output/${SPLIT}_spider_with_ep.json -o output/${SPLIT}_qpl.json; done`
 3. Post-process QPL: `for SPLIT in {train,dev}; do python post_process_qpl.py -i output/${SPLIT}_qpl.json -o output/${SPLIT}_pp_qpl.json; done`
 4. Create CTEs: `for SPLIT in {train,dev}; do python qpl_to_cte.py -i output/${SPLIT}_pp_qpl.json -o output/${SPLIT}_with_cte.json; done`
-5. Run queries for train set: `python run_queries.py -i output/train_with_cte.json -o output/train_with_rs.pkl`
-6. Validate QPLs in train set: `python validate_qpl.py -i output/train_with_rs.pkl -o output/train.json`
-7. Rename `output/dev_with_cte.json` to `output/dev.json` for consistency: `mv output/dev_with_cte.json output/dev.json`
+5. Run queries for syntax and result validation: `for SPLIT in {train,dev}; do python run_queries.py -i output/${SPLIT}_with_cte.json -o output/${SPLIT}_with_rs.pkl; done`
+6. Validate QPLs: `for SPLIT in {train,dev}; do python validate_qpl.py -i output/${SPLIT}_with_rs.pkl -o output/${SPLIT}.json; done`
 

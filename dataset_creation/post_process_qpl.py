@@ -608,7 +608,7 @@ def main():
     with open(args.input) as f:
         qpls = json.load(f)
 
-    with open("./manual-fixes.json") as f:
+    with open("./manual-qpls.json") as f:
         manual_fixes = {x["id"]: x["qpl"] for x in json.load(f)}
 
     post_processed = []

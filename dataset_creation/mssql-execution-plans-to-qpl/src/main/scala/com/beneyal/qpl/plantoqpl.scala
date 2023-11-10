@@ -232,7 +232,6 @@ object plantoqpl extends ZIOAppDefault {
 
   def toOperation(si: SpiderInstance): Operation = {
     val (env, result) = toCR(si.ep.relop).run(si.ep.getInitialEnv).value
-    pprint.pprintln(env)
     result
   }
 
@@ -322,7 +321,6 @@ object plantoqpl extends ZIOAppDefault {
             case Assignment(columnReference, Convert(_)) => true
             case _                                       => false
           }
-          _                 = pprint.pprintln(definedValues)
           derefedOutputList = outputList.map(getOrDeref(env))
           aggPat            = """MIN|MAX|COUNT|SUM|AVG""".r
           groupBy = Opt(
@@ -564,9 +562,7 @@ object plantoqpl extends ZIOAppDefault {
           innerWithOutputList = inner.copy(outs = if (inner.outs.isEmpty) Chunk("1") else inner.outs)
           _   <- State.modify[Env](addDefinedValuesToEnv(definedValues))
           env <- State.get[Env]
-          _                 = pprint.pprintln(env)
           derefedOutputList = outputList.map(getOrDeref(env))
-          _                 = pprint.pprintln(derefedOutputList)
         } yield Operation(
           "Aggregate",
           derefedOutputList,
@@ -686,7 +682,6 @@ object plantoqpl extends ZIOAppDefault {
             }
           }
       case Intrinsic(functionName, lhs, rhs) =>
-        println(s"functionName = $functionName, rhs = $rhs")
         s"${toCR(env)(lhs)} $functionName ${toCR(env)(rhs)}"
       case Logical(operation, scalarOperators) =>
         if (operation == LogicalOperation.NOT)
@@ -828,7 +823,6 @@ object plantoqpl extends ZIOAppDefault {
   }
 
   def isAssertion(ifExpr: If): Boolean = {
-    pprint.pprintln(ifExpr)
     ifExpr match {
       case If(_, Const("0"), Const("NULL")) => true
       case _                                => false

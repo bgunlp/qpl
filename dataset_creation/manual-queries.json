@@ -1,0 +1,53 @@
+[
+  {
+    "id": "9d0778eb0707002333a0bf777d868b7a14384e4a6da008beda575d4c56628f95",
+    "query": "select max ( capacity ) AS Max_capacity , average from concert_singer.stadium group by average"
+  },
+  {
+    "id": "035659c5c5e07d718124ae4a3b4635423b78d35990d7ce6a1447c312966c2d8d",
+    "query": "SELECT min ( Version_Number ) AS Min_Version_Number , template_type_code FROM cre_Doc_Template_Mgt.Templates group by template_type_code"
+  },
+  {
+    "id": "cce310591b81b5c42d2388e7d5f7462d4d15db56b4ec47479ff05f4b43ad2cfa",
+    "query": "SELECT min ( Version_Number ) AS Min_Version_Number , template_type_code FROM cre_Doc_Template_Mgt.Templates group by template_type_code"
+  },
+  {
+    "id": "92f7870d8e544dec954c41ef4da65daa4fb2cba5f0706f1d73c2442f423a6dd8",
+    "query": "select TOP 1 WITH TIES t2.name FROM network_1.Likes AS T1 WITH (FORCESCAN) join network_1.highschooler as t2 WITH (FORCESCAN) ON t1.student_id = t2.id group by t2.name , t1.student_id order by count ( * ) desc OPTION (HASH JOIN, ORDER GROUP)"
+  },
+  {
+    "id": "587e9458cada672d2d3927d405dbd2f9bca706e71eb19a1a0e6d26d029033252",
+    "query": "select TOP 1 WITH TIES t2.name FROM network_1.Likes AS T1 WITH (FORCESCAN) join network_1.highschooler as t2 WITH (FORCESCAN) ON t1.student_id = t2.id group by t2.name , t1.student_id order by count ( * ) desc OPTION (HASH JOIN, ORDER GROUP)"
+  },
+  {
+    "id": "bd844dd1bbe595ee1aa0d5da9010030323680dc2b4a5b47d15a2dd2bd4796d8b",
+    "query": "select TOP 1 WITH TIES t2.transcript_date , t1.transcript_id FROM student_transcripts_tracking.Transcript_Contents AS T1 WITH (FORCESCAN) join student_transcripts_tracking.transcripts as t2 WITH (FORCESCAN) ON t1.transcript_id = t2.transcript_id group by t2.transcript_date , t1.transcript_id order by count ( * ) asc OPTION (HASH JOIN, ORDER GROUP)"
+  },
+  {
+    "id": "b4b4ae10d25e46d7369817827ed4141e9c701e7046aefa27d6f88b73baff0a32",
+    "query": "select TOP 1 WITH TIES t2.transcript_date , t1.transcript_id FROM student_transcripts_tracking.Transcript_Contents AS T1 WITH (FORCESCAN) join student_transcripts_tracking.transcripts as t2 WITH (FORCESCAN) ON t1.transcript_id = t2.transcript_id group by t2.transcript_date , t1.transcript_id order by count ( * ) asc OPTION (HASH JOIN, ORDER GROUP)"
+  },
+  {
+    "id": "bff2974c43a128f711181e493e2036cb2b26cb7aa8f12d9009b047620bef2c21",
+    "query": "select TOP 1 WITH TIES t1.contestant_number , t1.contestant_name FROM voter_1.contestants AS T1 WITH (FORCESCAN) join voter_1.votes as t2 WITH (FORCESCAN) ON t1.contestant_number = t2.contestant_number group by t1.contestant_number , t1.contestant_name order by count ( * ) asc OPTION (HASH JOIN, ORDER GROUP)"
+  },
+  {
+    "id": "96e58374f4e8995981abdae0add2d49bb797fb8e70ebe07715e6906b533c1775",
+    "query": "SELECT Name FROM world_1.country WITH (FORCESCAN) WHERE continent = 'Europe' AND Population > 80000 OPTION (HASH JOIN, ORDER GROUP)",
+    "question": "Give the names of countries that are in Europe and have a population larger than 80000."
+  },
+  {
+    "id": "3a1b4170c50ef2fb65e0ffaa67b45ab9282a898ec6581c895060e31332cf025b",
+    "query": "SELECT Name FROM world_1.country WITH (FORCESCAN) WHERE continent = 'Europe' AND Population > 80000 OPTION (HASH JOIN, ORDER GROUP)",
+    "question": "What are the names of the countries that are in the continent of Europe and have a population larger than 80000?"
+  },
+  {
+    "id": "34ae116d68862a3d031e45083c8c14f67053408224f2484c61530216d7152422",
+    "query": "SELECT id FROM tvshow.TV_Channel WITH (FORCESCAN) WHERE Country IN (SELECT Country FROM tvshow.TV_Channel WITH (FORCESCAN) GROUP BY Country HAVING COUNT ( * ) > 2)",
+    "question": "Find the ids of tv channels that are from countries that have more than two tv channels."
+  },
+  {
+    "id": "4030ca9a53a02732ea943743b6fe00d6d8750e215cf82b9ad4d9d63fd796c938",
+    "query": "SELECT id FROM tvshow.TV_Channel WITH (FORCESCAN) WHERE Country IN (SELECT Country FROM tvshow.TV_Channel WITH (FORCESCAN) GROUP BY Country HAVING COUNT ( * ) > 2)"
+  }
+]

@@ -1,9 +1,10 @@
 import argparse
 import json
-from pathlib import Path
 from collections import Counter
-import pandas as pd
+from pathlib import Path
+
 import numpy as np
+import pandas as pd
 import requests
 
 
@@ -97,16 +98,16 @@ def get_keys(d, keys):
 def get_order_by(qpl):
     last_qpl = qpl[-1].split(" ")
     last_qpl_op = last_qpl[2].lower()
-    if last_qpl_op != 'sort':
+    if last_qpl_op != "sort":
         return None
     keys = []
-    i = last_qpl.index('OrderBy') + 2  # First position after OrderBy [
-    while last_qpl[i] != ']':
+    i = last_qpl.index("OrderBy") + 2  # First position after OrderBy [
+    while last_qpl[i] != "]":
         keys.append(last_qpl[i].lower())
         i += 1
-        if (last_qpl[i].lower() in ['asc', 'desc']):
+        if last_qpl[i].lower() in ["asc", "desc"]:
             i += 1
-        if (last_qpl[i] == ','):
+        if last_qpl[i] == ",":
             i += 1
     return keys
 
@@ -194,10 +195,10 @@ def main():
             "http://localhost:8081/validate", json={"qpl": ex["qpl"]}
         ).json()
         if (
-                ex["crs"]
-                and ex["grs"]
-                and is_valid
-                and same_rs(ex["grs"], ex["crs"], ex["qpl"].split(" ; "))
+            ex["crs"] is not None
+            and ex["grs"] is not None
+            and is_valid
+            and same_rs(ex["grs"], ex["crs"], ex["qpl"].split(" ; "))
         ):
             del ex["crs"]
             del ex["grs"]

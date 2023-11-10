@@ -201,7 +201,7 @@ def flat_qpl_to_cte(flat_qpl: List[str], db_id: str) -> str:
                     predicate_ins = [lhs_table, rhs_table]
                     lhs_pred_col = groups["lhs_col"]
                     rhs_pred_col = groups["rhs_col"]
-                    if rhs_table < lhs_table:
+                    if rhs_table > lhs_table:
                         rhs_table, lhs_table = lhs_table, rhs_table
                         rhs_pred_col, lhs_pred_col = lhs_pred_col, rhs_pred_col
                     assert set(predicate_ins) <= set(

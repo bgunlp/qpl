@@ -63,6 +63,67 @@ def concertSinger: SqlSchema =
     primaryKeys = Vector(0, 7, 14, 19)
   )
 
+def concertSingerTPP: SqlSchema =
+  SqlSchema(
+    dbId = "concert_singer",
+    tableNames = Vector("stadium", "singer", "concert", "singer _ in _ concert"),
+    columnNames = Vector(
+      "Stadium _ ID",
+      "Location",
+      "Name",
+      "Capacity",
+      "Highest",
+      "Lowest",
+      "Average",
+      "Singer _ ID",
+      "Name",
+      "Country",
+      "Song _ Name",
+      "Song _ release _ year",
+      "Age",
+      "Is _ male",
+      "concert _ ID",
+      "concert _ Name",
+      "Theme",
+      "Stadium _ ID",
+      "Year",
+      "concert _ ID",
+      "Singer _ ID"
+    ),
+    columnTypes = Vector(
+      Number,
+      Text,
+      Text,
+      Number,
+      Number,
+      Number,
+      Number,
+      Number,
+      Text,
+      Text,
+      Text,
+      Text,
+      Number,
+      Others,
+      Number,
+      Text,
+      Text,
+      Number, // Originally `Text`
+      Number, // Originally `Text`
+      Number,
+      Number // Originally `Text`
+    ),
+    columnToTable = Vector(0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3),
+    tableToColumns = Map(
+      "stadium"               -> (0 to 6).toVector,
+      "singer"                -> (7 to 13).toVector,
+      "concert"               -> (14 to 18).toVector,
+      "singer _ in _ concert" -> Vector(19, 20)
+    ),
+    foreignKeys = Map(17 -> 0, 20 -> 7, 19 -> 14).toList,
+    primaryKeys = Vector(0, 7, 14, 19)
+  )
+
 def creDocTemplateMgt: SqlSchema = SqlSchema(
   dbId = "cre_Doc_Template_Mgt",
   tableNames = Vector("Ref_Template_Types", "Templates", "Documents", "Paragraphs"),
@@ -1101,6 +1162,49 @@ def flight2: SqlSchema = SqlSchema(
     "FlightNo",
     "SourceAirport",
     "DestAirport"
+  ),
+  columnTypes = Vector(
+    Number,
+    Text,
+    Text,
+    Text,
+    Text,
+    Text,
+    Text,
+    Text,
+    Text,
+    Number,
+    Number,
+    Text,
+    Text
+  ),
+  columnToTable = Vector(0, 0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2, 2),
+  tableToColumns = Map(
+    "airlines" -> Vector(0, 1, 2, 3),
+    "airports" -> Vector(4, 5, 6, 7, 8),
+    "flights"  -> Vector(9, 10, 11, 12)
+  ),
+  foreignKeys = Map(9 -> 0, 11 -> 5, 12 -> 5).toList,
+  primaryKeys = Vector(0, 5, 9, 10)
+)
+
+def flight2TPP: SqlSchema = SqlSchema(
+  dbId = "flight_2",
+  tableNames = Vector("airlines", "airports", "flights"),
+  columnNames = Vector(
+    "uid",
+    "airline",
+    "abbreviation",
+    "country",
+    "city",
+    "airportcode",
+    "airportname",
+    "country",
+    "countryabbrev",
+    "airline",
+    "flightno",
+    "sourceairport",
+    "destairport"
   ),
   columnTypes = Vector(
     Number,

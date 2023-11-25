@@ -105,7 +105,8 @@ object parse {
     ps.foldRight[QplParser[A]](err("choice: no match").lift)(_ | _)
 
   def startsWithAgg(s: String): Boolean =
-    Agg.values.map(agg => s"${agg.toString}_").exists(s.startsWith(_)) || s.startsWith("countstar")
+    s.toLowerCase.startsWith("countstar") ||
+      Agg.values.map(agg => s"${agg.aliasPrefix.toLowerCase} _").exists(s.toLowerCase.startsWith)
 
   enum ColumnType {
     case Number, Boolean, Text, Time, Others
@@ -196,10 +197,10 @@ object parse {
         case ">="       => GreaterThanOrEqual(lhs, rhs)
         case "<"        => LessThan(lhs, rhs)
         case "<="       => LessThanOrEqual(lhs, rhs)
-        case "IS"       => Is(lhs, rhs)
-        case "IS NOT"   => IsNot(lhs, rhs)
-        case "LIKE"     => Like(lhs, rhs)
-        case "NOT LIKE" => NotLike(lhs, rhs)
+        case "is"       => Is(lhs, rhs)
+        case "is not"   => IsNot(lhs, rhs)
+        case "like"     => Like(lhs, rhs)
+        case "not like" => NotLike(lhs, rhs)
         case _          => throw new RuntimeException(s"$op is not a valid operator")
       }
   }
@@ -225,6 +226,16 @@ object parse {
 
   enum Agg {
     case Sum, Min, Max, Count, Avg
+
+    def aliasPrefix: String = toString
+
+    def name: String = this match {
+      case Sum   => "sum"
+      case Min   => "min"
+      case Max   => "max"
+      case Count => "count"
+      case Avg   => "average"
+    }
   }
 
   final case class Line(idx: Int, operation: Operation)
@@ -260,25 +271,27 @@ object parse {
   def indexedColumn(inputs: List[Int]): QplParser[(Int, String)] = for {
     _      <- char('#').lift
     idx    <- int.lift
+    _      <- skipWhitespace.lift
     _      <- (if (inputs.contains(idx)) ok(()) else err(s"Index $idx is invalid given the inputs $inputs")).lift
     _      <- char('.').lift
+    _      <- skipWhitespace.lift
     column <- columnInIndex(idx, columnName) | columnInIndex(idx, aliasedColumn)
   } yield (idx, column)
 
   val comparisonOp: QplParser[String] =
     string("<>") | string("<=") | string(">=") |
-      stringCI("is not").as("IS NOT") | stringCI("is").as("IS") |
-      stringCI("like").as("LIKE") | stringCI("not like").as("NOT LIKE") |
+      stringCI("is not").as("is not") | stringCI("is").as("is") |
+      stringCI("like").as("like") | stringCI("not like").as("not like") |
       string("<") | string(">") | string("=")
 
   val number: QplParser[Comparable] = double.map(Comparable.Number(_)).lift
   val str: QplParser[Comparable]    = (char('\'') ~> takeWhile(_ != '\'') <~ char('\'')).map(Comparable.Str(_)).lift
   val bool: QplParser[Comparable]   = (string("0").as(false) | string("1").as(true)).map(Comparable.Bool(_))
-  val null_ : QplParser[Comparable] = string("NULL").as(Comparable.Null)
+  val null_ : QplParser[Comparable] = stringCI("null").as(Comparable.Null)
 
   val andOr: QplParser[(Predicate, Predicate) => Predicate] = for {
     _  <- skipWhitespace.lift
-    op <- string("AND").as(Predicate.Conjunction.apply) | string("OR").as(Predicate.Disjunction.apply)
+    op <- stringCI("and").as(Predicate.Conjunction.apply) | stringCI("or").as(Predicate.Disjunction.apply)
     _  <- skipWhitespace.lift
   } yield op
 
@@ -291,7 +304,7 @@ object parse {
   } yield ids.sorted
 
   def predicateWrapper(inner: QplParser[Predicate]): QplParser[Predicate] = for {
-    _ <- string("Predicate [ ")
+    _ <- stringCI("predicate [ ")
     p <- inner
     _ <- string(" ] ")
   } yield p
@@ -332,7 +345,7 @@ object parse {
   def columnInTable(table: String): QplParser[(String, Option[String])] = for {
     schema <- QplParser.ask
     column <- columnName
-    alias  <- (string(" AS ") ~> many1(letterOrDigit).lift).optional.map(_.map(_.toList.mkString))
+    alias  <- (stringCI(" as ") ~> many1(letterOrDigit).lift).optional.map(_.map(_.toList.mkString))
     t = schema.tableNames.indexOf(table)
     isColumnInTable = schema.columnNames.zipWithIndex.exists { case (cn, i) =>
       cn.toLowerCase == column.toLowerCase && schema.columnToTable(i) == t
@@ -358,8 +371,9 @@ object parse {
     QplParser.ask.flatMap { schema =>
       QplParser.get.flatMap { state =>
         val columns = outs.map {
-          case (_, "1 AS One")                => Some(Column.Dummy)
-          case (_, "countstar AS Count_Star") => Some(Column.Aliased("Count_Star", ColumnType.Number, List.empty))
+          case (_, out) if out.toLowerCase == "1 as one" => Some(Column.Dummy)
+          case (_, out) if out.toLowerCase == "countstar as count _ star" =>
+            Some(Column.Aliased("count _ star", ColumnType.Number, List.empty))
           case (_, out) if startsWithAgg(out) => Some(Column.Aliased(out, ColumnType.Number, List.empty))
           case (idx, out)                     => state.idxToTable(idx).columns.find(_.name == out)
         }.sequence
@@ -378,8 +392,9 @@ object parse {
       QplParser.get.flatMap { state =>
         val prev = inputs.map(state.idxToTable(_))
         val columns = outs.map {
-          case "1 AS One"                => Some(Column.Dummy)
-          case "countstar AS Count_Star" => Some(Column.Aliased("Count_Star", ColumnType.Number, List.empty))
+          case out if out.toLowerCase == "1 as one" => Some(Column.Dummy)
+          case out if out.toLowerCase == "countstar as count _ star" =>
+            Some(Column.Aliased("count _ star", ColumnType.Number, List.empty))
           case out if startsWithAgg(out) => Some(Column.Aliased(out, ColumnType.Number, List.empty))
           case out =>
             prev.foldLeft(Option.empty[Column]) { case (res, table) =>
@@ -403,7 +418,7 @@ object parse {
       isValidByColumn = state.idxToTable(input).columns.exists(_.name == by)
       _   <- (if (isValidByColumn) ok(()) else err(s"Column $by was not output before, can't order by it")).lift
       _   <- skipWhitespace.lift
-      dir <- string("ASC") | string("DESC")
+      dir <- stringCI("ascending") | stringCI("descending")
     } yield s"$by $dir"
   }
 
@@ -454,7 +469,7 @@ object parse {
         Table.Named(
           table,
           outs.map {
-            case ("1 AS One", _) =>
+            case (out, _) if out.toLowerCase == "1 as one" =>
               Column.Dummy
             case (out, Some(alias)) =>
               Column.Plain(alias, columnType(schema, table, out).get, columnKey(schema, table, out))
@@ -466,13 +481,13 @@ object parse {
     }
 
     for {
-      _          <- string("Scan Table [ ")
+      _          <- stringCI("scan table [ ")
       table      <- tableName
       _          <- string(" ] ")
       predicate  <- predicateWrapper(predicate(table)).optional
-      isDistinct <- string("Distinct [ true ] ").as(true).optional.map(_.getOrElse(false))
-      _          <- string("Output [ ")
-      outsWithAliases <- string("1 AS One").map(x => List(x -> None)) |
+      isDistinct <- stringCI("distinct [ true ] ").as(true).optional.map(_.getOrElse(false))
+      _          <- stringCI("output [ ")
+      outsWithAliases <- stringCI("1 as one").map(x => List(x -> None)) |
         columnInTable(table).sepBy1(skipWhitespace.lift ~> Atto.string(", ").lift)
       _ <-
         if (outsWithAliases.toSet.size == outsWithAliases.size) ok(()).lift
@@ -485,7 +500,7 @@ object parse {
 
   def aggregate: QplParser[Operation] = {
     def groupBy(input: Int): QplParser[List[String]] = for {
-      _       <- string("GroupBy [ ")
+      _       <- stringCI("groupby [ ")
       columns <- columnInIndex(input, columnName).sepBy1((skipWhitespace ~> Atto.string(", ")).lift)
       _       <- string(" ] ")
     } yield columns
@@ -493,17 +508,17 @@ object parse {
     def parseOutput(input: Int): QplParser[List[String]] = {
       val aliasedAggregate: QplParser[String] =
         for {
-          agg        <- choice(Agg.values.map(agg => string(agg.toString.toUpperCase).as(agg)).toList)
-          _          <- char('(').lift
-          isDistinct <- string("DISTINCT ").as(true).optional.map(_.getOrElse(false))
+          agg        <- choice(Agg.values.map(agg => stringCI(agg.name).as(agg)).toList)
+          _          <- string(" ( ")
+          isDistinct <- stringCI("distinct ").as(true).optional.map(_.getOrElse(false))
           column     <- columnInIndex(input, columnName)
-          _          <- string(") AS ")
-          prefix     <- string(s"${agg.toString}_")
-          dist       <- if (isDistinct) string("Dist_") else ok("").lift
+          _          <- stringCI(" ) as ")
+          prefix     <- stringCI(s"${agg.aliasPrefix} _ ")
+          dist       <- if (isDistinct) stringCI("distinct _ ") else ok("").lift
           alias      <- stringCI(column)
         } yield s"$prefix$dist$alias"
 
-      (string("countstar AS Count_Star") | aliasedAggregate | columnName)
+      (stringCI("countstar as count _ star") | aliasedAggregate | columnName)
         .sepBy1((skipWhitespace ~> Atto.string(", ")).lift)
     }
 
@@ -519,13 +534,13 @@ object parse {
     }
 
     for {
-      _      <- string("Aggregate ")
+      _      <- stringCI("aggregate ")
       inputs <- inputIds
       _ <- (if (inputs.length == 1) ok(())
             else err(s"Incorrect number of inputs to Aggregate, expected 1 but got ${inputs.length}")).lift
       input = inputs.head
       gbs         <- groupBy(input).optional
-      _           <- string("Output [ ")
+      _           <- stringCI("output [ ")
       outs        <- parseOutput(input)
       _           <- validateOutput(input, outs)
       outputTable <- getOutput(inputs, outs)
@@ -579,7 +594,7 @@ object parse {
     def validateOutput(input: Int, outs: List[String]): QplParser[Unit] = {
       QplParser.get.flatMap { state =>
         val prevColumns    = state.idxToTable(input).columns.map(_.name).toSet
-        val isDummy        = outs == List("1 AS One")
+        val isDummy        = outs.map(_.toLowerCase) == List("1 as one")
         val isSubsetOfPrev = outs.forall(prevColumns.contains)
         val noDups         = outs.toSet.size == outs.size
         (if (noDups && (isSubsetOfPrev || isDummy)) ok(())
@@ -588,15 +603,15 @@ object parse {
     }
 
     for {
-      _      <- string("Filter ")
+      _      <- stringCI("filter ")
       inputs <- inputIds
       _ <- (if (inputs.length == 1) ok(())
             else err(s"Incorrect number of inputs to Filter, expected 1 but got ${inputs.length}")).lift
       input = inputs.head
       pred       <- predicateWrapper(predicate(input)).optional
-      isDistinct <- string("Distinct [ true ] ").as(true).optional.map(_.getOrElse(false))
-      _          <- string("Output [ ")
-      outs <- string("1 AS One").map(List(_)) |
+      isDistinct <- stringCI("distinct [ true ] ").as(true).optional.map(_.getOrElse(false))
+      _          <- stringCI("output [ ")
+      outs <- stringCI("1 as one").map(List(_)) |
         (columnName | aliasedColumn).sepBy1(skipWhitespace.lift ~> Atto.string(", ").lift)
       _           <- validateOutput(input, outs)
       outputTable <- getOutput(inputs, outs)
@@ -617,15 +632,15 @@ object parse {
     }
 
     for {
-      _      <- string("Top ")
+      _      <- stringCI("top ")
       inputs <- inputIds
       _ <- (if (inputs.length == 1) ok(())
             else err(s"Incorrect number of inputs to Top, expected 1 but got ${inputs.length}")).lift
       input = inputs.head
-      _           <- string("Rows [ ")
+      _           <- stringCI("rows [ ")
       rows        <- int.lift
       _           <- string(" ] ")
-      _           <- string("Output [ ")
+      _           <- stringCI("output [ ")
       outs        <- (columnName | aliasedColumn).sepBy1(skipWhitespace.lift ~> Atto.string(", ").lift)
       _           <- validateOutput(input, outs)
       outputTable <- getOutput(inputs, outs)
@@ -646,16 +661,16 @@ object parse {
     }
 
     for {
-      _      <- string("Sort ")
+      _      <- stringCI("sort ")
       inputs <- inputIds
       _ <- (if (inputs.length == 1) ok(())
             else err(s"Incorrect number of inputs to Sort, expected 1 but got ${inputs.length}")).lift
       input = inputs.head
-      _           <- string("OrderBy [ ")
+      _           <- stringCI("orderby [ ")
       obs         <- orderBy(input).sepBy1((skipWhitespace ~> Atto.string(", ")).lift)
       _           <- string(" ] ")
-      isDistinct  <- string("Distinct [ true ] ").as(true).optional.map(_.getOrElse(false))
-      _           <- string("Output [ ")
+      isDistinct  <- stringCI("distinct [ true ] ").as(true).optional.map(_.getOrElse(false))
+      _           <- stringCI("output [ ")
       outs        <- (columnName | aliasedColumn).sepBy1(skipWhitespace.lift ~> Atto.string(", ").lift)
       _           <- validateOutput(input, outs)
       outputTable <- getOutput(inputs, outs)
@@ -676,19 +691,19 @@ object parse {
     }
 
     for {
-      _      <- string("TopSort ")
+      _      <- stringCI("topsort ")
       inputs <- inputIds
       _ <- (if (inputs.length == 1) ok(())
             else err(s"Incorrect number of inputs to TopSort, expected 1 but got ${inputs.length}")).lift
       input = inputs.head
-      _           <- string("Rows [ ")
+      _           <- stringCI("rows [ ")
       rows        <- int.lift
       _           <- string(" ] ")
-      _           <- string("OrderBy [ ")
+      _           <- stringCI("orderby [ ")
       obs         <- orderBy(input).sepBy1((skipWhitespace ~> Atto.string(", ")).lift)
       _           <- string(" ] ")
-      withTies    <- string("WithTies [ true ] ").as(true).optional.map(_.getOrElse(false))
-      _           <- string("Output [ ")
+      withTies    <- stringCI("withties [ true ] ").as(true).optional.map(_.getOrElse(false))
+      _           <- stringCI("output [ ")
       outs        <- (aliasedColumn | columnName).sepBy1(skipWhitespace.lift ~> Atto.string(", ").lift)
       _           <- validateOutput(input, outs)
       outputTable <- getOutput(inputs, outs)
@@ -799,7 +814,7 @@ object parse {
     def validateOutput(inputs: List[Int], outs: List[(Int, String)]): QplParser[Unit] = {
       QplParser.get.flatMap { state =>
         val prevColumns    = inputs.map(state.idxToTable(_)).map(_.columns).flatten.map(_.name).toSet
-        val isDummy        = outs.map(_._2) == List("1 AS One")
+        val isDummy        = outs.map(_._1) == List(-1)
         val isSubsetOfPrev = outs.map(_._2).forall(prevColumns.contains)
         val noDups         = outs.toSet.size == outs.size
         (if (noDups && (isSubsetOfPrev || isDummy)) ok(())
@@ -808,14 +823,14 @@ object parse {
     }
 
     for {
-      _      <- string("Join ")
+      _      <- stringCI("join ")
       inputs <- inputIds
       _ <- (if (inputs.length == 2) ok(())
             else err(s"Incorrect number of inputs to Join, expected 2 but got ${inputs.length}")).lift
       pred       <- predicateWrapper(predicate(inputs)).optional
-      isDistinct <- string("Distinct [ true ] ").as(true).optional.map(_.getOrElse(false))
-      _          <- string("Output [ ")
-      outsWithIndex <- string("1 AS One").map(x => List(-1 -> x)) |
+      isDistinct <- stringCI("distinct [ true ] ").as(true).optional.map(_.getOrElse(false))
+      _          <- stringCI("output [ ")
+      outsWithIndex <- stringCI("1 as one").map(x => List(-1 -> x)) |
         indexedColumn(inputs).sepBy1((skipWhitespace ~> Atto.string(", ")).lift)
       _           <- validateOutput(inputs, outsWithIndex)
       outputTable <- getTableFromIndexedOutputs(inputs, outsWithIndex)
@@ -863,7 +878,7 @@ object parse {
     def validateOutput(inputs: List[Int], outs: List[(Int, String)]): QplParser[Unit] = {
       QplParser.get.flatMap { state =>
         val prevColumns    = inputs.map(state.idxToTable(_)).map(_.columns).flatten.map(_.name).toSet
-        val isDummy        = outs.map(_._2) == List("1 AS One")
+        val isDummy        = outs.map(_._1) == List(-1)
         val isSubsetOfPrev = outs.map(_._2).forall(prevColumns.contains)
         val noDups         = outs.toSet.size == outs.size
         (if (noDups && (isSubsetOfPrev || isDummy)) ok(())
@@ -872,14 +887,14 @@ object parse {
     }
 
     for {
-      _      <- string("Intersect ")
+      _      <- stringCI("intersect ")
       inputs <- inputIds
       _ <- (if (inputs.length == 2) ok(())
             else err(s"Incorrect number of inputs to Intersect, expected 2 but got ${inputs.length}")).lift
       pred       <- predicateWrapper(predicate(inputs)).optional
-      isDistinct <- string("Distinct [ true ] ").as(true).optional.map(_.getOrElse(false))
-      _          <- string("Output [ ")
-      outsWithIndex <- string("1 AS One").map(x => List(-1 -> x)) |
+      isDistinct <- stringCI("distinct [ true ] ").as(true).optional.map(_.getOrElse(false))
+      _          <- stringCI("output [ ")
+      outsWithIndex <- stringCI("1 as one").map(x => List(-1 -> x)) |
         indexedColumn(inputs).sepBy1((skipWhitespace ~> Atto.string(", ")).lift)
       _           <- validateOutput(inputs, outsWithIndex)
       outputTable <- getTableFromIndexedOutputs(inputs, outsWithIndex)
@@ -927,7 +942,7 @@ object parse {
     def validateOutput(inputs: List[Int], outs: List[(Int, String)]): QplParser[Unit] = {
       QplParser.get.flatMap { state =>
         val prevColumns    = inputs.map(state.idxToTable(_)).map(_.columns).flatten.map(_.name).toSet
-        val isDummy        = outs.map(_._2) == List("1 AS One")
+        val isDummy        = outs.map(_._1) == List(-1)
         val isSubsetOfPrev = outs.map(_._2).forall(prevColumns.contains)
         val noDups         = outs.toSet.size == outs.size
         (if (noDups && (isSubsetOfPrev || isDummy)) ok(())
@@ -937,21 +952,21 @@ object parse {
 
     def exceptColumn(inputs: List[Int]): QplParser[String] = {
       for {
-        _            <- string("ExceptColumns [ ")
+        _            <- stringCI("exceptcolumns [ ")
         idxAndColumn <- indexedColumn(inputs)
         _            <- string(" ] ")
       } yield idxAndColumn._2
     }
 
     for {
-      _      <- string("Except ")
+      _      <- stringCI("except ")
       inputs <- inputIds
       _ <- (if (inputs.length == 2) ok(())
             else err(s"Incorrect number of inputs to Except, expected 2 but got ${inputs.length}")).lift
       pred       <- predicateWrapper(predicate(inputs)) || exceptColumn(inputs)
-      isDistinct <- string("Distinct [ true ] ").as(true).optional.map(_.getOrElse(false))
-      _          <- string("Output [ ")
-      outsWithIndex <- string("1 AS One").map(x => List(-1 -> x)) |
+      isDistinct <- stringCI("distinct [ true ] ").as(true).optional.map(_.getOrElse(false))
+      _          <- stringCI("output [ ")
+      outsWithIndex <- stringCI("1 as one").map(x => List(-1 -> x)) |
         indexedColumn(inputs).sepBy1((skipWhitespace ~> Atto.string(", ")).lift)
       _           <- validateOutput(inputs, outsWithIndex)
       outputTable <- getTableFromIndexedOutputs(inputs, outsWithIndex)
@@ -964,20 +979,19 @@ object parse {
     def validateOutput(inputs: List[Int], outs: List[(Int, String)]): QplParser[Unit] = {
       QplParser.get.flatMap { state =>
         val prevColumns    = inputs.map(state.idxToTable(_)).map(_.columns).flatten.map(_.name).toSet
-        val isDummy        = outs.map(_._2) == List("1 AS One")
         val isSubsetOfPrev = outs.map(_._2).forall(prevColumns.contains)
         val noDups         = outs.toSet.size == outs.size
-        (if (noDups && (isSubsetOfPrev || isDummy)) ok(())
+        (if (noDups && isSubsetOfPrev) ok(())
          else err(s"Some outputs in Union do not exist in the input")).lift
       }
     }
 
     for {
-      _      <- string("Union ")
+      _      <- stringCI("union ")
       inputs <- inputIds
       _ <- (if (inputs.length == 2) ok(())
             else err(s"Incorrect number of inputs to Union, expected 2 but got ${inputs.length}")).lift
-      _             <- string("Output [ ")
+      _             <- stringCI("output [ ")
       outsWithIndex <- indexedColumn(inputs).sepBy1((skipWhitespace ~> Atto.string(", ")).lift)
       _             <- validateOutput(inputs, outsWithIndex)
       outputTable   <- getTableFromIndexedOutputs(inputs, outsWithIndex)

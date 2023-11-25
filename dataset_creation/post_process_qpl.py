@@ -146,7 +146,7 @@ def post_process(flat_qpl: List[str]) -> List[str]:
                 g = m.groupdict()
                 if agg := g["agg"]:
                     if g["distinct"]:
-                        key = f"{agg.title()}_Dist_{g['col']}"
+                        key = f"{agg.title()}_Distinct_{g['col']}"
                         indexed_output_list.append(f"#{agg2idx[key]}.{key}")
                     else:
                         key = f"{agg.title()}_{g['col']}"
@@ -278,9 +278,9 @@ def post_process(flat_qpl: List[str]) -> List[str]:
                         out = f"{agg}({g['col']})"
                         if g["distinct"] or opts.get("Distinct"):
                             new_output_list.append(
-                                f"{out.replace('(', '(DISTINCT ')} AS {agg.title()}_Dist_{g['col']}"
+                                f"{out.replace('(', '(DISTINCT ')} AS {agg.title()}_Distinct_{g['col']}"
                             )
-                            agg2idx[f"{agg.title()}_Dist_{g['col']}"] = idx
+                            agg2idx[f"{agg.title()}_Distinct_{g['col']}"] = idx
                         else:
                             new_output_list.append(f"{out} AS {agg.title()}_{g['col']}")
                             agg2idx[f"{agg.title()}_{g['col']}"] = idx

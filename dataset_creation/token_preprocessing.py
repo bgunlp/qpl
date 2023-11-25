@@ -47,8 +47,8 @@ def main():
 
     result = []
     for ex in qpls:
-        qpl = ex["qpl"].split(" | ")[1]
-        ex["token_preprocessed"] = token_preprocess(qpl)
+        ex["tp_qpl"] = token_preprocess(ex["qpl"])
+        ex["prefixed_tp_qpl"] = f"{ex['db_id']} | {token_preprocess(ex['qpl'])}"
         result.append(ex)
 
     with open(args.output, "w") as f:

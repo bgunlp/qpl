@@ -34,6 +34,7 @@ object reading {
   final case class JsonInstance(
       id: String,
       @jsonField("db_id") dbId: String,
+      difficulty: String,
       query: String,
       question: String,
       ep: Option[String]
@@ -53,6 +54,7 @@ object reading {
       db: Schema,
       query: String,
       question: String,
+      difficulty: String,
       ep: ExecutionPlan
   )
 
@@ -74,7 +76,7 @@ object reading {
             .mapError(t =>
               new RuntimeException(s"${t.getLocalizedMessage} for ${ji.id}: ${t.getStackTrace.mkString("\n")}")
             )
-        } yield SpiderInstance(ji.id, schemas(ji.dbId).toSchema, ji.query, ji.question, ep)
+        } yield SpiderInstance(ji.id, schemas(ji.dbId).toSchema, ji.query, ji.question, ji.difficulty, ep)
       }
     } yield result
   }

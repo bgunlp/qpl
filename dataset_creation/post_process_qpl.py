@@ -621,20 +621,25 @@ def main():
             # Problematic IDs in train set
             continue
         if id_ in manual_fixes:
-            ex["qpl"] = manual_fixes[id_]
+            ex["qpl"] = manual_fixes[id_].split(" | ")[1]
+            ex["prefixed_qpl"] = manual_fixes[id_]
         else:
-            db_id, qpl = ex["qpl"].split(" | ")
-            if db_id == "hr_1":
-                qpl = qpl.replace("<> 'null'", "IS NOT NULL").replace(
-                    "= 'null'", "IS NULL"
+            if ex["db_id"] == "hr_1":
+                qpl = (
+                    ex["qpl"]
+                    .replace("<> 'null'", "IS NOT NULL")
+                    .replace("= 'null'", "IS NULL")
                 )
+            else:
+                qpl = ex["qpl"]
             try:
                 result = post_process(qpl.split(" ; "))
             except AssertionError as e:
                 print(e)
                 continue
             else:
-                ex["qpl"] = f"{db_id} | {' ; '.join(result)}"
+                ex["qpl"] = " ; ".join(result)
+                ex["prefixed_qpl"] = f"{ex['db_id']} | {' ; '.join(result)}"
         post_processed.append(ex)
 
     with open(args.output, "w") as f:

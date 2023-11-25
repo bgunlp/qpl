@@ -7,6 +7,8 @@ import numpy as np
 import pandas as pd
 import requests
 
+from utils import schema_preprocess
+
 
 def eq_aggregated_cols(s1, s2):
     "Determines whether two aggregated column names are equivalent - based on prefix only - case insensitive"
@@ -177,23 +179,33 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-i", "--input", type=Path)
     parser.add_argument("-o", "--output", type=Path)
+    parser.add_argument("--token-preprocessing", action="store_true")
     args = parser.parse_args()
 
     with open("./schemas.json") as f:
         schemas = json.load(f)
 
     for schema in schemas:
-        requests.post("http://localhost:8081/schema", json=schema)
+        if args.token_preprocessing:
+            requests.post(
+                "http://localhost:8081/schema", json=schema_preprocess(schema)
+            )
+        else:
+            requests.post("http://localhost:8081/schema", json=schema)
 
-    # with open(args.input) as f:
-    #     qpls = json.load(f)
     qpls = pd.read_pickle(args.input).to_dict(orient="records")
 
     result = []
     for ex in qpls:
-        is_valid = requests.post(
-            "http://localhost:8081/validate", json={"qpl": ex["qpl"]}
-        ).json()
+        if args.token_preprocessing:
+            is_valid = requests.post(
+                "http://localhost:8081/validate",
+                json={"qpl": ex["prefixed_tp_qpl"]},
+            ).json()
+        else:
+            is_valid = requests.post(
+                "http://localhost:8081/validate", json={"qpl": ex["prefixed_qpl"]}
+            ).json()
         if (
             ex["crs"] is not None
             and ex["grs"] is not None

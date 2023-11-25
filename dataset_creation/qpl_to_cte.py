@@ -429,9 +429,8 @@ def main():
             ex["cte"] = None
             with_cte.append(ex)
             continue
-        db_id, qpl = ex["qpl"].split(" | ")
         try:
-            result = flat_qpl_to_cte(qpl.split(" ; "), db_id)
+            result = flat_qpl_to_cte(ex["qpl"].split(" ; "), ex["db_id"])
         except Exception as e:
             print(f"Error in id {ex['id']}: {e}")
         else:

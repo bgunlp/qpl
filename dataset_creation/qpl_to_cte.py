@@ -120,6 +120,7 @@ def flat_qpl_to_cte(flat_qpl: List[str], db_id: str) -> str:
                     m := re.match(
                         r"#(?P<rhs_table>\d+)\.(?P<rhs_col>\w+) IS NULL OR #(?P<lhs_table>\d+)\.(?P<lhs_col>\w+) = #\1\.\2",
                         predicate,
+                        re.IGNORECASE,
                     )
                 ):
                     # NOTE: This is how the plan looks like (usually) for a NOT IN query

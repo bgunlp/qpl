@@ -42,7 +42,7 @@ def token_postprocess(qpl: str) -> str:
     # Remove spaces between underscores
     qpl = qpl.replace(" _ ", "_")
     # Remove spaces between line number and column name
-    qpl = re.sub(r"(#\d+) \. (\w+)", r"\1.\2", qpl)
+    qpl = re.sub(r"(#\d+) ?\. (\w+)", r"\1.\2", qpl)
     return qpl
 
 

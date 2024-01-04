@@ -78,7 +78,8 @@ object parse {
 
     def modify(f: QplState => QplState): QplParser[Unit] = QplParser(StateT.modify(f))
 
-    def make(schema: SqlSchema): Parser[Qpl] = qpl.run(QplState.empty, schema).map(_._2)
+    def make(schema: SqlSchema, withTypeChecking: Boolean): Parser[Qpl] =
+      qpl(withTypeChecking).run(QplState.empty, schema).map(_._2)
   }
 
   extension [A](parser: Parser[A]) {
@@ -407,7 +408,7 @@ object parse {
     } yield s"$by $dir"
   }
 
-  def scan: QplParser[Operation] = {
+  def scan(withTypeChecking: Boolean): QplParser[Operation] = {
     def predicate(table: String): QplParser[Predicate] = {
       def columnInTableOfType(typ: ColumnType): QplParser[String] = for {
         schema <- QplParser.ask
@@ -420,7 +421,7 @@ object parse {
               else err(s"No column $column of type $typ in table $table")).lift
       } yield column
 
-      def comparable(lhsType: ColumnType): QplParser[Comparable] = {
+      def typeComparable(lhsType: ColumnType): QplParser[Comparable] = {
         import ColumnType.*
 
         lhsType match {
@@ -432,19 +433,34 @@ object parse {
         }
       }
 
-      val comparison: QplParser[Comparison] = for {
-        schema          <- QplParser.ask
-        columnWithAlias <- columnInTable(table)
-        (column, _) = columnWithAlias
-        typ <- columnType(schema, table, column)
-          .map(ok)
-          .getOrElse(err(s"No column $column in table $table"))
-          .lift
-        _   <- skipWhitespace.lift
-        op  <- comparisonOp
-        _   <- skipWhitespace.lift
-        rhs <- comparable(typ)
-      } yield Comparison.fromStringOp(op, Comparable.Col(column), rhs)
+      val comparable: QplParser[Comparable] =
+        number | bool | str | null_ | columnInTable(table).map { case (column, _) => Comparable.Col(column) }
+
+      val comparison: QplParser[Comparison] =
+        if (withTypeChecking)
+          for {
+            schema          <- QplParser.ask
+            columnWithAlias <- columnInTable(table)
+            (column, _) = columnWithAlias
+            typ <- columnType(schema, table, column)
+              .map(ok)
+              .getOrElse(err(s"No column $column in table $table"))
+              .lift
+            _   <- skipWhitespace.lift
+            op  <- comparisonOp
+            _   <- skipWhitespace.lift
+            rhs <- typeComparable(typ)
+          } yield Comparison.fromStringOp(op, Comparable.Col(column), rhs)
+        else
+          for {
+            schema          <- QplParser.ask
+            columnWithAlias <- columnInTable(table)
+            (column, _) = columnWithAlias
+            _   <- skipWhitespace.lift
+            op  <- comparisonOp
+            _   <- skipWhitespace.lift
+            rhs <- comparable
+          } yield Comparison.fromStringOp(op, Comparable.Col(column), rhs)
 
       chainl1(comparison.map(Predicate.Single(_)), andOr)
     }
@@ -534,7 +550,7 @@ object parse {
     } yield Operation.Aggregate(input, gbs.getOrElse(List.empty))
   }
 
-  def filter: QplParser[Operation] = {
+  def filter(withTypeChecking: Boolean): QplParser[Operation] = {
     def predicate(input: Int): QplParser[Predicate] = {
       def columnInIndexOfType(typ: ColumnType): QplParser[String] = for {
         state  <- QplParser.get
@@ -545,7 +561,7 @@ object parse {
               else err(s"No column $column of type $typ in table $table")).lift
       } yield column
 
-      def comparable(lhsType: ColumnType): QplParser[Comparable] = {
+      def typeComparable(lhsType: ColumnType): QplParser[Comparable] = {
         import ColumnType.*
 
         lhsType match {
@@ -557,21 +573,35 @@ object parse {
         }
       }
 
-      val comparison: QplParser[Comparison] = for {
-        state  <- QplParser.get
-        column <- columnInIndex(input, columnName) | columnInIndex(input, aliasedColumn)
-        typ <- state
-          .idxToTable(input)
-          .columns
-          .find(_.name == column)
-          .map(c => ok(c.typ))
-          .getOrElse(err(s"Column $column is not in input $input"))
-          .lift
-        _   <- skipWhitespace.lift
-        op  <- comparisonOp
-        _   <- skipWhitespace.lift
-        rhs <- comparable(typ)
-      } yield Comparison.fromStringOp(op, Comparable.Col(column), rhs)
+      val comparable: QplParser[Comparable] =
+        number | bool | str | null_ | columnName.map(Comparable.Col(_))
+
+      val comparison: QplParser[Comparison] =
+        if (withTypeChecking)
+          for {
+            state  <- QplParser.get
+            column <- columnInIndex(input, columnName) | columnInIndex(input, aliasedColumn)
+            typ <- state
+              .idxToTable(input)
+              .columns
+              .find(_.name == column)
+              .map(c => ok(c.typ))
+              .getOrElse(err(s"Column $column is not in input $input"))
+              .lift
+            _   <- skipWhitespace.lift
+            op  <- comparisonOp
+            _   <- skipWhitespace.lift
+            rhs <- typeComparable(typ)
+          } yield Comparison.fromStringOp(op, Comparable.Col(column), rhs)
+        else
+          for {
+            state  <- QplParser.get
+            column <- columnInIndex(input, columnName) | columnInIndex(input, aliasedColumn)
+            _      <- skipWhitespace.lift
+            op     <- comparisonOp
+            _      <- skipWhitespace.lift
+            rhs    <- comparable
+          } yield Comparison.fromStringOp(op, Comparable.Col(column), rhs)
 
       chainl1(comparison.map(Predicate.Single(_)), andOr)
     }
@@ -697,7 +727,7 @@ object parse {
     } yield Operation.TopSort(input, rows, obs, withTies)
   }
 
-  def join: QplParser[Operation] = {
+  def join(withTypeChecking: Boolean): QplParser[Operation] = {
     def predicate(inputs: List[Int]): QplParser[Predicate] = {
       def columnInIndexOfType(typ: ColumnType): QplParser[String] = for {
         state        <- QplParser.get
@@ -709,7 +739,7 @@ object parse {
               else err(s"No column $column of type $typ in table $table")).lift
       } yield column
 
-      def comparable(lhsType: ColumnType): QplParser[Comparable] = {
+      def typeComparable(lhsType: ColumnType): QplParser[Comparable] = {
         import ColumnType.*
 
         lhsType match {
@@ -771,27 +801,42 @@ object parse {
         p1 | p2
       }
 
-      val comparison: QplParser[Comparison] = for {
-        state        <- QplParser.get
-        idxAndColumn <- indexedColumn(inputs)
-        (idx, column) = idxAndColumn
-        lhsColInfo <- state
-          .idxToTable(idx)
-          .columns
-          .find(_.name == column)
-          .map {
-            case Column.Dummy                    => ok((Column.Dummy.typ, Column.Dummy.keys, false))
-            case Column.Plain(name, typ, keys)   => ok((typ, keys, false))
-            case Column.Aliased(name, typ, keys) => ok((typ, keys, true))
-          }
-          .getOrElse(err(s"Column $column is not in input $idx"))
-          .lift
-        (typ, keys, isAliased) = lhsColInfo
-        _   <- skipWhitespace.lift
-        op  <- comparisonOp
-        _   <- skipWhitespace.lift
-        rhs <- if (op == "=" && !isAliased) comparableKey(typ, keys) else comparable(typ)
-      } yield Comparison.fromStringOp(op, Comparable.Col(column), rhs)
+      val comparable: QplParser[Comparable] =
+        number | bool | str | null_ | indexedColumn(inputs).map { case (_, column) => Comparable.Col(column) }
+
+      val comparison: QplParser[Comparison] =
+        if (withTypeChecking)
+          for {
+            state        <- QplParser.get
+            idxAndColumn <- indexedColumn(inputs)
+            (idx, column) = idxAndColumn
+            lhsColInfo <- state
+              .idxToTable(idx)
+              .columns
+              .find(_.name == column)
+              .map {
+                case Column.Dummy                    => ok((Column.Dummy.typ, Column.Dummy.keys, false))
+                case Column.Plain(name, typ, keys)   => ok((typ, keys, false))
+                case Column.Aliased(name, typ, keys) => ok((typ, keys, true))
+              }
+              .getOrElse(err(s"Column $column is not in input $idx"))
+              .lift
+            (typ, keys, isAliased) = lhsColInfo
+            _   <- skipWhitespace.lift
+            op  <- comparisonOp
+            _   <- skipWhitespace.lift
+            rhs <- if (op == "=" && !isAliased) comparableKey(typ, keys) else typeComparable(typ)
+          } yield Comparison.fromStringOp(op, Comparable.Col(column), rhs)
+        else
+          for {
+            state        <- QplParser.get
+            idxAndColumn <- indexedColumn(inputs)
+            (idx, column) = idxAndColumn
+            _   <- skipWhitespace.lift
+            op  <- comparisonOp
+            _   <- skipWhitespace.lift
+            rhs <- comparable
+          } yield Comparison.fromStringOp(op, Comparable.Col(column), rhs)
 
       chainl1(comparison.map(Predicate.Single(_)), andOr)
     }
@@ -824,7 +869,7 @@ object parse {
     } yield Operation.Join(inputs, pred, isDistinct)
   }
 
-  def intersect: QplParser[Operation] = {
+  def intersect(withTypeChecking: Boolean): QplParser[Operation] = {
     def predicate(inputs: List[Int]): QplParser[Predicate] = {
       def columnInIndexOfType(typ: ColumnType): QplParser[String] = for {
         state        <- QplParser.get
@@ -836,26 +881,41 @@ object parse {
               else err(s"No column $column of type $typ in table $table")).lift
       } yield column
 
-      def comparable(lhsType: ColumnType): QplParser[Comparable] = {
+      def typeComparable(lhsType: ColumnType): QplParser[Comparable] = {
         columnInIndexOfType(lhsType).map(Comparable.Col(_))
       }
 
-      val comparison: QplParser[Comparison] = for {
-        state        <- QplParser.get
-        idxAndColumn <- indexedColumn(inputs)
-        (idx, column) = idxAndColumn
-        typ <- state
-          .idxToTable(idx)
-          .columns
-          .find(_.name == column)
-          .map(c => ok(c.typ))
-          .getOrElse(err(s"Column $column is not in input $idx"))
-          .lift
-        _   <- skipWhitespace.lift
-        op  <- comparisonOp
-        _   <- skipWhitespace.lift
-        rhs <- comparable(typ)
-      } yield Comparison.fromStringOp(op, Comparable.Col(column), rhs)
+      val comparable: QplParser[Comparable] =
+        number | bool | str | null_ | indexedColumn(inputs).map { case (_, column) => Comparable.Col(column) }
+
+      val comparison: QplParser[Comparison] =
+        if (withTypeChecking)
+          for {
+            state        <- QplParser.get
+            idxAndColumn <- indexedColumn(inputs)
+            (idx, column) = idxAndColumn
+            typ <- state
+              .idxToTable(idx)
+              .columns
+              .find(_.name == column)
+              .map(c => ok(c.typ))
+              .getOrElse(err(s"Column $column is not in input $idx"))
+              .lift
+            _   <- skipWhitespace.lift
+            op  <- comparisonOp
+            _   <- skipWhitespace.lift
+            rhs <- typeComparable(typ)
+          } yield Comparison.fromStringOp(op, Comparable.Col(column), rhs)
+        else
+          for {
+            state        <- QplParser.get
+            idxAndColumn <- indexedColumn(inputs)
+            (idx, column) = idxAndColumn
+            _   <- skipWhitespace.lift
+            op  <- comparisonOp
+            _   <- skipWhitespace.lift
+            rhs <- comparable
+          } yield Comparison.fromStringOp(op, Comparable.Col(column), rhs)
 
       comparison.map(Predicate.Single(_))
     }
@@ -888,7 +948,7 @@ object parse {
     } yield Operation.Intersect(inputs, pred, isDistinct)
   }
 
-  def except: QplParser[Operation] = {
+  def except(withTypeChecking: Boolean): QplParser[Operation] = {
     def predicate(inputs: List[Int]): QplParser[Predicate] = {
       def columnInIndexOfType(typ: ColumnType): QplParser[String] = for {
         state        <- QplParser.get
@@ -900,26 +960,41 @@ object parse {
               else err(s"No column $column of type $typ in table $table")).lift
       } yield column
 
-      def comparable(lhsType: ColumnType): QplParser[Comparable] = {
+      def typeComparable(lhsType: ColumnType): QplParser[Comparable] = {
         null_ | columnInIndexOfType(lhsType).map(Comparable.Col(_))
       }
 
-      val comparison: QplParser[Comparison] = for {
-        state        <- QplParser.get
-        idxAndColumn <- indexedColumn(inputs)
-        (idx, column) = idxAndColumn
-        typ <- state
-          .idxToTable(idx)
-          .columns
-          .find(_.name == column)
-          .map(c => ok(c.typ))
-          .getOrElse(err(s"Column $column is not in input $idx"))
-          .lift
-        _   <- skipWhitespace.lift
-        op  <- comparisonOp
-        _   <- skipWhitespace.lift
-        rhs <- comparable(typ)
-      } yield Comparison.fromStringOp(op, Comparable.Col(column), rhs)
+      val comparable: QplParser[Comparable] =
+        number | bool | str | null_ | indexedColumn(inputs).map { case (_, column) => Comparable.Col(column) }
+
+      val comparison: QplParser[Comparison] =
+        if (withTypeChecking)
+          for {
+            state        <- QplParser.get
+            idxAndColumn <- indexedColumn(inputs)
+            (idx, column) = idxAndColumn
+            typ <- state
+              .idxToTable(idx)
+              .columns
+              .find(_.name == column)
+              .map(c => ok(c.typ))
+              .getOrElse(err(s"Column $column is not in input $idx"))
+              .lift
+            _   <- skipWhitespace.lift
+            op  <- comparisonOp
+            _   <- skipWhitespace.lift
+            rhs <- typeComparable(typ)
+          } yield Comparison.fromStringOp(op, Comparable.Col(column), rhs)
+        else
+          for {
+            state        <- QplParser.get
+            idxAndColumn <- indexedColumn(inputs)
+            (idx, column) = idxAndColumn
+            _   <- skipWhitespace.lift
+            op  <- comparisonOp
+            _   <- skipWhitespace.lift
+            rhs <- comparable
+          } yield Comparison.fromStringOp(op, Comparable.Col(column), rhs)
 
       chainl1(comparison.map(Predicate.Single(_)), andOr)
     }
@@ -986,12 +1061,21 @@ object parse {
     } yield Operation.Union(inputs)
   }
 
-  val qpl: QplParser[Qpl] = (for {
-    _         <- QplParser.modify(_.incrementCurrentIndex)
-    state     <- QplParser.get
-    _         <- string(s"#${state.currentIdx}")
-    _         <- string(" = ")
-    operation <- scan | aggregate | filter | top | sort | topSort | join | intersect | except | union
-    _         <- QplParser.modify(s => s.copy(seen = s.seen + state.currentIdx))
+  def qpl(withTypeChecking: Boolean): QplParser[Qpl] = (for {
+    _     <- QplParser.modify(_.incrementCurrentIndex)
+    state <- QplParser.get
+    _     <- string(s"#${state.currentIdx}")
+    _     <- string(" = ")
+    operation <- scan(withTypeChecking) |
+      aggregate |
+      filter(withTypeChecking) |
+      top |
+      sort |
+      topSort |
+      join(withTypeChecking) |
+      intersect(withTypeChecking) |
+      except(withTypeChecking) |
+      union
+    _ <- QplParser.modify(s => s.copy(seen = s.seen + state.currentIdx))
   } yield Line(state.currentIdx, operation)).sepBy1(string(" ; "))
 }

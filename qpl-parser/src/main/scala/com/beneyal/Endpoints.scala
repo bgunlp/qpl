@@ -79,7 +79,8 @@ object Endpoints {
       tokenizer: Ref[Option[Tokenizer]],
       schemas: Ref[Map[String, SqlSchema]],
       detokenize: Ref[Option[Detokenize]],
-      partialParses: Ref[Map[Chunk[Long], PartialParse]]
+      partialParses: Ref[Map[Chunk[Long], PartialParse]],
+      withTypeChecking: Boolean
   )
 
   given Schema[Map[Int, Int]] = Schema.schemaForMap(_.toString)
@@ -105,20 +106,20 @@ object Endpoints {
       .in(jsonBody[ValidationRequest])
       .out(jsonBody[ValidationResult])
       .zServerLogic { req =>
-        ZIO.serviceWithZIO[ServerState](_.schemas.get).map { schemas =>
-          val parser = for {
+        for {
+          schemas          <- ZIO.serviceWithZIO[ServerState](_.schemas.get)
+          withTypeChecking <- ZIO.serviceWith[ServerState](_.withTypeChecking)
+          parser = for {
             schema <- mkSchemaParser(schemas)
             _      <- skipWhitespace ~> char('|') <~ skipWhitespace
-            res    <- QplParser.make(schema)
+            res    <- QplParser.make(schema, withTypeChecking)
           } yield res
-
-          parser.parseOnly(req.qpl) match {
-            case ParseResult.Done("", _) => ValidationResult.Valid
-            case ParseResult.Done(input, _) =>
-              ValidationResult.Invalid(s"Error in line: ${input.drop(3).takeWhile(_ != ';').strip}")
-            case ParseResult.Partial(_)          => ValidationResult.Invalid("Partial result")
-            case ParseResult.Fail(_, _, message) => ValidationResult.Invalid(s"Failed with message: $message")
-          }
+        } yield parser.parseOnly(req.qpl) match {
+          case ParseResult.Done("", _) => ValidationResult.Valid
+          case ParseResult.Done(input, _) =>
+            ValidationResult.Invalid(s"Error in line: ${input.drop(3).takeWhile(_ != ';').strip}")
+          case ParseResult.Partial(_)          => ValidationResult.Invalid("Partial result")
+          case ParseResult.Fail(_, _, message) => ValidationResult.Invalid(s"Failed with message: $message")
         }
       }
 
@@ -132,8 +133,9 @@ object Endpoints {
       for {
         sem <- Semaphore.make(permits = 1)
         _   <- ZIO.writeFile("./tokenizer.json", json).orDie
-        tokenizer  = Tokenizer.fromFile(Paths.get("./tokenizer.json"))
-        detokenize = (inputIds: Seq[Long]) => sem.withPermit(ZIO.succeed(tokenizer.decode(inputIds)))
+        tokenizer = Tokenizer.fromFile(Paths.get("./tokenizer.json"))
+        detokenize = (inputIds: Seq[Long]) =>
+          sem.withPermit(ZIO.succeed(tokenizer.decode(inputIds, skipSpecialTokens = false)))
         _ <- ZIO.serviceWithZIO[ServerState](_.tokenizer.set(Some(tokenizer)))
         _ <- ZIO.serviceWithZIO[ServerState](_.detokenize.set(Some(detokenize)))
         _ <- initializeParserCache
@@ -213,9 +215,10 @@ object Endpoints {
   }
 
   def initializeParserCache: ZIO[ServerState, Nothing, Unit] = for {
-    _       <- ZIO.serviceWithZIO[ServerState](_.partialParses.set(Map.empty))
-    schemas <- ZIO.serviceWithZIO[ServerState](_.schemas.get)
-    partialParse = getPartialParse(schemas, "")
+    _                <- ZIO.serviceWithZIO[ServerState](_.partialParses.set(Map.empty))
+    schemas          <- ZIO.serviceWithZIO[ServerState](_.schemas.get)
+    withTypeChecking <- ZIO.serviceWith[ServerState](_.withTypeChecking)
+    partialParse = getPartialParse(schemas, "", withTypeChecking)
     _ <- ZIO.serviceWithZIO[ServerState](_.partialParses.update(_.updated(Chunk.empty, partialParse)))
   } yield ()
 
@@ -226,20 +229,21 @@ object Endpoints {
 
   def lookupResult(decode: Detokenize, inputIds: Chunk[Long]): ZIO[ServerState, Nothing, PartialParse] = {
     for {
-      partialParses <- ZIO.serviceWithZIO[ServerState](_.partialParses.get)
-      schemas       <- ZIO.serviceWithZIO[ServerState](_.schemas.get)
+      partialParses    <- ZIO.serviceWithZIO[ServerState](_.partialParses.get)
+      schemas          <- ZIO.serviceWithZIO[ServerState](_.schemas.get)
+      withTypeChecking <- ZIO.serviceWith[ServerState](_.withTypeChecking)
       pp <- partialParses.get(inputIds) match {
         case Some(pp) => ZIO.succeed(pp)
-        case None     => decode(inputIds).map(getPartialParse(schemas, _))
+        case None     => decode(inputIds).map(getPartialParse(schemas, _, withTypeChecking))
       }
       _ <- ZIO.serviceWithZIO[ServerState](_.partialParses.update(_.updated(inputIds, pp)))
     } yield pp
   }
 
-  def getPartialParse(schemas: Map[String, SqlSchema], input: String): PartialParse =
-    PartialParse(input, mkParser(schemas).parse(input))
+  def getPartialParse(schemas: Map[String, SqlSchema], input: String, withTypeChecking: Boolean): PartialParse =
+    PartialParse(input, mkParser(schemas, withTypeChecking).parse(input))
 
-  def mkParser(schemas: Map[String, SqlSchema]): Parser[Qpl] = {
+  def mkParser(schemas: Map[String, SqlSchema], withTypeChecking: Boolean): Parser[Qpl] = {
     val specialToken: Parser[Unit] = for {
       _ <- char('<')
       _ <- string("pad") | string("s") | string("/s")
@@ -249,9 +253,10 @@ object Endpoints {
     for {
       _      <- skipWhitespace
       _      <- many(specialToken)
+      _      <- skipWhitespace
       schema <- mkSchemaParser(schemas)
       _      <- skipWhitespace ~> char('|') <~ skipWhitespace
-      res    <- QplParser.make(schema)
+      res    <- QplParser.make(schema, withTypeChecking)
     } yield res
   }
 
@@ -262,7 +267,8 @@ object Endpoints {
     } yield dbId
 
     schemas.toList
-      .sortBy(_._1.length)(using Ordering[Int].reverse)
+      .sortBy(_._1.length)
+      .reverse
       .foldLeft(Alternative[Parser].empty) { case (acc, (dbId, schema)) =>
         acc | lowercaseSchema(dbId).as(schema)
       }
@@ -270,4 +276,20 @@ object Endpoints {
 
   def stripPrefix(prefix: String, string: String): Option[String] =
     if (string.startsWith(prefix)) Some(string.stripPrefix(prefix)) else None
+
+  def string(s: String): Parser[String] =
+    s.toList.foldRight(ok("")) { case (ch, acc) =>
+      for {
+        c  <- char(ch)
+        cs <- acc
+      } yield s"$c$cs"
+    }
+
+  def stringCI(s: String): Parser[String] =
+    s.toList.foldRight(ok("")) { case (ch, acc) =>
+      for {
+        c  <- (char(ch.toLower) | char(ch.toUpper))
+        cs <- acc
+      } yield s"$c$cs"
+    }
 }

@@ -34,18 +34,20 @@ class ParserSpec extends munit.FunSuite {
       "#1 = Scan Table [ singer ] Output [ Age, Song_Name ] ; #2 = Aggregate [ #1 ] GroupBy [ Age ] Output [ Age, AVG(Age) AS Avg_Age ] ; #3 = TopSort [ #2 ] Rows [ 1 ] OrderBy [ Avg_Age DESC ] Output [ Song_Name, Avg_Age, Affect_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_Sort_"
     )
 
-    positives.foreach { example =>
-      QplParser.make(concertSinger).parseOnly(example) match {
-        case Done(input, _)      => assertEquals(input, "")
-        case Partial(_)          => fail("partial result")
-        case Fail(_, _, message) => fail(message)
+    List(true, false).foreach { withTypeChecking =>
+      positives.foreach { example =>
+        QplParser.make(concertSinger, withTypeChecking).parseOnly(example) match {
+          case Done(input, _)      => assertEquals(input, "")
+          case Partial(_)          => fail("partial result")
+          case Fail(_, _, message) => fail(message)
+        }
       }
-    }
 
-    negatives.foreach { example =>
-      QplParser.make(concertSinger).parseOnly(example) match {
-        case Done(input, _) => assertNotEquals(input, "")
-        case _              => assert(true)
+      negatives.foreach { example =>
+        QplParser.make(concertSinger, withTypeChecking).parseOnly(example) match {
+          case Done(input, _) => assertNotEquals(input, "")
+          case _              => assert(true)
+        }
       }
     }
   }

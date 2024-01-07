@@ -1,5 +1,8 @@
 # QPL Checker
 
+This application runs a Web User Interface to execute QPL programs on a database.
+It allows you to manually test QPL programs predicted by a model interactively to verify their execution.
+
 ## Instructions
 
 1. Run `docker-compose up --build`

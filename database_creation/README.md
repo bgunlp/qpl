@@ -1,7 +1,7 @@
 # Spider SQL Server Database Creation
 
 This module converts from the original [Spider](https://yale-lily.github.io/spider) (with SQL in SQLite) to Spider-QPL 
-- Translate original SQL queries from SQLite to MSSQL T-SQL with updates of datatypes to standard datatypes, updates of values accordingly for strict type checking and fixes of non-standard SQL statements.
+- Translate original SQL queries from SQLite to MSSQL T-SQL with updates of datatypes to standard datatypes, updates of values accordingly for strict type checking and fixes of non-standard SQL statements. The updated schemas of the databases are available in `./schemas`.
 - Filling of the databases so that no queries return empty resultsets (the databases contain more values than those in the original Spider dumps)
 - Addition of explicit foreign keys (and adjustment of values to make sure the constraints are satisfied)
 

@@ -27,7 +27,7 @@ object Main extends ZIOAppDefault {
           schemas       <- Ref.make[Map[String, SqlSchema]](Map.empty)
           detokenize    <- Ref.make[Option[Detokenize]](None)
           partialParses <- Ref.make[Map[Chunk[Long], PartialParse]](Map.empty)
-          withTypeChecking = args.nonEmpty && args.head == 1
+          withTypeChecking = args.isEmpty || args.head == 1
         } yield ServerState(counter, tokenizer, schemas, detokenize, partialParses, withTypeChecking)
       }
 

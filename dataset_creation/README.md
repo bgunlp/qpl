@@ -7,8 +7,8 @@ In order to create the QPL dataset, you need:
 - Python 3 (we tested it on Python 3.10, but it should work for other versions)
 - Scala-CLI (can be found [here](https://scala-cli.virtuslab.org/))
 - A copy of the Spider dataset (can be found [here](https://yale-lily.github.io/spider))
-- A running instance of the Spider database on port 1433
-- A running instance of PICARD running on port 8081
+- A running instance of the Spider database on port 1433 (use the docker container in `./database_creation`).
+- A running instance of PICARD running on port 8081 (use the docker container in `./qpl-parser`).
 
 ## Pipeline
 

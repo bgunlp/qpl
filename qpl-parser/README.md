@@ -40,3 +40,13 @@ such as type-checking, key relationships, etc.
 The file `Endpoints.scala` is where the server logic lies, which knows how to take a request
 that consists of input IDs (that came from a HuggingFace tokenizer), parse it, and return the partial parse
 back to the client.
+
+## Troubleshooting
+
+- If an error is thrown by PICARD when registering a tokenizer, do the following:
+    1. Download [OpenSSL 1.1.1w](https://www.openssl.org/source/)
+    2. Extract the file using `tar -xzvf openssl-1.1.1w.tar.gz`
+    3. Go into the newly created directory
+    4. Run `./config`
+    5. Run `make`
+    6. Run PICARD using `LD_LIBRARY_PATH=/path/to/openssl-1.1.1w scala-cli run .`

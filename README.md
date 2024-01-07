@@ -6,6 +6,6 @@ Every sub-directory has its own `README.md` file explaining how to use the modul
 The modules are:
 
 - Dataset creation, going from the original [Spider](https://yale-lily.github.io/spider) dataset to QPL
-- QPL parser server
+- QPL parser server (PICARD)
 - Evaluation scripts
-- Jupyter notebooks for fine-tuning and QPL generation
+- Scripts for fine-tuning and QPL generation

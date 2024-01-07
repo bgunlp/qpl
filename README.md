@@ -1,6 +1,6 @@
 # Query Plan Language (QPL)
 
-This repository contains all relevant code and data for our Query Plan Language (QPL). It is the official implementation of the paper "Semantic Decomposition of Question and SQL for Text-to-SQL Parsing" (EMNLP Findings 2023).
+This repository contains all relevant code and data for our Query Plan Language (QPL). It is the official implementation of the paper ["Semantic Decomposition of Question and SQL for Text-to-SQL Parsing" (EMNLP Findings 2023)](https://aclanthology.org/2023.findings-emnlp.910/).
 Every sub-directory has its own `README.md` file explaining how to use the module.
 
 If you use this repository, please cite the following paper:

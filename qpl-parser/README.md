@@ -3,6 +3,12 @@
 This module contains Scala code for an incremental parser in the spirit of [PICARD](https://github.com/ServiceNow/picard),
 only instead of parsing raw SQL, it parses QPL.
 
+The QPL Parser can parse QPL strings token by token in an incremental manner, as required by the PICARD constrained decoding method.
+It takes into account the following constraints when decoding a candidate token:
+- Syntax of QPL
+- Types of schema columns when parsing comparisons such as `column op value` - as in `weight > 3000`
+- The existence of foreign key constraints when parsing join predicates as in `#3 Join [ #1 , #2 ] Predicate [ #1.id = #2.student_id ]`
+
 The parser exposes the following REST endpoints:
 
 - `/tokenizer` for registering a tokenizer with the parser. The parser will use the registered tokenizer to convert from token IDs to strings.

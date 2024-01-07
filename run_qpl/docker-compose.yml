@@ -1,0 +1,32 @@
+services:
+  db:
+    image: beneyal/spider-db-full
+    ports:
+      - "1433:1433"
+  parser:
+    image: beneyal/qpl-parser-scala:latest
+    ports:
+      - "8081:8081"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://parser:8081/health"]
+  server:
+    build:
+      dockerfile: Dockerfile
+      context: "./server"
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_started
+      parser:
+        condition: service_healthy
+  client:
+    build:
+      dockerfile: Dockerfile
+      context: "./client"
+    depends_on:
+      - db
+      - parser
+      - server
+    ports:
+      - "5173:5173"

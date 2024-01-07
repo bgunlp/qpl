@@ -11,3 +11,7 @@ It allows you to manually test QPL programs predicted by a model interactively t
 4. Write QPL line-by-line, i.e., not separated by semicolons
 5. Click "Submit"
 6. Errors appear in red, results appear in a table
+
+## Example
+
+![image](https://github.com/bgunlp/qpl/assets/3891274/7cec119f-0290-43b3-ba9f-cca23ef2b04f)

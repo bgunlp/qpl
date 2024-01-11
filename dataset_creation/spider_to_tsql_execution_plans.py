@@ -31,6 +31,15 @@ def add_execution_plan(
     instances = []
     for instance in tqdm(split):
         db_id = instance["db_id"]
+        question = (  # Remove unicode special quotes
+            instance["question"]
+            .replace("\u2018", "'")
+            .replace("\u2019", "'")
+            .replace("\u201c", "'")
+            .replace("\u201d", "'")
+            .strip()
+        )
+
         try:
             difficulty = Evaluator().eval_hardness(
                 get_sql(
@@ -43,20 +52,20 @@ def add_execution_plan(
         except KeyError:
             difficulty = "unknown"
         instance_id = hashlib.sha256(
-            bytes(f"{db_id}|{instance['question']}|{instance['query']}", "utf-8")
+            bytes(f"{db_id}|{question}|{instance['query']}", "utf-8")
         ).hexdigest()
+
+        instance["id"] = instance_id
+        instance["question"] = question
+        instance["difficulty"] = difficulty
+        instance["query_original"] = instance["query"]
 
         if instance_id in manual_fixes:
             fix = manual_fixes[instance_id]
             new_query = fix["query"]
             cursor.execute(new_query)
             ep_xml = cursor.fetchone()[0]
-            instance["id"] = instance_id
-            instance["question"] = (
-                fix["question"] if "question" in fix else instance["question"]
-            )
-            instance["difficulty"] = difficulty
-            instance["query_original"] = instance["query"]
+            instance["question"] = fix["question"] if "question" in fix else question
             instance["query"] = new_query
             instance["ep"] = ep_xml
             instances.append(instance)
@@ -89,9 +98,6 @@ def add_execution_plan(
         new_query = re.sub(r"'\s*([^']+)\s+'", r"'\1'", " ".join(query_tokens))
         new_query = re.sub(r'"([^"]+)"', r"'\1'", new_query)
         if instance_id in MANUAL_PLANS:
-            instance["id"] = instance_id
-            instance["difficulty"] = difficulty
-            instance["query_original"] = instance["query"]
             instance["query"] = new_query
             instance["ep"] = MANUAL_PLANS[instance_id]
             instances.append(instance)
@@ -109,9 +115,6 @@ def add_execution_plan(
         try:
             cursor.execute(new_query)
             ep_xml = cursor.fetchone()[0]
-            instance["id"] = instance_id
-            instance["difficulty"] = difficulty
-            instance["query_original"] = instance["query"]
             instance["query"] = new_query
             instance["ep"] = ep_xml
             instances.append(instance)
@@ -133,16 +136,10 @@ def add_execution_plan(
                 try:
                     cursor.execute(new_query)
                     ep_xml = cursor.fetchone()[0]
-                    instance["id"] = instance_id
-                    instance["difficulty"] = difficulty
-                    instance["query_original"] = instance["query"]
                     instance["query"] = new_query
                     instance["ep"] = ep_xml
                     instances.append(instance)
                 except pymssql.Error:
-                    instance["id"] = instance_id
-                    instance["difficulty"] = difficulty
-                    instance["query_original"] = instance["query"]
                     instance["query"] = new_query
                     instance["ep"] = None
                     instances.append(instance)
@@ -153,18 +150,12 @@ def add_execution_plan(
                 try:
                     cursor.execute(new_query)
                     ep_xml = cursor.fetchone()[0]
-                    instance["id"] = instance_id
-                    instance["difficulty"] = difficulty
-                    instance["query_original"] = instance["query"]
                     instance["query"] = new_query
                     instance["ep"] = ep_xml
                     instances.append(instance)
                 except pymssql.Error:
                     raise NotImplementedError(f"{new_query = }")
             else:
-                instance["id"] = instance_id
-                instance["difficulty"] = difficulty
-                instance["query_original"] = instance["query"]
                 instance["query"] = new_query
                 instance["ep"] = None
                 instances.append(instance)

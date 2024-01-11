@@ -20,4 +20,5 @@ Assuming you have extracted the Spider dataset to `~/spider`, perform the follow
 4. Create CTEs: `for SPLIT in {train,dev}; do python qpl_to_cte.py -i output/${SPLIT}_pp_qpl.json -o output/${SPLIT}_with_cte.json; done`
 5. Run queries for syntax and result validation: `for SPLIT in {train,dev}; do python run_queries.py -i output/${SPLIT}_with_cte.json -o output/${SPLIT}_with_rs.pkl; done`
 6. Validate QPLs: `for SPLIT in {train,dev}; do python validate_qpl.py -i output/${SPLIT}_with_rs.pkl -o output/${SPLIT}.json; done`
+7. Finalize dataset: `for SPLIT in {train,dev}; do python normalize_queries.py -i output/${SPLIT}.json -o output/${SPLIT}.json; done`
 

@@ -832,7 +832,13 @@ object plantoqpl extends ZIOAppDefault {
   def toAssertion(ifExpr: If, env: Env): String =
     s"NOT (${toCR(env)(ifExpr.condition)})"
 
-  final case class QplInstance(id: String, question: String, query: String, qpl: String)
+  final case class QplInstance(
+      id: String,
+      question: String,
+      query: String,
+      difficulty: String,
+      qpl: String
+  )
 
   object QplInstance {
     given JsonCodec[QplInstance] = DeriveJsonCodec.gen
@@ -841,7 +847,10 @@ object plantoqpl extends ZIOAppDefault {
   def writeQplsToJson(instances: Chunk[SpiderInstance], outputPath: Path): Task[Unit] =
     for {
       qpls <- ZIO.foreach(instances) { ins =>
-        ZIO.attempt(toQpl(ins)).catchAll(_ => ZIO.succeed("")).map(QplInstance(ins.id, ins.question, ins.query, _))
+        ZIO
+          .attempt(toQpl(ins))
+          .catchAll(_ => ZIO.succeed(""))
+          .map(QplInstance(ins.id, ins.question, ins.query, ins.difficulty, _))
       }
       json = qpls.filter(_.qpl.nonEmpty).toJsonPretty
       _ <- ZIO.writeFile(outputPath, json)

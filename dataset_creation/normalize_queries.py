@@ -20,6 +20,10 @@ def main():
         query = re.sub(r"OPTION \(.*\)", "", query)
         query = re.sub(r"WITH \(FORCESCAN\)", "", query)
         ex["clean_query"] = query.strip()
+        ex["prefixed_qpl"] = ex["qpl"]
+        db_id, qpl = ex["qpl"].split(" | ")
+        ex["db_id"] = db_id
+        ex["qpl"] = qpl
         result.append(ex)
 
     with open(args.output, "w") as f:

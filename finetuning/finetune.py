@@ -4,6 +4,7 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 import json
 
+import numpy as np
 import pandas as pd
 import pydash
 from datasets import concatenate_datasets, load_dataset
@@ -123,7 +124,7 @@ def create_prompt(sample):
         + f"""\n\n-- {sample["question"].strip()}\n\n[QPL]: """
     )
 
-    return {"prompt": prompt, "target": f"{db_id} | {sample['tp_qpl']}"}
+    return {"prompt": prompt, "target": f"{db_id} | {sample['qpl']}"}
 
 
 def preprocess_function(sample, padding="max_length"):
@@ -180,6 +181,7 @@ def compute_metrics(eval_preds):
     preds, _ = eval_preds
     if isinstance(preds, tuple):
         preds = preds[0]
+    preds = np.where(preds != -100, preds, tokenizer.pad_token_id)
     decoded_preds = tokenizer.batch_decode(preds, skip_special_tokens=True)
 
     acc = check_predictions_on_dev(decoded_preds)
@@ -191,8 +193,8 @@ if __name__ == "__main__":
     dataset_id = "bgunlp/spider-qpl"
     model_id = "google/flan-t5-xl"
 
-    dataset = load_dataset(dataset_id, token=True)
-    train = dataset["train"].map(create_prompt)
+    dataset = load_dataset(dataset_id, token=True).map(create_prompt)
+    train = dataset["train"]
     validation = dataset["validation"]
 
     print(f"Train dataset size: {len(train)}")

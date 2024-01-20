@@ -195,10 +195,10 @@ def main():
             "http://localhost:8081/validate", json={"qpl": ex["qpl"]}
         ).json()
         if (
-            ex["crs"] is not None
-            and ex["grs"] is not None
-            and is_valid
-            and same_rs(ex["grs"], ex["crs"], ex["qpl"].split(" ; "))
+                ex["crs"]
+                and ex["grs"]
+                and is_valid
+                and same_rs(ex["grs"], ex["crs"], ex["qpl"].split(" ; "))
         ):
             del ex["crs"]
             del ex["grs"]

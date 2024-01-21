@@ -153,6 +153,157 @@
     ]
   },
   {
+    "db_id": "car_11",
+    "table_names": [
+      "continents",
+      "countries",
+      "car_makers",
+      "model_list",
+      "car_names",
+      "cars_data"
+    ],
+    "column_names": [
+      "ContId",
+      "Continent",
+      "CountryId",
+      "CountryName",
+      "ContId",
+      "MakerId",
+      "Maker",
+      "FullName",
+      "CountryId",
+      "ModelId",
+      "MakerId",
+      "Model",
+      "CarId",
+      "CarName",
+      "Model",
+      "CarId",
+      "MPG",
+      "Cylinders",
+      "Edispl",
+      "Horsepower",
+      "Weight",
+      "Acceleration",
+      "Year"
+    ],
+    "column_types": [
+      "number",
+      "text",
+      "number",
+      "text",
+      "number",
+      "number",
+      "text",
+      "text",
+      "number",
+      "number",
+      "number",
+      "text",
+      "number",
+      "text",
+      "text",
+      "number",
+      "number",
+      "number",
+      "number",
+      "number",
+      "number",
+      "number",
+      "number"
+    ],
+    "column_to_table": [
+      0,
+      0,
+      1,
+      1,
+      1,
+      2,
+      2,
+      2,
+      2,
+      3,
+      3,
+      3,
+      4,
+      4,
+      4,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5
+    ],
+    "table_to_columns": {
+      "continents": [
+        0,
+        1
+      ],
+      "countries": [
+        2,
+        3,
+        4
+      ],
+      "car_makers": [
+        5,
+        6,
+        7,
+        8
+      ],
+      "model_list": [
+        9,
+        10,
+        11
+      ],
+      "car_names": [
+        12,
+        13,
+        14
+      ],
+      "cars_data": [
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22
+      ]
+    },
+    "foreign_keys": [
+      [
+        4,
+        0
+      ],
+      [
+        8,
+        2
+      ],
+      [
+        10,
+        5
+      ],
+      [
+        14,
+        11
+      ],
+      [
+        15,
+        12
+      ]
+    ],
+    "primary_keys": [
+      0,
+      2,
+      5,
+      9
+    ]
+  },
+  {
     "db_id": "party_people",
     "table_names": [
       "region",
@@ -10850,6 +11001,217 @@
   },
   {
     "db_id": "wta_1",
+    "table_names": [
+      "players",
+      "matches",
+      "rankings"
+    ],
+    "column_names": [
+      "player_id",
+      "first_name",
+      "last_name",
+      "hand",
+      "birth_date",
+      "country_code",
+      "best_of",
+      "draw_size",
+      "loser_age",
+      "loser_entry",
+      "loser_hand",
+      "loser_ht",
+      "loser_id",
+      "loser_ioc",
+      "loser_name",
+      "loser_rank",
+      "loser_rank_points",
+      "loser_seed",
+      "match_num",
+      "minutes",
+      "round",
+      "score",
+      "surface",
+      "tourney_date",
+      "tourney_id",
+      "tourney_level",
+      "tourney_name",
+      "winner_age",
+      "winner_entry",
+      "winner_hand",
+      "winner_ht",
+      "winner_id",
+      "winner_ioc",
+      "winner_name",
+      "winner_rank",
+      "winner_rank_points",
+      "winner_seed",
+      "year",
+      "ranking_date",
+      "ranking",
+      "player_id",
+      "ranking_points",
+      "tours"
+    ],
+    "column_types": [
+      "number",
+      "text",
+      "text",
+      "text",
+      "time",
+      "text",
+      "number",
+      "number",
+      "number",
+      "text",
+      "text",
+      "number",
+      "number",
+      "text",
+      "text",
+      "number",
+      "number",
+      "number",
+      "number",
+      "number",
+      "text",
+      "text",
+      "text",
+      "time",
+      "text",
+      "text",
+      "text",
+      "number",
+      "text",
+      "text",
+      "number",
+      "number",
+      "text",
+      "text",
+      "number",
+      "number",
+      "number",
+      "number",
+      "time",
+      "number",
+      "number",
+      "number",
+      "number"
+    ],
+    "column_to_table": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      2,
+      2,
+      2,
+      2,
+      2
+    ],
+    "table_to_columns": {
+      "players": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "matches": [
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37
+      ],
+      "rankings": [
+        38,
+        39,
+        40,
+        41,
+        42
+      ]
+    },
+    "foreign_keys": [
+      [
+        12,
+        0
+      ],
+      [
+        31,
+        0
+      ],
+      [
+        40,
+        0
+      ]
+    ],
+    "primary_keys": [
+      0
+    ]
+  },
+  {
+    "db_id": "wta_11",
     "table_names": [
       "players",
       "matches",
@@ -27333,6 +27695,144 @@
       [
         20,
         0
+      ]
+    ],
+    "primary_keys": [
+      0,
+      15,
+      20,
+      21
+    ]
+  },
+  {
+    "db_id": "world_11",
+    "table_names": [
+      "country",
+      "city",
+      "countrylanguage"
+    ],
+    "column_names": [
+      "Code",
+      "Name",
+      "Continent",
+      "Region",
+      "SurfaceArea",
+      "IndepYear",
+      "Population",
+      "LifeExpectancy",
+      "GNP",
+      "GNPOld",
+      "LocalName",
+      "GovernmentForm",
+      "HeadOfState",
+      "CapitalId",
+      "Code2",
+      "ID",
+      "Name",
+      "CountryCode",
+      "District",
+      "Population",
+      "CountryCode",
+      "Language",
+      "IsOfficial",
+      "Percentage"
+    ],
+    "column_types": [
+      "text",
+      "text",
+      "text",
+      "text",
+      "number",
+      "number",
+      "number",
+      "number",
+      "number",
+      "number",
+      "text",
+      "text",
+      "text",
+      "number",
+      "text",
+      "number",
+      "text",
+      "text",
+      "text",
+      "number",
+      "text",
+      "text",
+      "boolean",
+      "number"
+    ],
+    "column_to_table": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      1,
+      1,
+      1,
+      1,
+      2,
+      2,
+      2,
+      2
+    ],
+    "table_to_columns": {
+      "country": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14
+      ],
+      "city": [
+        15,
+        16,
+        17,
+        18,
+        19
+      ],
+      "countrylanguage": [
+        20,
+        21,
+        22,
+        23
+      ]
+    },
+    "foreign_keys": [
+      [
+        17,
+        0
+      ],
+      [
+        20,
+        0
+      ],
+      [
+        13,
+        15
       ]
     ],
     "primary_keys": [

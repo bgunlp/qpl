@@ -22,6 +22,7 @@ const App = () => {
     "browser_web",
     "candidate_poll",
     "car_1",
+    "car_11",
     "chinook_1",
     "cinema",
     "city_record",
@@ -169,8 +170,10 @@ const App = () => {
     "wine_1",
     "workshop_paper",
     "world_1",
+    "world_11",
     "wrestler",
     "wta_1",
+    "wta_11",
     "yelp",
   ];
 

@@ -1180,16 +1180,6 @@
     "question": "What are the dates that have an average sea level pressure between 30.3 and 31?",
     "db_content": {}
   },
-  "ae5f972de7ed5514057b2747c7e8feb1f91efff3ddb221455c286bc97957066f": {
-    "db_id": "bike_1",
-    "question": "Find the day in which the difference between the max temperature and min temperature was the smallest. Also report the difference.",
-    "db_content": {}
-  },
-  "418453e2b5585d059d871ee5df06834ae609bbe23427a874f99d8936f44115df": {
-    "db_id": "bike_1",
-    "question": "What are the days that had the smallest temperature range, and what was that range?",
-    "db_content": {}
-  },
   "b2c8f49faac756b7d827a67a52a7bae73a32612aa77f6c895e29653214776fa1": {
     "db_id": "bike_1",
     "question": "What are the id and name of the stations that have ever had more than 12 bikes available?",
@@ -1705,14 +1695,14 @@
     "question": "Find the number of users who posted some tweets.",
     "db_content": {}
   },
-  "ccef56684162d8d7fc1b3e7fd0352f67e71acc6752dbce6e279e0c7ccf9c8a78": {
+  "2328f259cf8b24c31c82b18607d5563d9654d7489831f48b7f5ac0c7c19d27eb": {
     "db_id": "twitter_1",
-    "question": "Find the name and email of the user whose name contains the word \u2018Swift\u2019.",
+    "question": "Find the name and email of the user whose name contains the word 'Swift'.",
     "db_content": {}
   },
-  "5045ced82615d6efa3ea30f41011e68b1749766804bc6cf7673854567f6b4a3b": {
+  "d4e2282d694a969096498febc916b4379f369e6bff95877e6cb98f56debd7ee7": {
     "db_id": "twitter_1",
-    "question": "Find the names of users whose emails contain \u2018superstar\u2019 or \u2018edu\u2019.",
+    "question": "Find the names of users whose emails contain 'superstar' or 'edu'.",
     "db_content": {}
   },
   "630127ecdf2378a81dacada4525c9c358f3ef0b0a53343230905807a018a8454": {
@@ -10758,10 +10748,16 @@
       }
     }
   },
-  "de4fe6c1745e531e1f6ae70a21cfb5fb42693ac11be3f8ba8a6bac37eac14b83": {
+  "0c49f30a829b9973e2a29608f85d7eca3852222d96a6baff847f818a7780d772": {
     "db_id": "college_2",
-    "question": "Find the names of all instructors whose name includes the substring \u201cdar\u201d.",
-    "db_content": {}
+    "question": "Find the names of all instructors whose name includes the substring 'dar'.",
+    "db_content": {
+      "instructor": {
+        "name": [
+          "Dar"
+        ]
+      }
+    }
   },
   "f1fab171f5177cf75b6f5dc4a72d1fab0011a03a32f9da837eb1a0cb35f15ed8": {
     "db_id": "college_2",
@@ -12580,10 +12576,16 @@
     "question": "What are the ages of the gymnasts, ordered descending by their total points?",
     "db_content": {}
   },
-  "bae5863c21d436e15f6117bf943b5c91060e230bdd6825ffd9a0d441df7334d6": {
+  "31a7e9b89de63d9f330c2a8e1423f5a3964cacbae84785603aa247ea4695c3ae": {
     "db_id": "small_bank_1",
-    "question": "Find the total savings balance of all accounts except the account with name \u2018Brown\u2019.",
-    "db_content": {}
+    "question": "Find the total savings balance of all accounts except the account with name 'Brown'.",
+    "db_content": {
+      "ACCOUNTS": {
+        "name": [
+          "Brown"
+        ]
+      }
+    }
   },
   "eaea96d8c4b7202301c7c555013477127fa80eb8e10a2f31d41c653d41d5ecad": {
     "db_id": "small_bank_1",
@@ -12646,9 +12648,9 @@
     "question": "What are the customer id and name corresponding to accounts with a checking balance less than the largest checking balance?",
     "db_content": {}
   },
-  "e0368606e94c79c648834afd596b832374d372f492fa2fc3b3c90da2f7367191": {
+  "e615f190440730652ad687deb8db6319ea6025eca3d11124adccf9ab3fc44e02": {
     "db_id": "small_bank_1",
-    "question": "What is the checking balance of the account whose owner\u2019s name contains the substring \u2018ee\u2019?",
+    "question": "What is the checking balance of the account whose owner's name contains the substring 'ee'?",
     "db_content": {}
   },
   "7ef2cf63f77db395bf09cdde0cddcbe1153ab4f69ccc68a0714ba2c4e75b0d33": {
@@ -12676,9 +12678,9 @@
     "question": "What are the balances of checking accounts belonging to people with savings balances greater than the average savings balance?",
     "db_content": {}
   },
-  "80a06ff05a5678567f6f9b3266406dac380a07bea32cc473b9f640d12e1ea586": {
+  "34fafd1785a200b5966f619f586def33f9d663b58e04340b8fec952bf7c9889b": {
     "db_id": "small_bank_1",
-    "question": "List all customers\u2019 names in the alphabetical order.",
+    "question": "List all customers' names in the alphabetical order.",
     "db_content": {}
   },
   "442e7782dade31cd509ae4e756163e403935af4e00fbbab7547874e54f8ad1bc": {
@@ -17177,9 +17179,9 @@
     "question": "How many reviewers are there?",
     "db_content": {}
   },
-  "7366db02e35eeeadf31d936116966ec8ea6eb1d43859a87de6537a5b3ea93e7c": {
+  "391832c45046eb96ef05867b76370f5fc0a8f87bae9bdbe25674f9dea270d973": {
     "db_id": "movie_1",
-    "question": "What is the id of the reviewer whose name has substring \u201cMike\u201d?",
+    "question": "What is the id of the reviewer whose name has substring 'Mike'?",
     "db_content": {}
   },
   "d421cbfc7dbe6ea51ab8d5e05f0ef22a76e0284fa829658621af33d448033498": {
@@ -21061,9 +21063,9 @@
     "question": "Count the number of different account types.",
     "db_content": {}
   },
-  "7de846f5458cffd4ba951f76632f8f78eb47830f9dda12f0ef823e7537241629": {
+  "6ef5165e986dfd3a33126a84f44be188deb65646e895ce370fa30a1cae8020a6": {
     "db_id": "loan_1",
-    "question": "Find the name and account balance of the customer whose name includes the letter \u2018a\u2019.",
+    "question": "Find the name and account balance of the customer whose name includes the letter 'a'.",
     "db_content": {}
   },
   "3ee19e4c89e67f007470e96eb1b88c528ed2e9e05d0258a6f43409fe712497e0": {
@@ -24236,9 +24238,9 @@
       }
     }
   },
-  "72deb608310be00b7d7428612410f84d7edc7c46cf7607de1e2d7c7020ff1269": {
+  "eba828951d0b9c550fd37d4f06db2fd6ce93f693e56aa7803adb53db29df9403": {
     "db_id": "hr_1",
-    "question": "display the employee number and name( first name and last name ) for all employees who work in a department with any employee whose name contains a \u2019T\u2019.",
+    "question": "display the employee number and name( first name and last name ) for all employees who work in a department with any employee whose name contains a 'T'.",
     "db_content": {}
   },
   "995bc94ac3b46336fc8944c8f45f72875b7a993456201716d97d297e7014c823": {
@@ -24885,16 +24887,6 @@
   "0c399d1599d5b3f5d64896a9e78c401f46a2c22c6b5b6921cc67e6f60f5f9c32": {
     "db_id": "music_1",
     "question": "What are the languages that are used most often in songs?",
-    "db_content": {}
-  },
-  "c11992c8ebd4b3f478d755211b676c5f0f9ecb19b12efbd251ada3f20daecc0a": {
-    "db_id": "music_1",
-    "question": "What is the language that was used most often in songs with resolution above 500?",
-    "db_content": {}
-  },
-  "860d3cb1d85d9ef8c7817c16d84b900133b0aa7b35f1dfd169cd169182dce638": {
-    "db_id": "music_1",
-    "question": "What is the name of the artist, for each language, that has the most songs with a higher resolution than 500?",
     "db_content": {}
   },
   "2e7534f4e708a75e3a7f68b042af7e74bb0b65cd2cd5cf21bb340a6081aa4d91": {
@@ -33178,6 +33170,16 @@
       }
     }
   },
+  "ff8dfa83397e5a52c0a51c29406dc034f6ec6d5b302b145404e292ed581d9681": {
+    "db_id": "document_management",
+    "question": "List all the username and passwords of users with the most popular role.",
+    "db_content": {}
+  },
+  "cfbc7793f4fc394beb3238644ae948ce7df436786f7c9900990ff09554a7e8e2": {
+    "db_id": "document_management",
+    "question": "What are the usernames and passwords of users that have the most common role?",
+    "db_content": {}
+  },
   "9c33c4d14402864e0bc199fc738d041aed3d75ef11d0ef6fff9693334b47b37e": {
     "db_id": "document_management",
     "question": "Find the average access counts of documents with functional area \"Acknowledgement\".",
@@ -36222,6 +36224,16 @@
     "question": "What are the names of the schools with the top 3 largest class sizes?",
     "db_content": {}
   },
+  "e368618cffb742774ad11176d9e53afc35f6d5d165754af7e35cb0c065abdfa1": {
+    "db_id": "soccer_2",
+    "question": "What is the name of school that has the smallest enrollment in each state?",
+    "db_content": {}
+  },
+  "99f7dc6836088f69aa3ec54ed92f0ea3f0dbd206f48500e46c06b6b47bd25de5": {
+    "db_id": "soccer_2",
+    "question": "What is the name of the school with smallest enrollment size per state?",
+    "db_content": {}
+  },
   "51c4b336d3a3262fed2148cbceddf378848aeeb53d31f66af967833874d3f7ab": {
     "db_id": "soccer_2",
     "question": "Find the states where have some college students in tryout.",
@@ -38630,6 +38642,16 @@
   "515dcc852f78bb40d61b5dad66048d3803e66e435e3415ec7131f68befde4e1f": {
     "db_id": "manufactory_1",
     "question": "What is the name and price of the cheapest product?",
+    "db_content": {}
+  },
+  "c5f0915e5a0242f09732d9ea65fec3f3310154888fbcba5afe412d08378de33e": {
+    "db_id": "manufactory_1",
+    "question": "Select the code of the product that is cheapest in each product category.",
+    "db_content": {}
+  },
+  "d873ec2e7975755cf6e8020370e1d17536c475c67d0a9c81af267af52384a136": {
+    "db_id": "manufactory_1",
+    "question": "What are the codes and names of the cheapest products in each category?",
     "db_content": {}
   },
   "77b159939ae5bbda1874edd8d38434d60e11bb74ebfac935c83d6f2c0b10b30c": {
@@ -41340,9 +41362,9 @@
     "question": "How many different genders are there in the dorms?",
     "db_content": {}
   },
-  "dc946f35299fb45fc6eb4a6b1989827a9cd532ad26bf905ef558920b0a7bd2ad": {
+  "396e7bbf2e7a1480f8c32768bd003c769ac88fb393ee84e64dd983e552cd0e76": {
     "db_id": "dorm_1",
-    "question": "Find the capacity and gender type of the dorm whose name has substring \u2018Donor\u2019.",
+    "question": "Find the capacity and gender type of the dorm whose name has substring 'Donor'.",
     "db_content": {}
   },
   "b38c4a48ac7b10471e00845b22ba8799d2002fcac85f8f2046c276169493dae7": {
@@ -46700,9 +46722,9 @@
     "question": "What is the name and hours for the project which has the most scientists assigned to it?",
     "db_content": {}
   },
-  "c6ccb5da4b5dc4a43d92f3bc3bc96e09e516f421992e757737031e40d678f06e": {
+  "3ab0f028e92d47571677e90b89e3cfb8f408eb10a99efd45d01ce8971949a998": {
     "db_id": "scientist_1",
-    "question": "Find the name of the project for which a scientist whose name contains \u2018Smith\u2019 is assigned to.",
+    "question": "Find the name of the project for which a scientist whose name contains 'Smith' is assigned to.",
     "db_content": {}
   },
   "fc057289407ee9d5df064cc56d021499be84db2c8ff5d87028cf284af77dcb7a": {
@@ -47388,6 +47410,16 @@
   "7da500b5fc54c982d2c0f49a56dfe494d46e690f8adf622ef9692c5a3d894a1c": {
     "db_id": "wine_1",
     "question": "What are the maximum price and score of wines for each year?",
+    "db_content": {}
+  },
+  "5d1c8f0bb5ee3af5a88e8a94a5c11ad087096051f6916ab38bd69e88d5e4d45e": {
+    "db_id": "wine_1",
+    "question": "What are the average price and score of wines grouped by appelation?",
+    "db_content": {}
+  },
+  "780c377c83ae1558f66c3e486f2ab5a20384166c4986b116265ac2ace98b2a93": {
+    "db_id": "wine_1",
+    "question": "What are the average price and score of wines for each appelation?",
     "db_content": {}
   },
   "fb8b76244604b049aadfd888be23650d8d0f0932a5497fb94a8f97497f4de7d5": {
@@ -51497,10 +51529,16 @@
     "question": "What are the different first names and ages of the students who do have pets?",
     "db_content": {}
   },
-  "27252c0db0413b8693acfca670aa3ed42cd52d470b30fac453a92b3cf2e9ce82": {
+  "cd76c13283c015a462ca208c264fad22478847289cedf4d8ebcce4c92788c536": {
     "db_id": "pets_1",
-    "question": "Find the id of the pet owned by student whose last name is \u2018Smith\u2019.",
-    "db_content": {}
+    "question": "Find the id of the pet owned by student whose last name is 'Smith'.",
+    "db_content": {
+      "Student": {
+        "LName": [
+          "Smith"
+        ]
+      }
+    }
   },
   "21558cf97f26dbb4214a9eae6e5df3b4c1b408de7847a6c459d57a3021c58c3b": {
     "db_id": "pets_1",
@@ -56394,9 +56432,9 @@
       }
     }
   },
-  "02ea3ce3c1ca33852d94e1ec67b4c4456820afff93824fb3d341ce5c6c667d45": {
+  "b8eb279e57648803c6d1bf4c7b1a4c8242049aa9b87445bb05f609181fb3dc50": {
     "db_id": "world_1",
-    "question": "Give me Brazil\u2019s population and life expectancies.",
+    "question": "Give me Brazil's population and life expectancies.",
     "db_content": {
       "country": {
         "Name": [
@@ -56452,9 +56490,9 @@
       }
     }
   },
-  "ead8406fcf8f5ac508a3fa2fee7f4eadfc597b2934367ddaa29a95d3b2a7a0ab": {
+  "350ce507e25e14e8dc42ed1910caf123b3252f15286f9b7b2cebf148c1fce446": {
     "db_id": "world_1",
-    "question": "How long is the people\u2019s average life expectancy in Central Africa?",
+    "question": "How long is the people's average life expectancy in Central Africa?",
     "db_content": {
       "country": {
         "Continent": [

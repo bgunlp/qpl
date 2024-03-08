@@ -16,6 +16,8 @@ from transformers import (
     LogitsProcessorList,
 )
 
+from qpl_variants.data_row import build_FlatQplOp, build_FlatQplOp_from_nested_plan, build_QPLOP_from_dict, build_QPLOP_from_yaml
+
 logging.basicConfig(filename="picard.log", level=logging.INFO)
 
 parser = argparse.ArgumentParser()
@@ -116,8 +118,20 @@ def create_table_prompt(
     return prompt
 
 
-def create_prompt(sample):
+def create_prompt(sample, target_language='nested_qpl'):
     db_id = sample["db_id"]
+
+    if target_language == 'qpl':
+        target = sample['qpl']
+    elif target_language == 'nested_qpl':
+        flat_qpl_node = build_FlatQplOp(sample['qpl'])
+        target = flat_qpl_node.to_nested_str()
+    elif target_language == 'dict_qpl':
+        flat_qpl_node = build_FlatQplOp(sample['qpl'])
+        target = flat_qpl_node.to_dict()
+    elif target_language == 'yaml_qpl':
+        flat_qpl_node = build_FlatQplOp(sample['qpl'])
+        target = flat_qpl_node.to_yaml()
 
     prompt = (
         f"{db_id}\n\n"
@@ -127,7 +141,7 @@ def create_prompt(sample):
         + f"""\n\n-- {sample["question"].strip()}\n\n[QPL]: """
     )
 
-    return {"prompt": prompt, "target": f"{db_id} | {sample['qpl']}"}
+    return {"prompt": prompt, "target": f"{db_id} | {target}"}
 
 
 def preprocess_function(sample):
@@ -141,17 +155,17 @@ dataset = datasets.load_dataset("bgunlp/spider-qpl", split="validation").map(
 )
 
 
-model = AutoPeftModelForSeq2SeqLM.from_pretrained(args.model_id, device_map="auto")
+model = AutoPeftModelForSeq2SeqLM.from_pretrained(args.model_id)
 tokenizer = AutoTokenizer.from_pretrained(
     args.model_id,
     model_max_length=2048,
 )
 
-requests.post(
-    "http://localhost:8081/tokenizer",
-    data=tokenizer.backend_tokenizer.to_str(pretty=False).encode("utf-8"),
-    headers={"Content-Type": "application/json"},
-)
+# requests.post(
+#     "http://localhost:8081/tokenizer",
+#     data=tokenizer.backend_tokenizer.to_str(pretty=False).encode("utf-8"),
+#     headers={"Content-Type": "application/json"},
+# )
 
 tokenized_inputs = dataset.map(
     lambda x: tokenizer(x["prompt"], truncation=True),
@@ -178,57 +192,57 @@ for sample in dataset:
     if db_id not in schemas:
         schemas.add(db_id)
         schema = db_id_to_schema[db_id]
-        res = requests.post("http://localhost:8081/schema", json=schema)
-        if res.status_code != 200:
-            raise ValueError(f"Oops, couldn't register schema: {schema}")
+        # res = requests.post("http://localhost:8081/schema", json=schema)
+        # if res.status_code != 200:
+        #     raise ValueError(f"Oops, couldn't register schema: {schema}")
 
 
-class PicardQplLogitsProcessor(LogitsProcessor):
-    def _batch_mask_top_k(self, indices_to_remove, input_ids, top_tokens):
-        req = {"input_ids": input_ids.tolist(), "top_tokens": top_tokens.tolist()}
-        res = requests.post("http://localhost:8081/parse", json=req).json()
-        for r in res:
-            batch_id = r["batch_id"]
-            feed_result = r["feed_result"]
-            feed_result_tag = feed_result["tag"]
-            top_token = r["top_token"]
+# class PicardQplLogitsProcessor(LogitsProcessor):
+#     def _batch_mask_top_k(self, indices_to_remove, input_ids, top_tokens):
+#         req = {"input_ids": input_ids.tolist(), "top_tokens": top_tokens.tolist()}
+#         res = requests.post("http://localhost:8081/parse", json=req).json()
+#         for r in res:
+#             batch_id = r["batch_id"]
+#             feed_result = r["feed_result"]
+#             feed_result_tag = feed_result["tag"]
+#             top_token = r["top_token"]
+#
+#             if feed_result_tag == "failure":
+#                 indices_to_remove[batch_id, top_token] = True
+#             elif feed_result_tag == "partial":
+#                 pass
+#             elif feed_result_tag == "complete":
+#                 pass
+#             else:
+#                 raise ValueError("Unexpected FeedResult")
+#
+#     @torch.inference_mode()
+#     def __call__(self, input_ids, scores):
+#         top_k = min(8, scores.size(-1))  # Safety check
+#         top_scores, top_tokens = torch.topk(scores, top_k)
+#         # Remove all tokens with a probability less than the last token of the top-k
+#         lowest_top_k_scores = top_scores[..., -1, None]
+#         del top_scores
+#         indices_to_remove = scores < lowest_top_k_scores
+#         del lowest_top_k_scores
+#         # Do not mask the EOS token because otherwise production can continue indefinitely if all other tokens are masked
+#         indices_to_remove[:, tokenizer.eos_token_id] = False
+#         # Mask top-k tokens rejected by picard
+#         self._batch_mask_top_k(
+#             indices_to_remove=indices_to_remove,
+#             input_ids=input_ids,
+#             top_tokens=top_tokens,
+#         )
+#         del top_tokens
+#         scores = scores.masked_fill(indices_to_remove, torch.finfo(scores.dtype).min)
+#         del indices_to_remove
+#         return scores
 
-            if feed_result_tag == "failure":
-                indices_to_remove[batch_id, top_token] = True
-            elif feed_result_tag == "partial":
-                pass
-            elif feed_result_tag == "complete":
-                pass
-            else:
-                raise ValueError("Unexpected FeedResult")
 
-    @torch.inference_mode()
-    def __call__(self, input_ids, scores):
-        top_k = min(8, scores.size(-1))  # Safety check
-        top_scores, top_tokens = torch.topk(scores, top_k)
-        # Remove all tokens with a probability less than the last token of the top-k
-        lowest_top_k_scores = top_scores[..., -1, None]
-        del top_scores
-        indices_to_remove = scores < lowest_top_k_scores
-        del lowest_top_k_scores
-        # Do not mask the EOS token because otherwise production can continue indefinitely if all other tokens are masked
-        indices_to_remove[:, tokenizer.eos_token_id] = False
-        # Mask top-k tokens rejected by picard
-        self._batch_mask_top_k(
-            indices_to_remove=indices_to_remove,
-            input_ids=input_ids,
-            top_tokens=top_tokens,
-        )
-        del top_tokens
-        scores = scores.masked_fill(indices_to_remove, torch.finfo(scores.dtype).min)
-        del indices_to_remove
-        return scores
-
-
-ds = tokenized_dataset.with_format("torch", device="cuda")
-dataloader = torch.utils.data.DataLoader(ds, batch_size=2)
-logits_processor = LogitsProcessorList([PicardQplLogitsProcessor()])
-generation_config = GenerationConfig(max_new_tokens=512, num_beams=8)
+ds = tokenized_dataset.with_format("torch")
+dataloader = torch.utils.data.DataLoader(ds, batch_size=1)
+# logits_processor = LogitsProcessorList([PicardQplLogitsProcessor()])
+generation_config = GenerationConfig(max_new_tokens=512)
 
 generated_plans = []
 for batch in tqdm(dataloader):
@@ -236,7 +250,7 @@ for batch in tqdm(dataloader):
         model.generate(
             **batch,
             generation_config=generation_config,
-            logits_processor=logits_processor,
+            # logits_processor=logits_processor,
         ),
         skip_special_tokens=True,
     )

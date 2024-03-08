@@ -1,3 +1,5 @@
+target_lang = "yaml_qpl"
+print(target_lang)
 import os
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
@@ -20,6 +22,7 @@ from transformers import (
 )
 
 from qpl_to_cte import flat_qpl_to_cte
+from data_row import SPACE, NEWLINE, build_FlatQplOp, build_FlatQplOp_from_nested_plan, build_QPLOP_from_json, build_QPLOP_from_yaml
 from validate_qpl import same_rs
 
 with open("./db_schemas.json") as f:
@@ -114,8 +117,20 @@ def create_table_prompt(
     return prompt
 
 
-def create_prompt(sample):
+def create_prompt(sample, target_language=target_lang):
     db_id = sample["db_id"]
+
+    if target_language == 'qpl':
+        target = sample['qpl']
+    elif target_language == 'nested_qpl':
+        flat_qpl_node = build_FlatQplOp(sample['qpl'])
+        target = flat_qpl_node.to_nested_str()
+    elif target_language == 'dict_qpl':
+        flat_qpl_node = build_FlatQplOp(sample['qpl'])
+        target = flat_qpl_node.to_json()
+    elif target_language == 'yaml_qpl':
+        flat_qpl_node = build_FlatQplOp(sample['qpl'])
+        target = flat_qpl_node.to_yaml()
 
     prompt = (
         f"{db_id}\n\n"
@@ -125,7 +140,7 @@ def create_prompt(sample):
         + f"""\n\n-- {sample["question"].strip()}\n\n[QPL]: """
     )
 
-    return {"prompt": prompt, "target": f"{db_id} | {sample['qpl']}"}
+    return {"prompt": prompt, "target": f"{db_id} | {target}"}
 
 
 def preprocess_function(sample, padding="max_length"):
@@ -151,20 +166,47 @@ def preprocess_function(sample, padding="max_length"):
 
 cache = {}
 
+epoch = 0
+results_df = pd.DataFrame([], columns=["epoch", "id", "db_id", f"pred", "pred_qpl", "pred_rs", "gold_rs"])
+def check_predictions_on_dev(preds, target_language=target_lang):
+    global epoch
+    global results_df
+    epoch += 1
 
-def check_predictions_on_dev(preds):
     engine = create_engine(
+        # "mssql+pyodbc://SA:Passw0rd!@0.0.0.0/spider?driver=ODBC+Driver+17+for+SQL+Server",
         "mssql+pyodbc://bene:Passw0rd!@spider-qpl.database.windows.net/spider_full?driver=ODBC+Driver+18+for+SQL+Server",
     )
 
     correct = 0
     total = 0
+    rows = []
     for gold, pred in zip(validation, preds):
         total += 1
         tmp = pred.split(" | ")
         if len(tmp) != 2:
             continue
-        pred_db_id, pred_qpl = tmp
+        pred_db_id, pred = tmp
+
+        pred_qpl = None
+        if target_language == 'qpl':
+            pred_qpl = pred
+        elif target_language == 'nested_qpl':
+            try:
+                pred_qpl = repr(build_FlatQplOp_from_nested_plan(pred))
+            except:
+                pass
+        elif target_language == 'dict_qpl':
+            try:
+                pred_qpl = repr(build_QPLOP_from_json(pred))
+            except:
+                pass
+        elif target_language == 'yaml_qpl':
+            try:
+                pred_qpl = repr(build_QPLOP_from_yaml(pred))
+            except:
+                pass
+
         if pred_db_id != gold["db_id"]:
             continue
         if gold["cte"] in cache:
@@ -172,20 +214,35 @@ def check_predictions_on_dev(preds):
         else:
             grs = pd.read_sql(gold["cte"], engine).to_dict(orient="records")
             cache[gold["cte"]] = grs
-        try:
-            pred_cte = flat_qpl_to_cte(pred_qpl.split(" ; "), pred_db_id)
-            if pred_cte in cache:
-                prs = cache[pred_cte]
+        if pred_qpl is not None:
+            try:
+                pred_cte = flat_qpl_to_cte(pred_qpl.split(" ; "), pred_db_id)
+                if pred_cte in cache:
+                    prs = cache[pred_cte]
+                else:
+                    prs = pd.read_sql(pred_cte, engine).to_dict(orient="records")
+                    cache[pred_cte] = prs
+            except:
+                rows.append([epoch, gold["id"], gold["db_id"], pred, pred_qpl, None, grs])
             else:
-                prs = pd.read_sql(pred_cte, engine).to_dict(orient="records")
-                cache[pred_cte] = prs
-        except:
-            pass
+                if same_rs(grs, prs, gold["qpl"].split(" ; ")):
+                    correct += 1
+                rows.append([epoch, gold["id"], gold["db_id"], pred, pred_qpl, prs, grs])
         else:
-            if same_rs(grs, prs, gold["qpl"].split(" ; ")):
-                correct += 1
+            rows.append([epoch, gold["id"], gold["db_id"], pred, pred_qpl, None, grs])
 
     engine.dispose()
+
+    new_df = pd.DataFrame(rows, columns=["epoch", "id", "db_id", f"pred", "pred_qpl", "pred_rs", "gold_rs"])
+    results_df = pd.concat([results_df, new_df])
+    results_df.to_csv(f"{target_language}_results.csv", index=False)
+    try:
+        d = results_df.to_dict(orient='records')
+        with open('{target_language}_results.json', 'w') as f:
+            json.dump(d, f, indent=4, default=str)
+    except:
+        print("Could not save JSON results file")
+        pass
     return correct / total
 
 
@@ -206,14 +263,31 @@ if __name__ == "__main__":
     model_id = "google/flan-t5-xl"
 
     dataset = load_dataset(dataset_id, token=True).map(create_prompt)
-    train = dataset["train"]
-    validation = dataset["validation"]
+    train = dataset["train"] # .select(range(10))
+    validation = dataset["validation"] # .select(range(10))
 
     print(f"Train dataset size: {len(train)}")
     print(f"Test dataset size: {len(validation)}")
 
     tokenizer = AutoTokenizer.from_pretrained(model_id, model_max_length=2048)
-    tokenizer.add_tokens([" <=", " <>", " <"])
+    tokenizer.add_tokens([SPACE, NEWLINE, " <=", " <>", " <", "{", "}"])
+    # for i in range(2, 8):
+    #     tokenizer.add_tokens(AddedToken(i * " ", normalized=False))
+    # tokenizer.add_tokens(AddedToken("\n", normalized=False))
+    # tokenizer.add_tokens(AddedToken("\t", normalized=False))
+
+
+    # wrong = 0
+    # for i in range(len(validation)):
+    #     l = validation[i]['qpl']
+    #     r = repr(build_QPLOP_from_yaml(tokenizer.decode(tokenizer(build_FlatQplOp(validation[i]['qpl']).to_yaml(), truncation=True)['input_ids'])[:-4]))
+    #     if build_FlatQplOp(l).to_dict() != build_FlatQplOp(r).to_dict():
+    #         wrong += 1
+    #         print(i)
+    #         print(l)
+    #         print(r)
+    # print(wrong)
+
 
     # The maximum total input sequence length after tokenization.
     # Sequences longer than this will be truncated, sequences shorter will be padded.
@@ -238,8 +312,8 @@ if __name__ == "__main__":
     tokenized_dataset = dataset.map(
         preprocess_function, batched=True, remove_columns=train.column_names
     )
-    tokenized_train = tokenized_dataset["train"]
-    tokenized_validation = tokenized_dataset["validation"]
+    tokenized_train = tokenized_dataset["train"] # .select(range(10))
+    tokenized_validation = tokenized_dataset["validation"] # .select(range(10))
     print(f"Keys of tokenized dataset: {list(tokenized_train.features)}")
 
     peft_config = LoraConfig(
@@ -269,7 +343,7 @@ if __name__ == "__main__":
 
     # Hugging Face repository id
     repository_id = (
-        f"{model_id.split('/')[1]}-spider-qpl-token-preprocessing-lora-20231217"
+        f"{model_id.split('/')[1]}-spider-{target_lang}-20240304-v3"
     )
 
     # Define training args
@@ -278,7 +352,7 @@ if __name__ == "__main__":
         evaluation_strategy="epoch",
         per_device_train_batch_size=1,
         learning_rate=2e-4,
-        num_train_epochs=15,
+        num_train_epochs=17,
         logging_strategy="steps",
         logging_steps=500,
         save_strategy="epoch",
@@ -290,6 +364,8 @@ if __name__ == "__main__":
         hub_private_repo=True,
         predict_with_generate=True,
         generation_max_length=max_target_length,
+        save_total_limit=5,
+        push_to_hub=True
     )
 
     # Create Trainer instance
@@ -305,5 +381,5 @@ if __name__ == "__main__":
     )
 
     trainer.train()
-
+    # trainer.train(resume_from_checkpoint=True)
     trainer.push_to_hub()

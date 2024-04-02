@@ -1,4 +1,4 @@
-target_lang = "yaml_qpl"
+target_lang = "cte"
 print(target_lang)
 import os
 
@@ -131,6 +131,10 @@ def create_prompt(sample, target_language=target_lang):
     elif target_language == 'yaml_qpl':
         flat_qpl_node = build_FlatQplOp(sample['qpl'])
         target = flat_qpl_node.to_yaml()
+    elif target_language == 'sql':
+        target = sample['clean_query']
+    elif target_language == 'cte':
+        target = sample['cte']
 
     prompt = (
         f"{db_id}\n\n"
@@ -189,6 +193,8 @@ def check_predictions_on_dev(preds, target_language=target_lang):
         pred_db_id, pred = tmp
 
         pred_qpl = None
+        pred_sql = None
+        prs = None
         if target_language == 'qpl':
             pred_qpl = pred
         elif target_language == 'nested_qpl':
@@ -206,6 +212,10 @@ def check_predictions_on_dev(preds, target_language=target_lang):
                 pred_qpl = repr(build_QPLOP_from_yaml(pred))
             except:
                 pass
+        elif target_language == 'sql':
+            pred_sql = pred
+        elif target_language == 'cte':
+            pred_sql = pred
 
         if pred_db_id != gold["db_id"]:
             continue
@@ -214,26 +224,30 @@ def check_predictions_on_dev(preds, target_language=target_lang):
         else:
             grs = pd.read_sql(gold["cte"], engine).to_dict(orient="records")
             cache[gold["cte"]] = grs
+
         if pred_qpl is not None:
             try:
-                pred_cte = flat_qpl_to_cte(pred_qpl.split(" ; "), pred_db_id)
-                if pred_cte in cache:
-                    prs = cache[pred_cte]
-                else:
-                    prs = pd.read_sql(pred_cte, engine).to_dict(orient="records")
-                    cache[pred_cte] = prs
+                pred_sql = flat_qpl_to_cte(pred_qpl.split(" ; "), pred_db_id)
             except:
-                rows.append([epoch, gold["id"], gold["db_id"], pred, pred_qpl, None, grs])
+                pass
+
+        if pred_sql is not None:
+            if pred_sql in cache:
+                prs = cache[pred_sql]
             else:
-                if same_rs(grs, prs, gold["qpl"].split(" ; ")):
-                    correct += 1
-                rows.append([epoch, gold["id"], gold["db_id"], pred, pred_qpl, prs, grs])
-        else:
-            rows.append([epoch, gold["id"], gold["db_id"], pred, pred_qpl, None, grs])
+                try:
+                    prs = pd.read_sql(pred_sql, engine).to_dict(orient="records")
+                    cache[pred_sql] = prs
+                except:
+                    pass
+
+        if prs is not None and same_rs(grs, prs, gold["qpl"].split(" ; ")):
+            correct += 1
+        rows.append([epoch, gold["id"], gold["db_id"], pred, pred_sql, pred_qpl, prs, grs])
 
     engine.dispose()
 
-    new_df = pd.DataFrame(rows, columns=["epoch", "id", "db_id", f"pred", "pred_qpl", "pred_rs", "gold_rs"])
+    new_df = pd.DataFrame(rows, columns=["epoch", "id", "db_id", f"pred", "pred_sql", "pred_qpl", "pred_rs", "gold_rs"])
     results_df = pd.concat([results_df, new_df])
     results_df.to_csv(f"{target_language}_results.csv", index=False)
     try:

@@ -329,9 +329,9 @@ object parsing {
         val columnReference = parseColumnReference((operator \ "ColumnReference").head)
         Identifier(columnReference)
       case "Intrinsic" =>
-        val functionName   = operator \@ "FunctionName"
-        val List(lhs, rhs) = operator.child.map(parseScalarOperator).toList
-        Intrinsic(functionName, lhs, rhs)
+        val functionName = operator \@ "FunctionName"
+        val args         = operator.child.map(parseScalarOperator).to(Chunk)
+        Intrinsic(functionName.toUpperCase, args)
       case "Logical" =>
         val operation       = operator \@ "Operation"
         val scalarOperators = operator.child.map(parseScalarOperator)
@@ -351,7 +351,7 @@ object parsing {
       case s"'$str '" => s"'$str'"
       case v          => v
     }
-    ColumnReference(scalarOperator, column, schema, table, alias, value).strip
+    ColumnReference(scalarOperator, s"[$column]", schema, table, alias, value) // .strip
   }
 
   private def parseGroupBy(node: Node): Chunk[ColumnReference] =
@@ -375,7 +375,7 @@ object parsing {
     val table  = node \@ "Table"
     val alias  = Option(node \@ "Alias").filter(_.trim.nonEmpty)
     val index  = Option(node \@ "Index").filter(_.trim.nonEmpty)
-    Object(schema, table, alias, index).strip
+    Object(schema, table, alias, index)
   }
 
   private def parsePredicate(node: Node): ScalarOperator =

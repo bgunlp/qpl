@@ -49,7 +49,7 @@ object plantoqpl extends ZIOAppDefault {
     def empty: QplState = QplState(1, Map.empty)
   }
 
-  def toQpl(si: SpiderInstance): String = {
+  def toQpl(si: BirdInstance): String = {
     def recur(op: Operation, isRoot: Boolean = false): State[QplState, Chunk[QplLine]] = {
       op.name match {
         case "Scan" =>
@@ -227,10 +227,10 @@ object plantoqpl extends ZIOAppDefault {
       }
     }
 
-    s"${si.db.name} | ${lines.mkString(" ; ")}"
+    s"${si.dbId} | ${lines.mkString(" ; ")}"
   }
 
-  def toOperation(si: SpiderInstance): Operation = {
+  def toOperation(si: BirdInstance): Operation = {
     val (env, result) = toCR(si.ep.relop).run(si.ep.getInitialEnv).value
     result
   }
@@ -259,7 +259,7 @@ object plantoqpl extends ZIOAppDefault {
 
   def getOrDeref(env: Env)(cr: ColumnReference): String = {
     val derefed = env.deref(cr.column)
-    if (derefed == cr.column) cr.strip.toString else derefed
+    if (derefed == cr.column) cr /* .strip */ .toString else derefed
   }
 
   def toMap(definedValues: Chunk[DefinedValue]): Map[String, ScalarOperator | String] =
@@ -291,8 +291,8 @@ object plantoqpl extends ZIOAppDefault {
           If(recur(condition, alias), recur(ifTrue, alias), recur(ifFalse, alias))
         case Identifier(cr) =>
           Identifier(ColumnReference(None, cr.column, None, alias, None, None))
-        case Intrinsic(functionName, lhs, rhs) =>
-          Intrinsic(functionName, recur(lhs, alias), recur(rhs, alias))
+        case Intrinsic(functionName, args) =>
+          Intrinsic(functionName, args.map(recur(_, alias)))
         case Logical(operation, scalarOperators) =>
           if (operation == LogicalOperation.ISNULL) Logical(operation, scalarOperators)
           else Logical(operation, Chunk(recur(scalarOperators(0), Some("T")), recur(scalarOperators(1), Some("B"))))
@@ -432,7 +432,7 @@ object plantoqpl extends ZIOAppDefault {
           if (newOutputs.isEmpty) Chunk("*")
           else newOutputs.map(getOrDeref(env)),
           Chunk.empty,
-          Chunk(Opt("Table", Chunk(obj.strip.toString))) /* ++ isOrdered */ ++
+          Chunk(Opt("Table", Chunk(obj /* .strip */ .toString))) /* ++ isOrdered */ ++
             (if (p.isDefined) Chunk(Opt("Predicate", Chunk(p.get))) else Chunk.empty)
         )
       case MergeJoin(top, bottom, joinColumns, definedValues) =>
@@ -547,7 +547,7 @@ object plantoqpl extends ZIOAppDefault {
           Chunk(
             Opt(
               "OrderBy",
-              orderBy.map(c => s"${env.deref(c.column.strip.toString)} ${if (c.ascending) "ASC" else "DESC"}")
+              orderBy.map(c => s"${env.deref(c.column /* .strip */ .toString)} ${if (c.ascending) "ASC" else "DESC"}")
             )
           ) ++ (if (distinct) Chunk(Opt("Distinct", Chunk("true"))) else Chunk.empty)
         )
@@ -596,7 +596,7 @@ object plantoqpl extends ZIOAppDefault {
           if (newOutputs.isEmpty) Chunk("*")
           else newOutputs.map(getOrDeref(env)),
           Chunk.empty,
-          Chunk(Opt("Table", Chunk(obj.strip.toString))) ++ isOrdered ++ p
+          Chunk(Opt("Table", Chunk(obj /* .strip */ .toString))) ++ isOrdered ++ p
         )
       case Top(tieColumns, topExpression, relop, definedValues) =>
         for {
@@ -623,7 +623,7 @@ object plantoqpl extends ZIOAppDefault {
             Chunk(
               Opt(
                 "OrderBy",
-                orderBy.map(c => s"${env.deref(c.column.strip.toString)} ${if (c.ascending) "ASC" else "DESC"}")
+                orderBy.map(c => s"${env.deref(c.column /* .strip */ .toString)} ${if (c.ascending) "ASC" else "DESC"}")
               )
             )
         )
@@ -681,18 +681,18 @@ object plantoqpl extends ZIOAppDefault {
               case ColumnReference(_, column, _, None, _, _)        => env.deref(column)
             }
           }
-      case Intrinsic(functionName, lhs, rhs) =>
-        s"${toCR(env)(lhs)} $functionName ${toCR(env)(rhs)}"
+      case Intrinsic(functionName, args) =>
+        // s"${toCR(env)(lhs)} $functionName ${toCR(env)(rhs)}"
+        s"$functionName(${args.map(toCR(env)).filter(_.nonEmpty).mkString(", ")})"
       case Logical(operation, scalarOperators) =>
         if (operation == LogicalOperation.NOT)
           scalarOperators match {
-            case Chunk(Intrinsic("like", lhs, rhs)) => s"${toCR(env)(lhs)} NOT LIKE ${toCR(env)(rhs)}"
-            case _                                  => s"${toCR(env)(scalarOperators(0))} ${operation.toString}"
+            case Chunk(Intrinsic("like", args)) => s"${toCR(env)(args(0))} NOT LIKE ${toCR(env)(args(1))}"
+            case _                              => s"${toCR(env)(scalarOperators(0))} ${operation.toString}"
           }
-        else if (operation == LogicalOperation.ISNULL)
-          s"${toCR(env)(scalarOperators(0))} ${operation.toString}"
+        else if (operation == LogicalOperation.ISNULL) s"(${toCR(env)(scalarOperators(0))} ${operation.toString})"
         else
-          s"${toCR(env)(scalarOperators(0))} ${operation.toString} ${toCR(env)(scalarOperators(1))}"
+          s"(${scalarOperators.map(toCR(env)).mkString(s" ${operation.toString} ")})"
     }
 
   def extractColumns(so: ScalarOperator): List[ColumnReference] = {
@@ -710,8 +710,8 @@ object plantoqpl extends ZIOAppDefault {
           recur(condition) ++ recur(ifTrue) ++ recur(ifFalse)
         case Identifier(cr @ ColumnReference(_, _, _, Some(_), _, _)) =>
           List(cr)
-        case Intrinsic(_, lhs, rhs) =>
-          recur(lhs) ++ recur(rhs)
+        case Intrinsic(_, args) =>
+          args.toList.flatMap(recur)
         case Logical(_, scalarOperators) =>
           scalarOperators.toList.flatMap(recur)
         case _ =>
@@ -833,7 +833,7 @@ object plantoqpl extends ZIOAppDefault {
     s"NOT (${toCR(env)(ifExpr.condition)})"
 
   final case class QplInstance(
-      id: String,
+      id: Int,
       question: String,
       query: String,
       difficulty: String,
@@ -844,7 +844,15 @@ object plantoqpl extends ZIOAppDefault {
     given JsonCodec[QplInstance] = DeriveJsonCodec.gen
   }
 
-  def writeQplsToJson(instances: Chunk[SpiderInstance], outputPath: Path): Task[Unit] =
+  def debugById(instances: Chunk[BirdInstance], id: Int): Unit = {
+    val instance = instances.find(_.id == id)
+    instance match {
+      case None      => println(s"Could not find id $id")
+      case Some(ins) => println(toQpl(ins).replace(" ; ", "\n"))
+    }
+  }
+
+  def writeQplsToJson(instances: Chunk[BirdInstance], outputPath: Path): Task[Unit] =
     for {
       qpls <- ZIO.foreach(instances) { ins =>
         ZIO
@@ -857,7 +865,7 @@ object plantoqpl extends ZIOAppDefault {
     } yield ()
 
   final case class CommandLineArgs(
-      spiderPath: Option[Path] = None,
+      // spiderPath: Option[Path] = None,
       datasetPath: Option[Path] = None,
       outputPath: Option[Path] = None
   )
@@ -868,7 +876,7 @@ object plantoqpl extends ZIOAppDefault {
 
     OParser.sequence(
       programName("ep2qpl"),
-      opt[Path]('s', "spider").action((x, c) => c.copy(spiderPath = Some(x))).text("Path to the Spider dataset"),
+      // opt[Path]('s', "spider").action((x, c) => c.copy(spiderPath = Some(x))).text("Path to the Spider dataset"),
       opt[Path]('i', "input").action((x, c) => c.copy(datasetPath = Some(x))).text("Path to dataset file to convert"),
       opt[Path]('o', "output").action((x, c) => c.copy(outputPath = Some(x))).text("Output path")
     )
@@ -877,14 +885,14 @@ object plantoqpl extends ZIOAppDefault {
   val program = for {
     args <- getArgs.flatMap(args => ZIO.fromOption(OParser.parse(cmdLineParser, args, CommandLineArgs())))
     paths <- ZIO.fromOption(for {
-      s <- args.spiderPath
+      // s <- args.spiderPath
       d <- args.datasetPath
       o <- args.outputPath
-    } yield (s, d, o))
-    (spiderPath, datasetPath, outputPath) = paths
-    tablesPath                            = spiderPath.resolve("tables.json")
-    instances <- readDataset(datasetPath, tablesPath)
+    } yield (d, o))
+    (datasetPath, outputPath) = paths
+    instances <- readDataset(datasetPath)
     _         <- writeQplsToJson(instances, outputPath)
+    // _ = debugById(instances, 574)
   } yield ()
 
   override def run = program

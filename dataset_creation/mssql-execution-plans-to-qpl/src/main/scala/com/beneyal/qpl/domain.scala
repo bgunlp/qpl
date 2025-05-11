@@ -28,9 +28,10 @@ object domain {
   final case class OrderByColumn(column: ColumnReference, ascending: Boolean)
 
   enum ArithmeticOperation(val sign: String) {
-    case ADD extends ArithmeticOperation("+")
-    case DIV extends ArithmeticOperation("/")
-    case SUB extends ArithmeticOperation("-")
+    case ADD  extends ArithmeticOperation("+")
+    case SUB  extends ArithmeticOperation("-")
+    case MULT extends ArithmeticOperation("*")
+    case DIV  extends ArithmeticOperation("/")
   }
 
   enum ComparisonOperation(val sign: String) {
@@ -60,7 +61,7 @@ object domain {
     case Convert(scalarOperator: ScalarOperator)
     case If(condition: ScalarOperator, ifTrue: ScalarOperator, ifFalse: ScalarOperator)
     case Identifier(columnReference: ColumnReference)
-    case Intrinsic(functionName: String, lhs: ScalarOperator, rhs: ScalarOperator)
+    case Intrinsic(functionName: String, args: Chunk[ScalarOperator])
     case Logical(operation: LogicalOperation, scalarOperators: Chunk[ScalarOperator])
   }
 

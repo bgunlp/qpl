@@ -7,6 +7,8 @@ import java.nio.file.Path
 
 import com.beneyal.qpl.parsing.*
 import com.beneyal.qpl.domain.ExecutionPlan
+import scala.util.Failure
+import scala.util.Success
 
 object reading {
   final case class JsonSchema(
@@ -32,12 +34,15 @@ object reading {
   }
 
   final case class JsonInstance(
-      id: String,
+      @jsonField("question_id") questionId: Int,
       @jsonField("db_id") dbId: String,
-      query: String,
       question: String,
+      evidence: String,
+      @jsonField("SQL") sql: String,
       difficulty: String,
-      ep: Option[String]
+      @jsonField("TSQL") tsql: String,
+      ep: Option[String],
+      @jsonField("err_msg") errMsg: Option[String]
   )
 
   object JsonInstance {
@@ -49,35 +54,38 @@ object reading {
       db: Map[String, Chunk[String]]
   )
 
-  final case class SpiderInstance(
-      id: String,
-      db: Schema,
+  final case class BirdInstance(
+      id: Int,
+      dbId: String,
       query: String,
       question: String,
       difficulty: String,
       ep: ExecutionPlan
   )
 
-  def readDataset(datasetPath: Path, tablesPath: Path): Task[Chunk[SpiderInstance]] = {
+  def readDataset(datasetPath: Path /* , tablesPath: Path */ ): Task[Chunk[BirdInstance]] = {
     for {
-      tablesJson  <- ZIO.readFile(tablesPath)
-      schemasList <- ZIO.fromEither(tablesJson.fromJson[Chunk[JsonSchema]]).mapError(new RuntimeException(_))
-      schemas = schemasList.map(s => s.dbId -> s).toMap
+      // tablesJson  <- ZIO.readFile(tablesPath)
+      // schemasList <- ZIO.fromEither(tablesJson.fromJson[Chunk[JsonSchema]]).mapError(new RuntimeException(_))
+      // schemas = schemasList.map(s => s.dbId -> s).toMap
       dataset   <- ZIO.readFile(datasetPath)
       instances <- ZIO.fromEither(dataset.fromJson[Chunk[JsonInstance]]).mapError(new RuntimeException(_))
       instancesWithEps = instances.filter(_.ep.isDefined)
       eps = instancesWithEps.map { ins =>
         ins.ep.map(XML.loadString).toRight(new RuntimeException("No EP")).toTry.flatMap(parseExecutionPlan)
       }
-      result <- ZIO.foreach(instancesWithEps.zip(eps)) { case (ji, epTry) =>
-        for {
-          ep <- ZIO
-            .fromTry(epTry)
-            .mapError(t =>
-              new RuntimeException(s"${t.getLocalizedMessage} for ${ji.id}: ${t.getStackTrace.mkString("\n")}")
-            )
-        } yield SpiderInstance(ji.id, schemas(ji.dbId).toSchema, ji.query, ji.question, ji.difficulty, ep)
+      (result, numErrors) = instancesWithEps.zip(eps).foldLeft(Chunk.empty[BirdInstance], 0) {
+        case ((result, numErrors), (ji, epTry)) =>
+          epTry match {
+            case Success(value) =>
+              (result :+ BirdInstance(ji.questionId, ji.dbId, ji.tsql, ji.question, ji.difficulty, value), numErrors)
+            case Failure(ex) =>
+              println(s"Skipping ${ji.questionId} because of ${ex.getLocalizedMessage}")
+              // ex.printStackTrace()
+              (result, numErrors + 1)
+          }
       }
+      _ = println(s"Skipped $numErrors instances out of ${eps.length}")
     } yield result
   }
 }

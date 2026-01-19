@@ -58,8 +58,11 @@ def main():
         """,  # 7.
     ]
 
-    """ Can copy the EP from 'anonymous_EP.txt' into 'output/tst1.json' (for example), then run Scala manually: """
-    # qpl_cr.tsql_to_ep(tsqls_temporal[0])
+    """ 
+    Can copy the EP from './out_for_testing/anonymous_EP.txt' into 'qpl/dataset_creation/output/tst1.json', 
+    then run Scala (plantoqpl.scala) manually: 
+    """
+    qpl_cr.tsql_to_ep(tsqls_temporal[0])
 
     """ Can compare against files suffixed with '_G' (gold), or between themselves to observe the translations: """
     # qpl_cr.tsqls_to_qpls_raw(tsqls_temporal, '_TEST_TSQLs_to_QPLs_temporal')

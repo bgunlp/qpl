@@ -49,7 +49,22 @@ object plantoqpl extends ZIOAppDefault {
     def empty: QplState = QplState(1, Map.empty)
   }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+  // 4 -> 5 -> 6??
   def toQpl(si: SpiderInstance): String = {
+    // 5:
     def recur(op: Operation, isRoot: Boolean = false): State[QplState, Chunk[QplLine]] = {
       op.name match {
         case "Scan" =>
@@ -59,6 +74,7 @@ object plantoqpl extends ZIOAppDefault {
               QplState(state.currentIdx + 1, state.outs.updated(state.currentIdx, op.outs))
             )
           } yield Chunk(QplLine(state.currentIdx, Chunk.empty, op))
+
         case "Aggregate" =>
           val outs = if (op.ins.head.name == "Sort" && op.ins.head.ins.head.name == "Scan") {
             op.outs.map {
@@ -75,6 +91,7 @@ object plantoqpl extends ZIOAppDefault {
               QplState(state.currentIdx + 1, state.outs.updated(state.currentIdx, outs))
             )
           } yield inner :+ QplLine(state.currentIdx, Chunk(state.currentIdx - 1), op.copy(outs = outs))
+       
         case "Filter" =>
           for {
             inner <- recur(op.ins.head)
@@ -105,21 +122,23 @@ object plantoqpl extends ZIOAppDefault {
             Chunk(state.currentIdx - 1),
             op.copy(outs = outs, options = opts)
           )
+      
         case "Sort" =>
           val isDistinct = op.options.exists { case Opt("Distinct", _) => true; case _ => false }
           for {
             inner <- recur(op.ins.head)
             state <- State.get[QplState]
             _ <-
-              if (isRoot) {
+              // if (isRoot) { // !!
+              if (!isDistinct) { // !!
                 State.set[QplState](
                   QplState(state.currentIdx + 1, state.outs.updated(state.currentIdx, op.outs))
                 )
-              } else {
+              } else {          // !!
                 State.pure(())
               }
           } yield
-            if (isRoot) {
+            // if (isRoot) { // !!
               if (isDistinct) {
                 val last   = inner.last
                 val lastOp = last.operation
@@ -134,14 +153,15 @@ object plantoqpl extends ZIOAppDefault {
               } else {
                 inner :+ QplLine(state.currentIdx, Chunk(state.currentIdx - 1), op)
               }
-            } else if (isDistinct) {
-              val init  = inner.init
-              val op    = inner.last.operation
-              val newOp = op.copy(options = op.options :+ Opt("Distinct", "true"))
-              init :+ QplLine(inner.last.idx, inner.last.ins, newOp)
-            } else {
-              inner
-            }
+            // } else if (isDistinct) {  // !!
+            //   val init  = inner.init
+            //   val op    = inner.last.operation
+            //   val newOp = op.copy(options = op.options :+ Opt("Distinct", "true"))
+            //   init :+ QplLine(inner.last.idx, inner.last.ins, newOp)
+            // } else {
+            //   inner
+            // }
+        
         case "Top" =>
           for {
             inner <- recur(op.ins.head)
@@ -156,6 +176,8 @@ object plantoqpl extends ZIOAppDefault {
               QplState(state.currentIdx + 1, state.outs.updated(state.currentIdx, outs))
             )
           } yield inner :+ QplLine(state.currentIdx, Chunk(state.currentIdx - 1), op.copy(outs = outs))
+         // yield inner :+ QplLine(state.currentIdx, Chunk(state.currentIdx - 1), op.copy(name = "TopSort", outs = outs))
+       
         case "TopSort" =>
           for {
             inner <- recur(op.ins.head)
@@ -170,9 +192,10 @@ object plantoqpl extends ZIOAppDefault {
               QplState(state.currentIdx + 1, state.outs.updated(state.currentIdx, outs))
             )
           } yield inner :+ QplLine(state.currentIdx, Chunk(state.currentIdx - 1), op.copy(outs = outs))
-        case "Join" | "Intersect" | "Except" | "Union" =>
+        
+        case "Join" | "Intersect" | "Except" | "Union" =>  //  | "LeftOuterJoin"  !!
           for {
-            top    <- recur(op.ins(0))
+            top    <- recur(op.ins(0))  // !!  , isRoot = true
             s1     <- State.get[QplState]
             bottom <- recur(op.ins(1))
             s2     <- State.get[QplState]
@@ -206,29 +229,86 @@ object plantoqpl extends ZIOAppDefault {
             Chunk(s1.currentIdx - 1, s2.currentIdx - 1),
             op.copy(options = opts, outs = outs)
           )
+        
+        // !!
+        // case "ConstantScan" =>
+        //   for {
+        //     state <- State.get[QplState]
+        //     _ <- State.set[QplState](
+        //       QplState(state.currentIdx + 1, state.outs.updated(state.currentIdx, op.outs))
+        //     )
+        //   } yield Chunk(QplLine(state.currentIdx, Chunk.empty, op))
+
+        // 5 !!
+        case "SequenceProject" =>
+          for {
+            inner <- recur(op.ins.head, false)  // inner <- recur(op.ins.head, true)
+            state <- State.get[QplState]
+            _ <-
+              // if (isRoot) {
+              State.set[QplState](
+                QplState(state.currentIdx + 1, state.outs.updated(state.currentIdx, op.outs))
+              )
+              // } else {
+              //   State.pure(())
+              // }
+          } yield
+            //if (isRoot) {
+            inner :+ QplLine(state.currentIdx, Chunk(state.currentIdx - 1), op)
+            // } else {
+            //   inner
+            // }
+              
+            
+
         case _ => throw new IllegalArgumentException(s"What is ${op.name}?!")
       }
     }
 
-    val lines = recur(toOperation(si), true).run(QplState.empty).value._2.map { line =>
-      val idx     = line.idx
-      val ins     = line.ins
-      val op      = line.operation
-      val opName  = op.name
-      val opts    = op.options.map(opt => s"${opt.name} ${opt.args.mkString("[ ", " , ", " ]")}").mkString(" ")
-      val outputs = op.outs.mkString("Output [ ", " , ", " ]")
 
-      if (opName == "Scan") {
-        s"#$idx = $opName $opts $outputs"
-      } else if (line.operation.options.isEmpty) {
-        s"#$idx = $opName [ ${ins.map(i => s"#$i").mkString(" , ")} ] $outputs"
-      } else {
-        s"#$idx = $opName [ ${ins.map(i => s"#$i").mkString(" , ")} ] $opts $outputs"
-      }
-    }
+
+
+   
+    val si_op = toOperation(si)     //  <-- 4 + 4b??
+    val lines = recur(si_op, true)  //  <-- 5       
+                .run(QplState.empty).value._2   //  <- 6:
+                .map { 
+                  line =>
+                      val idx     = line.idx
+                      val ins     = line.ins
+                      val op      = line.operation
+                      val opName  = op.name
+                      val opts    = op.options.map(opt => s"${opt.name} ${opt.args.mkString("[ ", " , ", " ]")}").mkString(" ")
+                      val outputs = op.outs.mkString("Output [ ", " , ", " ]")
+
+                      if (opName == "Scan") {
+                        s"#$idx = $opName $opts $outputs"
+                      } else if (line.operation.options.isEmpty) {
+                        s"#$idx = $opName [ ${ins.map(i => s"#$i").mkString(" , ")} ] $outputs"
+                      } else {
+                        s"#$idx = $opName [ ${ins.map(i => s"#$i").mkString(" , ")} ] $opts $outputs"
+                      }
+            }
 
     s"${si.db.name} | ${lines.mkString(" ; ")}"
   }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   def toOperation(si: SpiderInstance): Operation = {
     val (env, result) = toCR(si.ep.relop).run(si.ep.getInitialEnv).value
@@ -279,23 +359,49 @@ object plantoqpl extends ZIOAppDefault {
       so match {
         case Aggregate(aggType, distinct, scalarOperators) =>
           Aggregate(aggType, distinct, scalarOperators.map(recur(_, alias)))
+       
         case Arithmetic(operation, lhs, rhs) =>
           Arithmetic(operation, recur(lhs, Some("T")), recur(rhs, Some("B")))
+        
         case Compare(operation, lhs, rhs) =>
           Compare(operation, recur(lhs, Some("T")), recur(rhs, Some("B")))
+        
         case Const(value) =>
           Const(value)
+        
         case Convert(scalarOperator) =>
           recur(scalarOperator, alias)
+        
         case If(condition, ifTrue, ifFalse) =>
           If(recur(condition, alias), recur(ifTrue, alias), recur(ifFalse, alias))
+        
         case Identifier(cr) =>
           Identifier(ColumnReference(None, cr.column, None, alias, None, None))
+        
         case Intrinsic(functionName, lhs, rhs) =>
           Intrinsic(functionName, recur(lhs, alias), recur(rhs, alias))
+        
         case Logical(operation, scalarOperators) =>
           if (operation == LogicalOperation.ISNULL) Logical(operation, scalarOperators)
           else Logical(operation, Chunk(recur(scalarOperators(0), Some("T")), recur(scalarOperators(1), Some("B"))))
+       
+       
+
+       
+        case TimeIntervalPredicate(value) =>
+          TimeIntervalPredicate(value)
+        
+        case IntrinsicNoParam(functionName) =>
+          IntrinsicNoParam(functionName)
+        
+        case IntrinsicMultyParam(functionName, scalarOperators) =>
+          IntrinsicMultyParam(functionName, scalarOperators.map(recur(_, alias)))
+        
+        case UserDefinedFunction(functionName, scalarOperators) =>
+          UserDefinedFunction(functionName, scalarOperators.map(recur(_, alias)))
+        
+        case Sequence(functionName) =>
+          Sequence(functionName)
       }
     }
     recur(p, None)
@@ -309,21 +415,52 @@ object plantoqpl extends ZIOAppDefault {
 
   private val skipSortAndConvert = skipSort andThen toCR
 
+
+
+
+
+
+
+
+  // 4 !!
   private def toCR(relop: RelOp): State[Env, Operation] = {
     val outputList = relop.outputList
     relop.operation match {
+      // case Assert(_,                                         // !!  (ALWAYS skip assert with underline StreamAggregate)
+      //             RelOp(StreamAggregate(_relop, _, _), _outLst),   
+      //             _, 
+      //             _) 
+      //     => toCR(_relop.copy(outputList = _relop.outputList ++ _outLst ++ relop.outputList))  // !!
+
       case ComputeScalar(relop, _, definedValues) =>
         for {
           inner <- toCR(relop)
           _     <- State.modify[Env](addDefinedValuesToEnv(definedValues))
           env   <- State.get[Env]
+
+
+          // !! !!
+          // definedValuesAssignmentAliased = definedValues.map(df => 
+          //   df match {
+          //       case Values(values) =>
+          //         "ERROR1"
+          //       case Assignment(columnReference, scalarOperator) =>
+          //         toCR(env)(assignAliases(scalarOperator))  
+
+          //       case UnionAssignment(unionName, lhs, rhs) =>
+          //         "ERROR2"
+          //     }
+          //   )
+
+
+
           isConvertOp = definedValues.exists {
             case Assignment(columnReference, Convert(_)) => true
             case _                                       => false
           }
           derefedOutputList = outputList.map(getOrDeref(env))
           aggPat            = """MIN|MAX|COUNT|SUM|AVG""".r
-          groupBy = Opt(
+          groupBy = Opt(  // ??
             "GroupBy",
             outputList.filterNot(cr => aggPat.findPrefixOf(getOrDeref(env)(cr)).isDefined).map(_.column)
           )
@@ -332,24 +469,41 @@ object plantoqpl extends ZIOAppDefault {
           ifs           = definedValues.collect { case Assignment(columnReference, if_ : If) => if_ }
           finalResults  = ifs.map(toCR(env))
         } yield
-          if (inner.name == "Aggregate" || isConvertOp) inner.copy(outs = derefedOutputList)
+          if (inner.name == "Aggregate" || isConvertOp) {
+            inner.copy(outs = derefedOutputList)
+          }
           else if (arithColumns.nonEmpty) {
             val newOutputList = relop.outputList.filterNot(arithColumns.contains(_)).map(getOrDeref(env))
             inner.copy(outs = newOutputList ++ arithmeticOps.map(toCR(env)))
           } else if (derefedOutputList.exists(s => s.contains("AVG") || s.contains("SUM"))) {
-            inner.copy(outs = finalResults)
+            if (finalResults.isEmpty) 
+              inner.copy(outs = derefedOutputList) 
+            else {
+              inner.copy(outs = finalResults)
+            }
           } else if (derefedOutputList.toSet == inner.outs.toSet) {
             inner
-          } else {
-            Operation("Aggregate", derefedOutputList, Chunk(inner), groupBy)
+          } 
+
+          // else if (inner.name == "LeftOuterJoin") {  //  !!
+          //   //inner.copy(outs = finalResults)
+          //   Operation("Aggregate", derefedOutputList, Chunk(inner))
+          // }
+
+          else {
+            //Operation("Aggregate", derefedOutputList, Chunk(inner), groupBy)  // !!  
+            inner.copy(outs = derefedOutputList) //  !!
           }
+
+          
       case Concat(relops, definedValues) =>
         for {
           inners <- relops.map(toCR).sequence
           _      <- State.modify[Env](addDefinedValuesToEnv(definedValues))
           env    <- State.get[Env]
         } yield Operation("Union", outputList.map(cr => env.deref(cr.column)), inners)
-      case Filter(startupExpression, relop, predicate, definedValues) =>
+      
+      case Filter(startupExpression, relop, predicate, definedValues)  =>
         for {
           inner <- toCR(relop)
           _     <- State.modify[Env](addDefinedValuesToEnv(definedValues))
@@ -360,25 +514,52 @@ object plantoqpl extends ZIOAppDefault {
           Chunk(inner),
           Opt("Predicate", toCR(env)(predicate))
         )
+
+        case Assert(startupExpression, relop, predicate, definedValues)  =>
+        for {
+          inner <- toCR(relop)
+          _     <- State.modify[Env](addDefinedValuesToEnv(definedValues))
+          env   <- State.get[Env]
+        } yield 
+            if (inner.name == "Aggregate") {
+            // return the predecessor of inner (preserve/override outputs based on outputList)
+            val pred = inner.ins.headOption.getOrElse(inner)
+            val newOuts = if (outputList.isEmpty) pred.outs else outputList.map(getOrDeref(env))
+            pred.copy(outs = newOuts)
+            } else {     
+            Operation(
+              "Filter",
+              outputList.map(getOrDeref(env)),
+              Chunk(inner),
+              Opt("Predicate", toCR(env)(predicate))
+            )
+            }
+    
       case HashAggregate(relop, definedValues) =>
         for {
           inner <- toCR(relop)
           _     <- State.modify[Env](addDefinedValuesToEnv(definedValues))
           env   <- State.get[Env]
         } yield Operation("Aggregate", outputList.map(getOrDeref(env)), Chunk(inner))
-      case HashJoin(top, bottom, hashKeysBuild, hashKeysProbe, definedValues) =>
+
+      case HashJoin(top, bottom, hashKeysBuild, hashKeysProbe, definedValues, probeResidual) =>  // !!
         for {
           t   <- toCR(top)
           b   <- toCR(bottom)
           _   <- State.modify[Env](addDefinedValuesToEnv(definedValues))
           env <- State.get[Env]
           hashKeys      = hashKeysBuild.map(getOrDeref(env)).zip(hashKeysProbe.map(getOrDeref(env)))
-          newOutputList = if (outputList.isEmpty) t.outs else outputList.map(getOrDeref(env))
+
+          pred = if (probeResidual.isDefined) 
+            Chunk(toCR(env)(probeResidual.get)) 
+            else hashKeys.map { case (lhs, rhs) => s"$lhs = $rhs" }
+
+          newOutputList = if (outputList.isEmpty) t.outs else outputList.map(getOrDeref(env)) 
         } yield Operation(
           "Join",
           newOutputList,
           Chunk(t, b),
-          Opt("Predicate", hashKeys.map { case (lhs, rhs) => s"$lhs = $rhs" })
+          Opt("Predicate", pred)
         )
       case HashUnion(top, bottom, definedValues) =>
         for {
@@ -416,11 +597,15 @@ object plantoqpl extends ZIOAppDefault {
           ins,
           Opt("Predicate", hashKeys.map { case (lhs, rhs) => s"$lhs = $rhs" })
         )
+      
       case IndexScan(ordered, obj, seekPredicate, predicate, definedValues) =>
         for {
           _   <- State.modify[Env](addDefinedValuesToEnv(definedValues))
           env <- State.get[Env]
+          
           p = predicate.map(toCR(env)).filterNot(_.contains("==="))
+          p_seek = seekPredicate
+
           otherOutputs = predicate.toList
             .flatMap(extractColumns)
             .filter(_.table.exists(_ == obj.table))
@@ -435,6 +620,7 @@ object plantoqpl extends ZIOAppDefault {
           Chunk(Opt("Table", Chunk(obj.strip.toString))) /* ++ isOrdered */ ++
             (if (p.isDefined) Chunk(Opt("Predicate", Chunk(p.get))) else Chunk.empty)
         )
+      
       case MergeJoin(top, bottom, joinColumns, definedValues) =>
         for {
           t   <- skipSortAndConvert(top)
@@ -471,13 +657,17 @@ object plantoqpl extends ZIOAppDefault {
           _   <- State.modify[Env](addDefinedValuesToEnv(definedValues))
           env <- State.get[Env]
         } yield Operation("Union", outputList.map(cr => env.deref(cr.column)), Chunk(t, b))
+      
       case NestedLoopsJoin(top, bottom, predicate, definedValues) =>
         for {
           t <- toCR(top)
-          newBottom = bottom.operation match {
-            case Top(_, _, relop, _) => relop
-            case _                   => bottom
-          }
+
+          newBottom = bottom // !!
+          // newBottom = bottom.operation match {  
+          //   case Top(_, _, relop, _) => relop  // !!
+          //   case _                   => bottom
+          // }
+
           b <- toCR(newBottom)
           bWithOutputList = b.copy(outs = if (b.outs.isEmpty) t.outs else b.outs)
           _   <- State.modify[Env](addDefinedValuesToEnv(definedValues))
@@ -491,11 +681,12 @@ object plantoqpl extends ZIOAppDefault {
           Chunk(t, b),
           newP.map(p => Chunk(Opt("Predicate", p))).getOrElse(Chunk.empty)
         )
+     
       case NestedLoopsExcept(top, bottom, predicate, outerReferences, definedValues) =>
         for {
           t <- skipSortAndConvert(top)
           newBottom = bottom.operation match {
-            case Top(_, _, relop, _) => relop
+            case Top(_, _, _, relop, _) => relop
             case _                   => bottom
           }
           b <- toCR(newBottom)
@@ -515,11 +706,12 @@ object plantoqpl extends ZIOAppDefault {
           Chunk(t, b),
           newP.map(p => Chunk(Opt("Predicate", p))).getOrElse(Chunk.empty) ++ exceptColumns
         )
+      
       case Intersect(top, bottom, predicate, definedValues) =>
         for {
-          t <- skipSortAndConvert(top)
+          t <- toCR(top) // skipSortAndConvert(top) // !!
           newBottom = bottom.operation match {
-            case Top(_, _, relop, _) => relop
+            case Top(_, _, _, relop, _) => relop
             case _                   => bottom
           }
           b <- toCR(newBottom)
@@ -535,6 +727,28 @@ object plantoqpl extends ZIOAppDefault {
           Chunk(t, b),
           newP.map(p => Chunk(Opt("Predicate", p))).getOrElse(Chunk.empty)
         )
+
+      // case NestedLoopsLeftOuterJoin(top, bottom, predicate, definedValues) =>
+      //   for {
+      //     t <- toCR(top)
+      //     newBottom = bottom.operation match {
+      //       case Top(_, _, relop, _) => relop
+      //       case _                   => bottom
+      //     }
+      //     b <- toCR(newBottom)
+      //     bWithOutputList = b.copy(outs = if (b.outs.isEmpty) t.outs else b.outs)
+      //     _   <- State.modify[Env](addDefinedValuesToEnv(definedValues))
+      //     env <- State.get[Env]
+      //     p               = predicate.map(toCR(env))
+      //     shouldGiveAlias = p.exists(_.contains("==="))
+      //     newP            = if (shouldGiveAlias) predicate.map(assignAliases).map(toCR(env)) else p
+      //   } yield Operation(
+      //     "LeftOuterJoin",
+      //     outputList.map(getOrDeref(env)),
+      //     Chunk(t, b),
+      //     newP.map(p => Chunk(Opt("Predicate", p))).getOrElse(Chunk.empty)
+      //   )
+      
       case Sort(distinct, orderBy, relop, definedValues) =>
         for {
           inner <- toCR(relop)
@@ -551,11 +765,13 @@ object plantoqpl extends ZIOAppDefault {
             )
           ) ++ (if (distinct) Chunk(Opt("Distinct", Chunk("true"))) else Chunk.empty)
         )
+      
       case Spool(relop, definedValues) =>
         for {
           inner <- toCR(relop)
           _     <- State.modify[Env](addDefinedValuesToEnv(definedValues))
         } yield inner
+      
       case StreamAggregate(relop, groupBy, definedValues) =>
         for {
           inner <- skipSortAndConvert(relop)
@@ -568,17 +784,24 @@ object plantoqpl extends ZIOAppDefault {
           derefedOutputList,
           Chunk(innerWithOutputList),
           (if (groupBy.nonEmpty)
-             Chunk(
-               Opt(
-                 "GroupBy",
-                 groupBy.map(_.column).map(env.deref).map {
-                   case s"$table.$col" => col
-                   case s              => s
-                 }
-               )
-             )
+            Chunk(
+              Opt(
+                "GroupBy",
+                groupBy
+                .map(_.column)
+                .map(env.deref)
+                .map { s =>
+                  s.split("\\s+")
+                  .map { part =>
+                    part.replaceAll("[\\w]+\\.", "")  // substitute every instance of "<table>." with ""
+                  }
+                  .mkString(" ")
+                }
+              )
+            )
            else Chunk.empty)
         )
+      
       case TableScan(ordered, obj, predicate, definedValues) =>
         for {
           _   <- State.modify[Env](addDefinedValuesToEnv(definedValues))
@@ -598,17 +821,68 @@ object plantoqpl extends ZIOAppDefault {
           Chunk.empty,
           Chunk(Opt("Table", Chunk(obj.strip.toString))) ++ isOrdered ++ p
         )
-      case Top(tieColumns, topExpression, relop, definedValues) =>
+
+      // case ConstantScan =>  // ConstantScan()
+      //   State.pure(Operation("ConstantScan", Chunk.empty, Chunk.empty, Chunk.empty))  // !!
+
+     // 4 !!
+      case SequenceProject(relop, definedValues) =>
+        for {
+          inner <- skipSortAndConvert(relop) //toCR(relop)
+          _     <- State.modify[Env](addDefinedValuesToEnv(definedValues))
+          env   <- State.get[Env]
+
+        } yield Operation(
+          "SequenceProject", 
+          outputList.map(getOrDeref(env)),    // outputList.map(cr => env.deref(cr.column))
+          Chunk(inner),
+          Chunk(
+            Opt(
+              "Over",
+              relop.operation match {
+                case Sort(_, orderBy, _, _) =>
+                  orderBy.map(c => s"${env.deref(c.column.strip.toString)} ${if (c.ascending) "ASC" else "DESC"}")
+                case _ =>
+                  Chunk.empty
+              }
+            )
+          )
+          )  
+  
+      case Top(tieColumns, topExpression, offsetExpression, relop, definedValues) =>
         for {
           inner <- toCR(relop)
           _     <- State.modify[Env](addDefinedValuesToEnv(definedValues))
           env   <- State.get[Env]
-        } yield Operation(
-          "Top",
-          outputList.map(getOrDeref(env)),
-          Chunk(inner),
-          Chunk(Opt("Rows", toCR(env)(topExpression)))
-        )
+        } 
+        yield 
+          if (offsetExpression.isDefined) {  // !!
+            if (inner.name == "TopSort") {  // !!
+              inner.copy(
+                outs = outputList.map(getOrDeref(env)),
+                options = inner.options.map {
+                  case Opt("Rows", _) => Opt("Rows", toCR(env)(topExpression))
+                  case opt => opt
+                } ++ Chunk(Opt("Offset", toCR(env)(offsetExpression.get)))
+              )
+            } else {  // !!
+              Operation(
+                "Top",
+                outputList.map(getOrDeref(env)),
+                Chunk(inner),
+                Chunk(Opt("Rows", toCR(env)(topExpression)))  ++ 
+                Chunk(Opt("Offset", toCR(env)(offsetExpression.get)))
+              )
+            }
+        } else {
+          Operation(
+            "Top",
+            outputList.map(getOrDeref(env)),
+            Chunk(inner),
+            Chunk(Opt("Rows", toCR(env)(topExpression)))
+          )
+        }
+
       case TopSort(rows, distinct, orderBy, relop, definedValues) =>
         for {
           inner <- toCR(relop)
@@ -631,6 +905,16 @@ object plantoqpl extends ZIOAppDefault {
     }
   }
 
+
+
+
+
+
+
+
+
+
+  // 4 for ScalarOperator ??
   private def toCR(env: Env)(so: ScalarOperator): String =
     so match {
       case Aggregate(aggType, distinct, scalarOperator) =>
@@ -649,28 +933,43 @@ object plantoqpl extends ZIOAppDefault {
           case _ if credScalarOperator == Some("countstar") => "countstar"
           case _ => s"$aggType(${if (distinct) "DISTINCT " else ""}${credScalarOperator.get})"
         }
+  
       case Arithmetic(operation, lhs, rhs) =>
         s"${toCR(env)(lhs)} ${operation.sign} ${toCR(env)(rhs)}"
+
       case Compare(operation, lhs, rhs) =>
         val lhs_ = toCR(env)(lhs)
         val rhs_ = toCR(env)(rhs)
-        if (lhs_ == rhs_) s"$lhs_ === $rhs_"
-        else s"${lhs_} ${operation.sign} ${rhs_}"
+
+        // if (lhs_ == rhs_) s"$lhs_ === $rhs_"  // !! why???
+        //  else s"${lhs_} ${operation.sign} ${rhs_}"
+
+        // Below is a hack. TODO: fix it properly:  // !!
+        if (lhs_.contains("MET_BY") || lhs_.contains("MEETS") || lhs_.contains("DURING") & operation.sign == "=" & rhs_ == "1") 
+            lhs_
+        else
+          s"${lhs_} ${operation.sign} ${rhs_}" // !!
+     
       case Const(value) =>
         value match {
           case s"'$str '" => s"'$str'"
           case s"N'$str'" => s"'$str'"
           case _          => value
         }
+    
       case Convert(scalarOperator) =>
         toCR(env)(scalarOperator)
+      
       case ifExpr @ If(condition, ifTrue, ifFalse) =>
         if (isAvg(ifExpr)) toAvg(ifExpr, env)
         else if (isSum(ifExpr)) toSum(ifExpr, env)
         else if (isCountColumn(ifExpr)) toCountColumn(ifExpr, env)
         else if (isCountStar(ifExpr)) "countstar"
-        else if (isAssertion(ifExpr)) toAssertion(ifExpr, env)
+        else if (isAssertion(ifExpr))      toAssertion(ifExpr, env)
+        else if (isBoolExpWrapper(ifExpr))  toBoolExp(ifExpr, env)
+        else if (isPercentRankCalc(ifExpr))  toPercentRank(ifExpr, env)
         else ???
+      
       case Identifier(columnReference) =>
         columnReference.scalarOperator
           .map(toCR(env))
@@ -681,8 +980,19 @@ object plantoqpl extends ZIOAppDefault {
               case ColumnReference(_, column, _, None, _, _)        => env.deref(column)
             }
           }
+
       case Intrinsic(functionName, lhs, rhs) =>
         s"${toCR(env)(lhs)} $functionName ${toCR(env)(rhs)}"
+
+      // !!
+      case IntrinsicNoParam(functionName) =>
+        s"$functionName()"
+
+      // !!
+      case IntrinsicMultyParam(functionName, scalarOperators) =>
+        s"$functionName(${scalarOperators.map(toCR(env)).filter(_.nonEmpty).mkString(", ")})"
+      
+      // !!
       case Logical(operation, scalarOperators) =>
         if (operation == LogicalOperation.NOT)
           scalarOperators match {
@@ -692,9 +1002,30 @@ object plantoqpl extends ZIOAppDefault {
         else if (operation == LogicalOperation.ISNULL)
           s"${toCR(env)(scalarOperators(0))} ${operation.toString}"
         else
-          s"${toCR(env)(scalarOperators(0))} ${operation.toString} ${toCR(env)(scalarOperators(1))}"
+          scalarOperators.map(toCR(env)).mkString(s" ${operation.toString} ")  
+        
+      // !!    
+      case TimeIntervalPredicate(value) =>
+        value
+
+      // !!        
+      case UserDefinedFunction(functionName, scalarOperators) =>
+        if (functionName.contains("MET_BY") || functionName.contains("MEETS") || functionName.contains("DURING")) // TODO: fix this hack
+            toCR(env)(scalarOperators(0)) + "  " + functionName + "  " + toCR(env)(scalarOperators(1))
+        else
+          functionName + "(" + scalarOperators.map(toCR(env)).mkString(", ") + ")"
+
+      // 4 so !!
+      case Sequence(functionName) =>
+        s"$functionName()"
     }
 
+
+
+
+
+
+  
   def extractColumns(so: ScalarOperator): List[ColumnReference] = {
     def recur(so: ScalarOperator): List[ColumnReference] =
       so match {
@@ -828,9 +1159,35 @@ object plantoqpl extends ZIOAppDefault {
       case _                                => false
     }
   }
-
+  
   def toAssertion(ifExpr: If, env: Env): String =
     s"NOT (${toCR(env)(ifExpr.condition)})"
+
+
+  def isBoolExpWrapper(ifExpr: If): Boolean = {
+    ifExpr match {
+      case If(_, Const("1"), Const("0")) => true
+      case _                             => false
+    }
+  }
+  def toBoolExp(ifExpr: If, env: Env): String =
+    s"${toCR(env)(ifExpr.condition)}"
+
+  def isPercentRankCalc(ifExpr: If): Boolean = {
+    ifExpr match {
+      case If(Compare(ComparisonOperation.EQ,	
+                      _, 
+                      Const("1")), 
+              Const("0.0"), 
+              Arithmetic(ArithmeticOperation.DIV, 
+                        Arithmetic(ArithmeticOperation.SUB, _, Const("1.0")), 
+                        Arithmetic(ArithmeticOperation.SUB, _, Const("1.0")))) => true
+      case _                             => false
+    }
+  }
+  def toPercentRank(ifExpr: If, env: Env): String =
+    "percent_rank()"
+
 
   final case class QplInstance(
       id: String,
@@ -874,8 +1231,16 @@ object plantoqpl extends ZIOAppDefault {
     )
   }
 
+ 
+  // val args = CommandLineArgs(  // !!
+  //     spiderPath = Some(java.nio.file.Paths.get("C:\\Users\\Stas\\PycharmProjects\\EHRSQL\\mimic_iv")),
+  //     datasetPath = Some(java.nio.file.Paths.get("C:\\Users\\Stas\\PycharmProjects\\qpl\\dataset_creation\\output\\tst1.json")),
+  //     outputPath = Some(java.nio.file.Paths.get("C:\\Users\\Stas\\PycharmProjects\\qpl\\dataset_creation\\output\\tst1_qpl.json"))
+  //   ) 
+
   val program = for {
-    args <- getArgs.flatMap(args => ZIO.fromOption(OParser.parse(cmdLineParser, args, CommandLineArgs())))
+    args <- getArgs.flatMap(args => ZIO.fromOption(OParser.parse(cmdLineParser, args, CommandLineArgs()))) // !!
+    
     paths <- ZIO.fromOption(for {
       s <- args.spiderPath
       d <- args.datasetPath

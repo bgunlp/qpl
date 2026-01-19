@@ -2,6 +2,7 @@ package com.beneyal.qpl
 
 import zio.Chunk
 
+
 object domain {
   final case class ColumnReference(
       scalarOperator: Option[ScalarOperator],
@@ -31,6 +32,7 @@ object domain {
     case ADD extends ArithmeticOperation("+")
     case DIV extends ArithmeticOperation("/")
     case SUB extends ArithmeticOperation("-")
+    case MULT extends ArithmeticOperation("*")
   }
 
   enum ComparisonOperation(val sign: String) {
@@ -62,6 +64,15 @@ object domain {
     case Identifier(columnReference: ColumnReference)
     case Intrinsic(functionName: String, lhs: ScalarOperator, rhs: ScalarOperator)
     case Logical(operation: LogicalOperation, scalarOperators: Chunk[ScalarOperator])
+    
+    // !!
+    case TimeIntervalPredicate(value: String)
+    case IntrinsicNoParam(functionName: String)
+    case IntrinsicMultyParam(functionName: String, scalarOperators: List[ScalarOperator])
+    case UserDefinedFunction(functionName: String, scalarOperators: Chunk[ScalarOperator])
+
+    // 1 so !!
+    case Sequence(functionName: String)
   }
 
   enum DefinedValue {
@@ -107,12 +118,19 @@ object domain {
         predicate: ScalarOperator,
         definedValues: Chunk[DefinedValue]
     )
+    case Assert(
+        startupExpression: Boolean,
+        relop: RelOp,
+        predicate: ScalarOperator,
+        definedValues: Chunk[DefinedValue]
+    )
     case HashJoin(
         top: RelOp,
         bottom: RelOp,
         hashKeysBuild: Chunk[ColumnReference],
         hashKeysProbe: Chunk[ColumnReference],
-        definedValues: Chunk[DefinedValue]
+        definedValues: Chunk[DefinedValue],
+        probeResidual: Option[ScalarOperator] // !!
     )
     case HashUnion(
         top: RelOp,
@@ -146,6 +164,7 @@ object domain {
         predicates: Option[ScalarOperator],
         definedValues: Chunk[DefinedValue]
     )
+    
     case MergeUnion(
         top: RelOp,
         bottom: RelOp,
@@ -164,6 +183,7 @@ object domain {
         direction: Direction,
         definedValues: Chunk[DefinedValue]
     )
+
     case NestedLoopsJoin(
         top: RelOp,
         bottom: RelOp,
@@ -183,6 +203,21 @@ object domain {
         predicate: Option[ScalarOperator],
         definedValues: Chunk[DefinedValue]
     )
+
+    // 1 !!
+    // case NestedLoopsLeftOuterJoin(  
+    //     top: RelOp,
+    //     bottom: RelOp,
+    //     predicate: Option[ScalarOperator],
+    //     definedValues: Chunk[DefinedValue]
+    // )
+
+    // 1 !!  
+    case SequenceProject(  
+        relop: RelOp,
+        definedValues: Chunk[DefinedValue]
+    )
+
     case Sort(
         distinct: Boolean,
         orderBy: Chunk[OrderByColumn],
@@ -194,6 +229,10 @@ object domain {
         definedValues: Chunk[DefinedValue]
     )
     case EmptySpool
+
+    // //case ConstantScan()  // !!
+    // case ConstantScan  // !!
+
     case StreamAggregate(
         relop: RelOp,
         groupBy: Chunk[ColumnReference],
@@ -208,6 +247,7 @@ object domain {
     case Top(
         tieColumns: Chunk[ColumnReference],
         topExpression: ScalarOperator,
+        offsetExpression: Option[ScalarOperator],
         relop: RelOp,
         definedValues: Chunk[DefinedValue]
     )

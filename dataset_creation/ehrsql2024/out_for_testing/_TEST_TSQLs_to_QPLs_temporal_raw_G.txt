@@ -1,0 +1,490 @@
+0:
+
+
+SELECT admissions.dischtime
+FROM admissions
+WHERE dbo.MEETS(admissions.dischtime, dbo.TIME_INTERVAL(admissions.dischtime, admissions.dischtime)) = 1
+  AND subject_id = 10004235
+
+
+
+#1 = Scan Table [ admissions ]
+	 Predicate [ admissions.subject_id = 10004235 ]
+	 Output [ admissions.dischtime , admissions.subject_id ]
+	 
+#2 = Filter [ #1 ]
+	 Predicate [ admissions.dischtime  MEETS  TIME_INTERVAL(admissions.dischtime, admissions.dischtime) ]
+	 Output [ admissions.dischtime ]
+
+
+
+<RelOp NodeId="0" PhysicalOp="Filter" LogicalOp="Filter" >
+	<OutputList>
+		<ColumnReference   Table="admissions" Column="dischtime"/>
+	
+	<Filter >
+		<RelOp NodeId="1" PhysicalOp="Clustered Index Scan" LogicalOp="Clustered Index Scan" >
+			<OutputList>
+				<ColumnReference   Table="admissions" Column="dischtime"/>
+			
+			<IndexScan >
+				<DefinedValues>
+					<DefinedValue>
+						<ColumnReference   Table="admissions" Column="dischtime"/>
+				<Object   Table="admissions" >
+				<Predicate>
+					<ScalarOperator ScalarString=" admissions.subject_id=(10004235)">
+						<Compare CompareOp="EQ">
+							<ScalarOperator>
+								<Identifier>
+									<ColumnReference   Table="admissions" Column="subject_id"/>
+							<ScalarOperator>
+								<Const ConstValue="(10004235)"/>
+		<Predicate>
+			<ScalarOperator ScalarString=" MEETS( admissions.dischtime, TIME_INTERVAL( admissions.dischtime, admissions.dischtime))=(1)">
+				<Compare CompareOp="EQ">
+					<ScalarOperator>
+						<UserDefinedFunction FunctionName=" MEETS">
+							<ScalarOperator>
+								<Identifier>
+									<ColumnReference   Table="admissions" Column="dischtime"/>
+							<ScalarOperator>
+								<UserDefinedFunction FunctionName=" TIME_INTERVAL">
+									<ScalarOperator>
+										<Identifier>
+											<ColumnReference   Table="admissions" Column="dischtime"/>
+									<ScalarOperator>
+										<Identifier>
+											<ColumnReference   Table="admissions" Column="dischtime"/>
+					<ScalarOperator>
+						<Const ConstValue="(1)"/>
+
+
+======================================================================================================================================================
+
+1:
+
+
+SELECT DATEDIFF(YEAR, admissions.dischtime, GETDATE())
+FROM admissions
+WHERE dbo.DURING(admissions.dischtime, dbo.TIME_INTERVAL_REL(DATEADD(YEAR, -1, GETDATE()), 'year')) = 1
+
+
+
+#1 = Scan Table [ admissions ]
+	 Output [ admissions.dischtime ]
+	 
+#2 = Filter [ #1 ]
+	 Predicate [ admissions.dischtime  DURING  TIME_INTERVAL(dateadd(0, -1, getdate()), 'year') ]
+	 Output [ datediff(0, admissions.dischtime, getdate()) ]
+
+
+
+<RelOp NodeId="0" PhysicalOp="Compute Scalar" LogicalOp="Compute Scalar" >
+	<OutputList>
+		<ColumnReference Column="Expr1002"/>
+	
+	<ComputeScalar>
+		<DefinedValues>
+			<DefinedValue>
+				<ColumnReference Column="Expr1002"/>
+				<ScalarOperator ScalarString="datediff(year, admissions.dischtime,getdate())">
+					<Intrinsic FunctionName="datediff">
+						<ScalarOperator>
+							<Const ConstValue="(0)"/>
+						
+						<ScalarOperator>
+							<Identifier>
+								<ColumnReference   Table="admissions" Column="dischtime"/>
+						<ScalarOperator>
+							<Identifier>
+								<ColumnReference Column="ConstExpr1004">
+									<ScalarOperator>
+										<Intrinsic FunctionName="getdate"/>
+		<RelOp NodeId="1" PhysicalOp="Filter" LogicalOp="Filter" >
+			<OutputList>
+				<ColumnReference   Table="admissions" Column="dischtime"/>
+			
+			<Filter >
+				<RelOp NodeId="2" PhysicalOp="Clustered Index Scan" LogicalOp="Clustered Index Scan" >
+					<OutputList>
+						<ColumnReference   Table="admissions" Column="dischtime"/>
+					
+					<IndexScan >
+						<DefinedValues>
+							<DefinedValue>
+								<ColumnReference   Table="admissions" Column="dischtime"/>
+						<Object   Table="admissions" >
+				<Predicate>
+					<ScalarOperator ScalarString=" DURING( admissions.dischtime, TIME_INTERVAL_REL(dateadd(year,(-1),getdate()),'year'))=(1)">
+						<Compare CompareOp="EQ">
+							<ScalarOperator>
+								<UserDefinedFunction FunctionName=" DURING">
+									<ScalarOperator>
+										<Identifier>
+											<ColumnReference   Table="admissions" Column="dischtime"/>
+									<ScalarOperator>
+										<UserDefinedFunction FunctionName=" TIME_INTERVAL_REL">
+											<ScalarOperator>
+												<Identifier>
+													<ColumnReference Column="ConstExpr1003">
+														<ScalarOperator>
+															<Intrinsic FunctionName="dateadd">
+																<ScalarOperator>
+																	<Const ConstValue="(0)"/>
+																
+																<ScalarOperator>
+																	<Const ConstValue="(-1)"/>
+																
+																<ScalarOperator>
+																	<Intrinsic FunctionName="getdate"/>
+											<ScalarOperator>
+												<Const ConstValue="'year'"/>
+							<ScalarOperator>
+								<Const ConstValue="(1)"/>
+
+
+======================================================================================================================================================
+
+2:
+
+
+SELECT diagnoses_icd.icd_code
+FROM diagnoses_icd
+WHERE dbo.DURING(diagnoses_icd.charttime, dbo.TIME_INTERVAL_YMD(2100, NULL, NULL)) = 1
+
+
+
+#1 = Scan Table [ diagnoses_icd ]
+	 Output [ diagnoses_icd.icd_code , diagnoses_icd.charttime ]
+	 
+#2 = Filter [ #1 ]
+	 Predicate [ diagnoses_icd.charttime  DURING  TIME_INTERVAL(2100, NULL, NULL) ]
+	 Output [ diagnoses_icd.icd_code ]
+
+
+
+<RelOp NodeId="0" PhysicalOp="Filter" LogicalOp="Filter" >
+	<OutputList>
+		<ColumnReference   Table="diagnoses_icd" Column="icd_code"/>
+	
+	<Filter >
+		<RelOp NodeId="1" PhysicalOp="Clustered Index Scan" LogicalOp="Clustered Index Scan" >
+			<OutputList>
+				<ColumnReference   Table="diagnoses_icd" Column="icd_code"/>
+				<ColumnReference   Table="diagnoses_icd" Column="charttime"/>
+			
+			<IndexScan >
+				<DefinedValues>
+					<DefinedValue>
+						<ColumnReference   Table="diagnoses_icd" Column="icd_code"/>
+					
+					<DefinedValue>
+						<ColumnReference   Table="diagnoses_icd" Column="charttime"/>
+				<Object   Table="diagnoses_icd" >
+		<Predicate>
+			<ScalarOperator ScalarString=" DURING( diagnoses_icd.charttime, TIME_INTERVAL_YMD((2100),NULL,NULL))=(1)">
+				<Compare CompareOp="EQ">
+					<ScalarOperator>
+						<UserDefinedFunction FunctionName=" DURING">
+							<ScalarOperator>
+								<Identifier>
+									<ColumnReference   Table="diagnoses_icd" Column="charttime"/>
+							<ScalarOperator>
+								<UserDefinedFunction FunctionName=" TIME_INTERVAL_YMD">
+									<ScalarOperator>
+										<Const ConstValue="(2100)"/>
+									
+									<ScalarOperator>
+										<Const ConstValue="NULL"/>
+									
+									<ScalarOperator>
+										<Const ConstValue="NULL"/>
+					<ScalarOperator>
+						<Const ConstValue="(1)"/>
+
+
+======================================================================================================================================================
+
+3:
+
+
+SELECT DATEDIFF(MONTH, chartevents.charttime, GETDATE())
+FROM chartevents
+WHERE dbo.MET_BY(chartevents.charttime, dbo.TIME_POINT(DATEADD(MONTH, -5, GETDATE()))) = 1
+
+
+
+#1 = Scan Table [ chartevents ]
+	 Output [ chartevents.charttime ]
+	 
+#2 = Filter [ #1 ]
+	 Predicate [ chartevents.charttime  MET_BY  TIME_POINT(dateadd(2, -5, getdate())) ]
+	 Output [ datediff(2, chartevents.charttime, getdate()) ]
+
+
+
+<RelOp NodeId="0" PhysicalOp="Compute Scalar" LogicalOp="Compute Scalar" >
+	<OutputList>
+		<ColumnReference Column="Expr1002"/>
+	
+	<ComputeScalar>
+		<DefinedValues>
+			<DefinedValue>
+				<ColumnReference Column="Expr1002"/>
+				<ScalarOperator ScalarString="datediff(month, chartevents.charttime,getdate())">
+					<Intrinsic FunctionName="datediff">
+						<ScalarOperator>
+							<Const ConstValue="(2)"/>
+						
+						<ScalarOperator>
+							<Identifier>
+								<ColumnReference   Table="chartevents" Column="charttime"/>
+						<ScalarOperator>
+							<Identifier>
+								<ColumnReference Column="ConstExpr1004">
+									<ScalarOperator>
+										<Intrinsic FunctionName="getdate"/>
+		<RelOp NodeId="1" PhysicalOp="Filter" LogicalOp="Filter" >
+			<OutputList>
+				<ColumnReference   Table="chartevents" Column="charttime"/>
+			
+			<Filter >
+				<RelOp NodeId="2" PhysicalOp="Clustered Index Scan" LogicalOp="Clustered Index Scan" >
+					<OutputList>
+						<ColumnReference   Table="chartevents" Column="charttime"/>
+					
+					<IndexScan >
+						<DefinedValues>
+							<DefinedValue>
+								<ColumnReference   Table="chartevents" Column="charttime"/>
+						<Object   Table="chartevents" >
+				<Predicate>
+					<ScalarOperator ScalarString=" MET_BY( chartevents.charttime, TIME_POINT(dateadd(month,(-5),getdate())))=(1)">
+						<Compare CompareOp="EQ">
+							<ScalarOperator>
+								<UserDefinedFunction FunctionName=" MET_BY">
+									<ScalarOperator>
+										<Identifier>
+											<ColumnReference   Table="chartevents" Column="charttime"/>
+									<ScalarOperator>
+										<UserDefinedFunction FunctionName=" TIME_POINT">
+											<ScalarOperator>
+												<Identifier>
+													<ColumnReference Column="ConstExpr1003">
+														<ScalarOperator>
+															<Intrinsic FunctionName="dateadd">
+																<ScalarOperator>
+																	<Const ConstValue="(2)"/>
+																
+																<ScalarOperator>
+																	<Const ConstValue="(-5)"/>
+																
+																<ScalarOperator>
+																	<Intrinsic FunctionName="getdate"/>
+							<ScalarOperator>
+								<Const ConstValue="(1)"/>
+
+
+======================================================================================================================================================
+
+4:
+
+
+SELECT admissions.dischtime
+FROM admissions
+WHERE dbo.MEETS(admissions.dischtime, dbo.TIME_POINT_REL(admissions.dischtime, 'start-of day')) = 1
+  AND admissions.dischtime IS NOT NULL
+
+
+
+#1 = Scan Table [ admissions ]
+	 Predicate [ admissions.dischtime IS NOT NULL ]
+	 Output [ admissions.dischtime , admissions.dischtime ]
+	 
+#2 = Filter [ #1 ]
+	 Predicate [ admissions.dischtime  MEETS  TIME_POINT(admissions.dischtime, 'start-of day') ]
+	 Output [ admissions.dischtime ]
+
+
+
+<RelOp NodeId="0" PhysicalOp="Filter" LogicalOp="Filter" >
+	<OutputList>
+		<ColumnReference   Table="admissions" Column="dischtime"/>
+	
+	<Filter >
+		<RelOp NodeId="1" PhysicalOp="Clustered Index Scan" LogicalOp="Clustered Index Scan" >
+			<OutputList>
+				<ColumnReference   Table="admissions" Column="dischtime"/>
+			
+			<IndexScan >
+				<DefinedValues>
+					<DefinedValue>
+						<ColumnReference   Table="admissions" Column="dischtime"/>
+				<Object   Table="admissions" >
+				<Predicate>
+					<ScalarOperator ScalarString=" admissions.dischtime IS NOT NULL">
+						<Compare CompareOp="IS NOT">
+							<ScalarOperator>
+								<Identifier>
+									<ColumnReference   Table="admissions" Column="dischtime"/>
+							<ScalarOperator>
+								<Const ConstValue="NULL"/>
+		<Predicate>
+			<ScalarOperator ScalarString=" MEETS( admissions.dischtime, TIME_POINT_REL( admissions.dischtime,'start-of day'))=(1)">
+				<Compare CompareOp="EQ">
+					<ScalarOperator>
+						<UserDefinedFunction FunctionName=" MEETS">
+							<ScalarOperator>
+								<Identifier>
+									<ColumnReference   Table="admissions" Column="dischtime"/>
+							<ScalarOperator>
+								<UserDefinedFunction FunctionName=" TIME_POINT_REL">
+									<ScalarOperator>
+										<Identifier>
+											<ColumnReference   Table="admissions" Column="dischtime"/>
+									<ScalarOperator>
+										<Const ConstValue="'start-of day'"/>
+					<ScalarOperator>
+						<Const ConstValue="(1)"/>
+
+
+======================================================================================================================================================
+
+5:
+
+
+SELECT labevents.valuenum
+FROM labevents
+WHERE dbo.MET_BY(labevents.charttime, dbo.TIME_POINT_START_OF_YMD(2100, 05, NULL)) = 1
+
+
+
+#1 = Scan Table [ labevents ]
+	 Output [ labevents.charttime , labevents.valuenum ]
+	 
+#2 = Filter [ #1 ]
+	 Predicate [ labevents.charttime  MET_BY  TIME_POINT_START_OF(2100, 5, NULL) ]
+	 Output [ labevents.valuenum ]
+
+
+
+<RelOp NodeId="0" PhysicalOp="Filter" LogicalOp="Filter" >
+	<OutputList>
+		<ColumnReference   Table="labevents" Column="valuenum"/>
+	
+	<Filter >
+		<RelOp NodeId="1" PhysicalOp="Clustered Index Scan" LogicalOp="Clustered Index Scan" >
+			<OutputList>
+				<ColumnReference   Table="labevents" Column="charttime"/>
+				<ColumnReference   Table="labevents" Column="valuenum"/>
+			
+			<IndexScan >
+				<DefinedValues>
+					<DefinedValue>
+						<ColumnReference   Table="labevents" Column="charttime"/>
+					
+					<DefinedValue>
+						<ColumnReference   Table="labevents" Column="valuenum"/>
+				<Object   Table="labevents" >
+		<Predicate>
+			<ScalarOperator ScalarString=" MET_BY( labevents.charttime, TIME_POINT_START_OF_YMD((2100),(5),NULL))=(1)">
+				<Compare CompareOp="EQ">
+					<ScalarOperator>
+						<UserDefinedFunction FunctionName=" MET_BY">
+							<ScalarOperator>
+								<Identifier>
+									<ColumnReference   Table="labevents" Column="charttime"/>
+							<ScalarOperator>
+								<UserDefinedFunction FunctionName=" TIME_POINT_START_OF_YMD">
+									<ScalarOperator>
+										<Const ConstValue="(2100)"/>
+									
+									<ScalarOperator>
+										<Const ConstValue="(5)"/>
+									
+									<ScalarOperator>
+										<Const ConstValue="NULL"/>
+					<ScalarOperator>
+						<Const ConstValue="(1)"/>
+
+
+======================================================================================================================================================
+
+6:
+
+
+SELECT diagnoses_icd.charttime -- icd_code
+
+FROM diagnoses_icd
+WHERE dbo.MEETS(diagnoses_icd.charttime, dbo.TIME_POINT_START_OF_YMDHMS(2100, 01, 10, 16, MONTH(dateadd(YEAR, -1, getdate())), NULL)) = 1
+
+
+
+#1 = Scan Table [ diagnoses_icd ]
+	 Output [ diagnoses_icd.charttime ]
+	 
+#2 = Filter [ #1 ]
+	 Predicate [ diagnoses_icd.charttime  MEETS  TIME_POINT_START_OF(2100, 1, 10, 16, datepart(2, dateadd(0, -1, getdate())), NULL) ]
+	 Output [ diagnoses_icd.charttime ]
+
+
+
+<RelOp NodeId="0" PhysicalOp="Filter" LogicalOp="Filter" >
+	<OutputList>
+		<ColumnReference   Table="diagnoses_icd" Column="charttime"/>
+	
+	<Filter >
+		<RelOp NodeId="1" PhysicalOp="Clustered Index Scan" LogicalOp="Clustered Index Scan" >
+			<OutputList>
+				<ColumnReference   Table="diagnoses_icd" Column="charttime"/>
+			
+			<IndexScan >
+				<DefinedValues>
+					<DefinedValue>
+						<ColumnReference   Table="diagnoses_icd" Column="charttime"/>
+				<Object   Table="diagnoses_icd" >
+		<Predicate>
+			<ScalarOperator ScalarString=" MEETS( diagnoses_icd.charttime, TIME_POINT_START_OF_YMDHMS((2100),(1),(10),(16),datepart(month,dateadd(year,(-1),getdate())),NULL))=(1)">
+				<Compare CompareOp="EQ">
+					<ScalarOperator>
+						<UserDefinedFunction FunctionName=" MEETS">
+							<ScalarOperator>
+								<Identifier>
+									<ColumnReference   Table="diagnoses_icd" Column="charttime"/>
+							<ScalarOperator>
+								<UserDefinedFunction FunctionName=" TIME_POINT_START_OF_YMDHMS">
+									<ScalarOperator>
+										<Const ConstValue="(2100)"/>
+									
+									<ScalarOperator>
+										<Const ConstValue="(1)"/>
+									
+									<ScalarOperator>
+										<Const ConstValue="(10)"/>
+									
+									<ScalarOperator>
+										<Const ConstValue="(16)"/>
+									
+									<ScalarOperator>
+										<Identifier>
+											<ColumnReference Column="ConstExpr1002">
+												<ScalarOperator>
+													<Intrinsic FunctionName="datepart">
+														<ScalarOperator>
+															<Const ConstValue="(2)"/>
+														
+														<ScalarOperator>
+															<Intrinsic FunctionName="dateadd">
+																<ScalarOperator>
+																	<Const ConstValue="(0)"/>
+																
+																<ScalarOperator>
+																	<Const ConstValue="(-1)"/>
+																
+																<ScalarOperator>
+																	<Intrinsic FunctionName="getdate"/>
+									<ScalarOperator>
+										<Const ConstValue="NULL"/>
+					<ScalarOperator>
+						<Const ConstValue="(1)"/>

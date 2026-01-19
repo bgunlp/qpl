@@ -1,0 +1,14 @@
+﻿<?xml version="1.0"?>
+<DTS:ConnectionManager xmlns:DTS="www.microsoft.com/SqlServer/Dts"
+  DTS:ObjectName="127 0 0 1 MIMICIV SA"
+  DTS:DTSID="{FBFE1FE8-5AAB-4FC5-BED4-AD578A8E53BF}"
+  DTS:CreationName="ADO.NET:System.Data.SqlClient.SqlConnection, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+  <DTS:ObjectData>
+    <DTS:ConnectionManager
+      DTS:ConnectionString="Data Source=127.0.0.1;User ID=SA;Initial Catalog=mimic_iv;Persist Security Info=True;Encrypt=False;Application Name=SSIS-MIMIC-SSIS-{FBFE1FE8-5AAB-4FC5-BED4-AD578A8E53BF}127.0.0.1.MIMIC3.SA;">
+      <DTS:Password
+        DTS:Name="Password"
+        Sensitive="1">AQAAANCMnd8BFdERjHoAwE/Cl+sBAAAAa7rKYkP7IEmdPTYp8+mMXgAAAAACAAAAAAAQZgAAAAEAACAAAACNtxUk31GcqhJ8gXmsIY5xE3fuljnlTztxDVTZ1EYJ+wAAAAAOgAAAAAIAACAAAADjQhV0+MzanVaBpWRdjvW53H5TIq2ksMVXoEE47UgCUoAAAACsZQe45MOLnrlENVzonOnb4dFVy9MOEzYBYdZYCi+MA6PHZ4wJmPpeYxe0NCUe2NwQVJfKQ6+PIwV+iBtFhKyPtKsKbVi503QM65UWNHkc4e6cVkew9iFEyH1vt8y7cyQUXEscXUQyGU8ZvWPBRdL5TXqIlBBba2abr1u8jNCqtUAAAACGtNB7leEASWRBuO8gJg/A74tZPfOD4lyeghB7taMF9/pMz+eVZjyRRv4/MKIqwW0Ds+CpXBm0OFIA+Y3/fWek</DTS:Password>
+    </DTS:ConnectionManager>
+  </DTS:ObjectData>
+</DTS:ConnectionManager>

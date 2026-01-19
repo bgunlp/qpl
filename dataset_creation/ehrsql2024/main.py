@@ -69,11 +69,11 @@ def final_dataset_split(dataset_name='EHRSQL-2024-QPL'):
             sqlite = label[query_data['id']]
             if sqlite == 'null':
                 queries_null += 1
-                ehrsql2024_qpl_part.append(_get_final_dataset_null_query_element(query_data))
+                ehrsql2024_qpl_part.append(_create_final_dataset_null_query_element(query_data))
             else:
                 if query_data['id'] in tsql_qpl_cte_data_dct:
                     tsql_qpl_cte_data = tsql_qpl_cte_data_dct[query_data['id']]
-                    ehrsql2024_qpl_part.append(_get_final_dataset_non_null_query_element(tsql_qpl_cte_data))
+                    ehrsql2024_qpl_part.append(_create_final_dataset_non_null_query_element(tsql_qpl_cte_data))
 
         total += len(ehrsql2024_qpl_part)
         total_orig += len(data['data'])
@@ -89,8 +89,8 @@ def final_dataset_split(dataset_name='EHRSQL-2024-QPL'):
           f"(original amount: {total_orig}, "
           f"missing: {total_orig - total})\n\n")
 
-def _get_final_dataset_non_null_query_element(query_data: dict[str, Any]) -> dict[str, Any]:
-    return _get_final_dataset_element(
+def _create_final_dataset_non_null_query_element(query_data: dict[str, Any]) -> dict[str, Any]:
+    return _create_final_dataset_element(
         _id=query_data['id'],
         question=query_data['question'],
 
@@ -105,13 +105,13 @@ def _get_final_dataset_non_null_query_element(query_data: dict[str, Any]) -> dic
         cte_ans=query_data['cte_final_ans'],
     )
 
-def _get_final_dataset_null_query_element(query_data: dict[str, Any]) -> dict[str, Any]:
-    return _get_final_dataset_element(query_data['id'], query_data['question'])
+def _create_final_dataset_null_query_element(query_data: dict[str, Any]) -> dict[str, Any]:
+    return _create_final_dataset_element(query_data['id'], query_data['question'])
 
-def _get_final_dataset_element(_id, question,
-                               sqlite='null', sqlite_ans=None,
-                               tsql='null', tsql_ans=None,
-                               qpl='null', cte='null', cte_ans=None) -> dict[str, Any]:
+def _create_final_dataset_element(_id, question,
+                                  sqlite='null', sqlite_ans=None,
+                                  tsql='null', tsql_ans=None,
+                                  qpl='null', cte='null', cte_ans=None) -> dict[str, Any]:
     return {
         'id': _id,
         'question': question,

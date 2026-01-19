@@ -7,10 +7,10 @@ from dataset_creation.ehrsql2024.dataset_translation import (
     dataset_validate_translated_tsql_answers,
 )
 from dataset_creation.ehrsql2024.qpl_creation import (
-    dataset_add_eps, dataset_add_qpls_raw, dataset_add_qpl_pp,
+    dataset_add_eps, dataset_add_qpls_raw, dataset_add_qpls_pp,
 )
 from dataset_creation.ehrsql2024.cte_creation import (
-    dataset_add_cte,
+    dataset_add_ctes,
     dataset_add_cte_answers,
     fix_qpls_with_redundant_cols_in_cte_ans,
     dataset_validate_cte_answers,
@@ -29,12 +29,12 @@ def main():
 
     dataset_add_eps()
     dataset_add_qpls_raw()
-    dataset_add_qpl_pp()
+    dataset_add_qpls_pp()
 
-    dataset_add_cte()
+    dataset_add_ctes()
     dataset_add_cte_answers()
     fix_qpls_with_redundant_cols_in_cte_ans()
-    dataset_add_cte(is_re_run=True)
+    dataset_add_ctes(is_re_run=True)
     dataset_add_cte_answers(is_re_run=True)
     dataset_validate_cte_answers()
 

@@ -15,7 +15,7 @@ from dataset_creation.ehrsql2024.constants import (
 # =========================================================
 #               Post process QPLs:
 # =========================================================
-def dataset_add_qpl_pp():
+def dataset_add_qpls_pp():
     print('\n')
     ok = []
     err = []

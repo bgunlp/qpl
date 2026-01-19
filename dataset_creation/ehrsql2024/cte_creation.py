@@ -226,7 +226,7 @@ async def add_cte_ans_worker(ctes_q, ans_ok_q, ans_err_q, redundant_cols_q, pbar
 # =========================================================
 #               CTE creation:
 # =========================================================
-def dataset_add_cte(is_re_run=False):
+def dataset_add_ctes(is_re_run=False):
     print('\n')
     ok = []
     err = []

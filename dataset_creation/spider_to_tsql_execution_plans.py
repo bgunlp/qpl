@@ -25,7 +25,7 @@ MANUAL_PLANS = {
 def add_execution_plan(
     split: list, tables: dict, cursor: pymssql.Cursor, spider_path: Path
 ) -> list:
-    with open("./manual-queries.json") as f:
+    with open("./manual-queries.json", encoding='utf-8') as f:
         manual_fixes = {x["id"]: x for x in json.load(f)}
 
     instances = []
@@ -468,6 +468,9 @@ def create_dataset(
 
 
 def main():
+    # import nltk
+    # nltk.download('punkt')
+
     parser = argparse.ArgumentParser()
     parser.add_argument("-s", "--spider-path", type=Path)
     parser.add_argument("-o", "--output-dir", type=Path)
@@ -478,7 +481,7 @@ def main():
         print("Output path must be a directory")
         exit(1)
     output.mkdir(parents=True, exist_ok=True)
-    conn = pymssql.connect("0.0.0.0", "SA", "Passw0rd!", autocommit=True)
+    conn = pymssql.connect("127.0.0.1", "SA", "Passw0rd!", autocommit=True)
     cursor = conn.cursor()
     cursor.execute("USE spider")
     cursor.execute("EXEC sp_updatestats")

@@ -14,7 +14,7 @@ from tqdm.auto import tqdm
 
 
 def create_database(dbs: List[Path]):
-    conn = pymssql.connect("0.0.0.0", "SA", "Passw0rd!", autocommit=True)
+    conn = pymssql.connect("127.0.0.1", "SA", "Passw0rd!", autocommit=True)
     cursor = conn.cursor()
     cursor.execute("CREATE DATABASE spider")
     cursor.execute("USE spider")
@@ -23,9 +23,14 @@ def create_database(dbs: List[Path]):
     conn.close()
     ddls = Path("./schemas").glob("**/*.sql")
     for ddl in ddls:
-        subprocess.run(
+        ddl = "C:\\Users\\Stas\\PycharmProjects\\qpl\\database_creation" / ddl
+        subprocess.call(
             [
-                "/opt/mssql-tools/bin/sqlcmd",
+                "cmd",
+                "/c",
+                "sqlcmd",
+                "-S",
+                "127.0.0.1",
                 "-U",
                 "SA",
                 "-P",
@@ -122,7 +127,7 @@ def dump_all(dbs: List[Path]):
 
 
 def fill_databases():
-    conn = pymssql.connect("0.0.0.0", "SA", "Passw0rd!", autocommit=True)
+    conn = pymssql.connect("127.0.0.1", "SA", "Passw0rd!", autocommit=True)
     cursor = conn.cursor()
     cursor.execute("USE spider")
     df = pd.read_pickle("./data_to_insert_no_alters.pkl")
@@ -146,7 +151,7 @@ def main():
     data = dump_all(dbs)
 
     engine = create_engine(
-        "mssql+pyodbc://SA:Passw0rd!@0.0.0.0/spider?driver=ODBC+Driver+17+for+SQL+Server",
+       "mssql+pyodbc://SA:Passw0rd!@127.0.0.1/spider?driver=ODBC+Driver+17+for+SQL+Server",
     )
     sorted_tables_by_schema = json.load(open("./tables-sorted.json"))
     for schema, table_data in (bar := tqdm(data.items())):

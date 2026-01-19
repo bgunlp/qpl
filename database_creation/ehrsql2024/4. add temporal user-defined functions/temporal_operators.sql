@@ -358,7 +358,7 @@ GO
 --			strftime('%J', datetime_to) - strftime('%J', datetime_from)
 --
 --   (see also ehrsql_to_tsql_execution_plans.py --> 
---            func_name_translate, date_diff_tests+date_diff_replacer, finalize_translation, tsql_modify_for_alignment)     
+--            func_name_translate, date_diff_tests+date_diff_replacer, finalize_translation, tsql_modify_for_translation_validation)
 ----------------------------------------------------------------------------------------------
 IF OBJECT_ID (N'dbo.JULIAN_DAY_DIFF', N'FN') IS NOT NULL
     DROP FUNCTION dbo.JULIAN_DAY_DIFF;

@@ -1,0 +1,2027 @@
+0:
+
+SELECT TOP 1 DATEDIFF(DAY, icustays.intime, icustays.outtime)
+FROM icustays
+WHERE icustays.hadm_id IN
+    (SELECT admissions.hadm_id
+     FROM admissions
+     WHERE admissions.subject_id = 10025612)
+  AND NOT icustays.outtime IS NULL
+ORDER BY icustays.intime DESC
+
+
+
+#1 = Scan Table [ admissions ]
+	 Predicate [ subject_id = 10025612 ]
+	 Output [ hadm_id , subject_id ]
+	 
+#2 = Scan Table [ icustays ]
+	 Predicate [ outtime IS NOT NULL ]
+	 Output [ hadm_id , intime , datediff(day, intime, outtime) AS datediff_day_intime_outtime_1 ]
+	 
+#3 = Join [ #1 , #2 ]
+	 Predicate [ #1.hadm_id = #2.hadm_id ]
+	 Output [ #2.intime , #2.datediff_day_intime_outtime_1 ]
+	 
+#4 = TopSort [ #3 ]
+	 Rows [ 1 ]
+	 OrderBy [ intime DESC ]
+	 Output [ intime , datediff_day_intime_outtime_1 ]
+
+
+
+<RelOp NodeId="0" PhysicalOp="Sort" LogicalOp="TopN Sort" >
+	<OutputList>
+		<ColumnReference   Table="icustays" Column="intime"/>
+		<ColumnReference Column="Expr1004"/>
+	
+	<TopSort Distinct="0" Rows="1">
+		<OrderBy>
+			<OrderByColumn Ascending="0">
+				<ColumnReference   Table="icustays" Column="intime"/>
+		<RelOp NodeId="2" PhysicalOp="Hash Match" LogicalOp="Inner Join" >
+			<OutputList>
+				<ColumnReference   Table="icustays" Column="intime"/>
+				<ColumnReference Column="Expr1004"/>
+			
+			<Hash>
+				<DefinedValues/>
+				<HashKeysBuild>
+					<ColumnReference   Table="admissions" Column="hadm_id"/>
+				
+				<HashKeysProbe>
+					<ColumnReference   Table="icustays" Column="hadm_id"/>
+				
+				<RelOp NodeId="3" PhysicalOp="Clustered Index Scan" LogicalOp="Clustered Index Scan" >
+					<OutputList>
+						<ColumnReference   Table="admissions" Column="hadm_id"/>
+					
+					<IndexScan >
+						<DefinedValues>
+							<DefinedValue>
+								<ColumnReference   Table="admissions" Column="hadm_id"/>
+						<Object   Table="admissions" >
+						<Predicate>
+							<ScalarOperator ScalarString=" admissions.subject_id=(10025612)">
+								<Compare CompareOp="EQ">
+									<ScalarOperator>
+										<Identifier>
+											<ColumnReference   Table="admissions" Column="subject_id"/>
+									<ScalarOperator>
+										<Const ConstValue="(10025612)"/>
+				<RelOp NodeId="4" PhysicalOp="Compute Scalar" LogicalOp="Compute Scalar" >
+					<OutputList>
+						<ColumnReference   Table="icustays" Column="hadm_id"/>
+						<ColumnReference   Table="icustays" Column="intime"/>
+						<ColumnReference Column="Expr1004"/>
+					
+					<ComputeScalar>
+						<DefinedValues>
+							<DefinedValue>
+								<ColumnReference Column="Expr1004"/>
+								<ScalarOperator ScalarString="datediff(day, icustays.intime, icustays.outtime)">
+									<Intrinsic FunctionName="datediff">
+										<ScalarOperator>
+											<Const ConstValue="(4)"/>
+										
+										<ScalarOperator>
+											<Identifier>
+												<ColumnReference   Table="icustays" Column="intime"/>
+										<ScalarOperator>
+											<Identifier>
+												<ColumnReference   Table="icustays" Column="outtime"/>
+						<RelOp NodeId="5" PhysicalOp="Clustered Index Scan" LogicalOp="Clustered Index Scan" >
+							<OutputList>
+								<ColumnReference   Table="icustays" Column="hadm_id"/>
+								<ColumnReference   Table="icustays" Column="intime"/>
+								<ColumnReference   Table="icustays" Column="outtime"/>
+							
+							<IndexScan >
+								<DefinedValues>
+									<DefinedValue>
+										<ColumnReference   Table="icustays" Column="hadm_id"/>
+									
+									<DefinedValue>
+										<ColumnReference   Table="icustays" Column="intime"/>
+									
+									<DefinedValue>
+										<ColumnReference   Table="icustays" Column="outtime"/>
+								<Object   Table="icustays" >
+								<Predicate>
+									<ScalarOperator ScalarString=" icustays.outtime IS NOT NULL">
+										<Compare CompareOp="IS NOT">
+											<ScalarOperator>
+												<Identifier>
+													<ColumnReference   Table="icustays" Column="outtime"/>
+											<ScalarOperator>
+												<Const ConstValue="NULL"/>
+
+
+======================================================================================================================================================
+
+1:
+
+SELECT COUNT_BIG(DISTINCT admissions.subject_id)
+FROM admissions
+WHERE NOT admissions.dischtime IS NULL
+  AND dbo.DURING(admissions.dischtime, dbo.TIME_INTERVAL_REL(DATEADD(YEAR, -1, GETDATE()), 'year')) = 1
+
+
+
+#1 = Scan Table [ admissions ]
+	 Predicate [ dischtime IS NOT NULL ]
+	 Output [ subject_id , dischtime ]
+	 
+#2 = Filter [ #1 ]
+	 Predicate [ dischtime DURING TIME_INTERVAL(dateadd(year, -1, getdate()), 'year') ]
+	 Distinct [ true ]
+	 Output [ subject_id ]
+	 
+#3 = Aggregate [ #2 ]
+	 Output [ countstar AS Count_Star ]
+
+
+
+<RelOp NodeId="0" PhysicalOp="Stream Aggregate" LogicalOp="Aggregate" >
+	<OutputList>
+		<ColumnReference Column="Expr1002"/>
+	
+	<StreamAggregate>
+		<DefinedValues>
+			<DefinedValue>
+				<ColumnReference Column="Expr1002"/>
+				<ScalarOperator ScalarString="Count(*)">
+					<Aggregate AggType="countstar" Distinct="0"/>
+		<RelOp NodeId="1" PhysicalOp="Sort" LogicalOp="Distinct Sort" >
+			<OutputList>
+				<ColumnReference   Table="admissions" Column="subject_id"/>
+			
+			<Sort Distinct="1">
+				<OrderBy>
+					<OrderByColumn Ascending="1">
+						<ColumnReference   Table="admissions" Column="subject_id"/>
+				<RelOp NodeId="2" PhysicalOp="Filter" LogicalOp="Filter" >
+					<OutputList>
+						<ColumnReference   Table="admissions" Column="subject_id"/>
+					
+					<Filter >
+						<RelOp NodeId="3" PhysicalOp="Clustered Index Scan" LogicalOp="Clustered Index Scan" >
+							<OutputList>
+								<ColumnReference   Table="admissions" Column="subject_id"/>
+								<ColumnReference   Table="admissions" Column="dischtime"/>
+							
+							<IndexScan >
+								<DefinedValues>
+									<DefinedValue>
+										<ColumnReference   Table="admissions" Column="subject_id"/>
+									
+									<DefinedValue>
+										<ColumnReference   Table="admissions" Column="dischtime"/>
+								<Object   Table="admissions" >
+								<Predicate>
+									<ScalarOperator ScalarString=" admissions.dischtime IS NOT NULL">
+										<Compare CompareOp="IS NOT">
+											<ScalarOperator>
+												<Identifier>
+													<ColumnReference   Table="admissions" Column="dischtime"/>
+											<ScalarOperator>
+												<Const ConstValue="NULL"/>
+						<Predicate>
+							<ScalarOperator ScalarString=" DURING( admissions.dischtime, TIME_INTERVAL_REL(dateadd(year,(-1),getdate()),'year'))=(1)">
+								<Compare CompareOp="EQ">
+									<ScalarOperator>
+										<UserDefinedFunction FunctionName=" DURING">
+											<ScalarOperator>
+												<Identifier>
+													<ColumnReference   Table="admissions" Column="dischtime"/>
+											<ScalarOperator>
+												<UserDefinedFunction FunctionName=" TIME_INTERVAL_REL">
+													<ScalarOperator>
+														<Identifier>
+															<ColumnReference Column="ConstExpr1003">
+																<ScalarOperator>
+																	<Intrinsic FunctionName="dateadd">
+																		<ScalarOperator>
+																			<Const ConstValue="(0)"/>
+																		
+																		<ScalarOperator>
+																			<Const ConstValue="(-1)"/>
+																		
+																		<ScalarOperator>
+																			<Intrinsic FunctionName="getdate"/>
+													<ScalarOperator>
+														<Const ConstValue="'year'"/>
+									<ScalarOperator>
+										<Const ConstValue="(1)"/>
+
+
+======================================================================================================================================================
+
+2:
+
+SELECT TOP 1 chartevents.valuenum
+FROM chartevents
+WHERE chartevents.stay_id IN
+    (SELECT icustays.stay_id
+     FROM icustays
+     WHERE icustays.hadm_id IN
+         (SELECT admissions.hadm_id
+          FROM admissions
+          WHERE admissions.subject_id = 10027602))
+  AND chartevents.itemid IN
+    (SELECT d_items.itemid
+     FROM d_items
+     WHERE d_items.label = 'daily weight'
+       AND d_items.linksto = 'chartevents')
+  AND dbo.MET_BY(chartevents.charttime, dbo.TIME_POINT(DATEADD(MONTH, -5, GETDATE()))) = 1
+ORDER BY chartevents.charttime ASC
+
+
+
+#1 = Scan Table [ d_items ]
+	 Predicate [ label = 'daily weight' AND 
+	             linksto = 'chartevents' ]
+	 Output [ itemid , label , linksto ]
+	 
+#2 = Scan Table [ admissions ]
+	 Predicate [ subject_id = 10027602 ]
+	 Output [ hadm_id , subject_id ]
+	 
+#3 = Scan Table [ icustays ]
+	 Output [ hadm_id , stay_id ]
+	 
+#4 = Join [ #2 , #3 ]
+	 Predicate [ #2.hadm_id = #3.hadm_id ]
+	 Output [ #3.stay_id ]
+	 
+#5 = Scan Table [ chartevents ]
+	 Output [ stay_id , itemid , charttime , valuenum ]
+	 
+#6 = Filter [ #5 ]
+	 Predicate [ charttime MET_BY TIME_POINT(dateadd(month, -5, getdate())) ]
+	 Output [ stay_id , itemid , charttime , valuenum ]
+	 
+#7 = Join [ #4 , #6 ]
+	 Predicate [ #4.stay_id = #6.stay_id ]
+	 Output [ #6.itemid , #6.charttime , #6.valuenum ]
+	 
+#8 = Join [ #1 , #7 ]
+	 Predicate [ #1.itemid = #7.itemid ]
+	 Output [ #7.charttime , #7.valuenum ]
+	 
+#9 = Sort [ #8 ]
+	 OrderBy [ charttime ASC ]
+	 Output [ charttime , valuenum ]
+	 
+#10 = Top [ #9 ]
+	 Rows [ 1 ]
+	 Output [ valuenum ]
+
+
+
+<RelOp NodeId="0" PhysicalOp="Top" LogicalOp="Top" >
+	<OutputList>
+		<ColumnReference   Table="chartevents" Column="valuenum"/>
+	
+	<Top RowCount="0" IsPercent="0" WithTies="0">
+		<TopExpression>
+			<ScalarOperator ScalarString="(1)">
+				<Const ConstValue="(1)"/>
+		<RelOp NodeId="2" PhysicalOp="Sort" LogicalOp="Sort" >
+			<OutputList>
+				<ColumnReference   Table="chartevents" Column="charttime"/>
+				<ColumnReference   Table="chartevents" Column="valuenum"/>
+			
+			<Sort Distinct="0">
+				<OrderBy>
+					<OrderByColumn Ascending="1">
+						<ColumnReference   Table="chartevents" Column="charttime"/>
+				<RelOp NodeId="5" PhysicalOp="Hash Match" LogicalOp="Inner Join" >
+					<OutputList>
+						<ColumnReference   Table="chartevents" Column="charttime"/>
+						<ColumnReference   Table="chartevents" Column="valuenum"/>
+					
+					<Hash>
+						<DefinedValues/>
+						<HashKeysBuild>
+							<ColumnReference   Table="d_items" Column="itemid"/>
+						
+						<HashKeysProbe>
+							<ColumnReference   Table="chartevents" Column="itemid"/>
+						
+						<RelOp NodeId="6" PhysicalOp="Clustered Index Scan" LogicalOp="Clustered Index Scan" >
+							<OutputList>
+								<ColumnReference   Table="d_items" Column="itemid"/>
+							
+							<IndexScan >
+								<DefinedValues>
+									<DefinedValue>
+										<ColumnReference   Table="d_items" Column="itemid"/>
+								<Object   Table="d_items" >
+								<Predicate>
+									<ScalarOperator ScalarString=" d_items.label='daily weight' AND  d_items.linksto='chartevents'">
+										<Logical Operation="AND">
+											<ScalarOperator>
+												<Compare CompareOp="EQ">
+													<ScalarOperator>
+														<Identifier>
+															<ColumnReference   Table="d_items" Column="label"/>
+													<ScalarOperator>
+														<Const ConstValue="'daily weight'"/>
+											<ScalarOperator>
+												<Compare CompareOp="EQ">
+													<ScalarOperator>
+														<Identifier>
+															<ColumnReference   Table="d_items" Column="linksto"/>
+													<ScalarOperator>
+														<Const ConstValue="'chartevents'"/>
+						<RelOp NodeId="7" PhysicalOp="Hash Match" LogicalOp="Inner Join" >
+							<OutputList>
+								<ColumnReference   Table="chartevents" Column="itemid"/>
+								<ColumnReference   Table="chartevents" Column="charttime"/>
+								<ColumnReference   Table="chartevents" Column="valuenum"/>
+							
+							<Hash>
+								<DefinedValues/>
+								<HashKeysBuild>
+									<ColumnReference   Table="icustays" Column="stay_id"/>
+								
+								<HashKeysProbe>
+									<ColumnReference   Table="chartevents" Column="stay_id"/>
+								
+								<RelOp NodeId="8" PhysicalOp="Hash Match" LogicalOp="Inner Join" >
+									<OutputList>
+										<ColumnReference   Table="icustays" Column="stay_id"/>
+									
+									<Hash>
+										<DefinedValues/>
+										<HashKeysBuild>
+											<ColumnReference   Table="admissions" Column="hadm_id"/>
+										
+										<HashKeysProbe>
+											<ColumnReference   Table="icustays" Column="hadm_id"/>
+										
+										<RelOp NodeId="9" PhysicalOp="Clustered Index Scan" LogicalOp="Clustered Index Scan" >
+											<OutputList>
+												<ColumnReference   Table="admissions" Column="hadm_id"/>
+											
+											<IndexScan >
+												<DefinedValues>
+													<DefinedValue>
+														<ColumnReference   Table="admissions" Column="hadm_id"/>
+												<Object   Table="admissions" >
+												<Predicate>
+													<ScalarOperator ScalarString=" admissions.subject_id=(10027602)">
+														<Compare CompareOp="EQ">
+															<ScalarOperator>
+																<Identifier>
+																	<ColumnReference   Table="admissions" Column="subject_id"/>
+															<ScalarOperator>
+																<Const ConstValue="(10027602)"/>
+										<RelOp NodeId="10" PhysicalOp="Clustered Index Scan" LogicalOp="Clustered Index Scan" >
+											<OutputList>
+												<ColumnReference   Table="icustays" Column="hadm_id"/>
+												<ColumnReference   Table="icustays" Column="stay_id"/>
+											
+											<IndexScan >
+												<DefinedValues>
+													<DefinedValue>
+														<ColumnReference   Table="icustays" Column="hadm_id"/>
+													
+													<DefinedValue>
+														<ColumnReference   Table="icustays" Column="stay_id"/>
+												<Object   Table="icustays" >
+								<RelOp NodeId="11" PhysicalOp="Filter" LogicalOp="Filter" >
+									<OutputList>
+										<ColumnReference   Table="chartevents" Column="stay_id"/>
+										<ColumnReference   Table="chartevents" Column="itemid"/>
+										<ColumnReference   Table="chartevents" Column="charttime"/>
+										<ColumnReference   Table="chartevents" Column="valuenum"/>
+									
+									<Filter >
+										<RelOp NodeId="12" PhysicalOp="Clustered Index Scan" LogicalOp="Clustered Index Scan" >
+											<OutputList>
+												<ColumnReference   Table="chartevents" Column="stay_id"/>
+												<ColumnReference   Table="chartevents" Column="itemid"/>
+												<ColumnReference   Table="chartevents" Column="charttime"/>
+												<ColumnReference   Table="chartevents" Column="valuenum"/>
+											
+											<IndexScan >
+												<DefinedValues>
+													<DefinedValue>
+														<ColumnReference   Table="chartevents" Column="stay_id"/>
+													
+													<DefinedValue>
+														<ColumnReference   Table="chartevents" Column="itemid"/>
+													
+													<DefinedValue>
+														<ColumnReference   Table="chartevents" Column="charttime"/>
+													
+													<DefinedValue>
+														<ColumnReference   Table="chartevents" Column="valuenum"/>
+												<Object   Table="chartevents" >
+										<Predicate>
+											<ScalarOperator ScalarString=" MET_BY( chartevents.charttime, TIME_POINT(dateadd(month,(-5),getdate())))=(1)">
+												<Compare CompareOp="EQ">
+													<ScalarOperator>
+														<UserDefinedFunction FunctionName=" MET_BY">
+															<ScalarOperator>
+																<Identifier>
+																	<ColumnReference   Table="chartevents" Column="charttime"/>
+															<ScalarOperator>
+																<UserDefinedFunction FunctionName=" TIME_POINT">
+																	<ScalarOperator>
+																		<Identifier>
+																			<ColumnReference Column="ConstExpr1008">
+																				<ScalarOperator>
+																					<Intrinsic FunctionName="dateadd">
+																						<ScalarOperator>
+																							<Const ConstValue="(2)"/>
+																						
+																						<ScalarOperator>
+																							<Const ConstValue="(-5)"/>
+																						
+																						<ScalarOperator>
+																							<Intrinsic FunctionName="getdate"/>
+													<ScalarOperator>
+														<Const ConstValue="(1)"/>
+
+
+======================================================================================================================================================
+
+3:
+
+SELECT AVG(labevents.valuenum)
+FROM labevents
+WHERE labevents.hadm_id IN
+    (SELECT admissions.hadm_id
+     FROM admissions
+     WHERE admissions.subject_id = 10021487)
+  AND labevents.itemid IN
+    (SELECT d_labitems.itemid
+     FROM d_labitems
+     WHERE d_labitems.label = 'bilirubin, direct')
+  AND dbo.MET_BY(labevents.charttime, dbo.TIME_POINT_START_OF_YMD(2100, 05, NULL)) = 1
+GROUP BY FORMAT(labevents.charttime, 'yyyy-MM')
+
+
+
+#1 = Scan Table [ admissions ]
+	 Predicate [ subject_id = 10021487 ]
+	 Output [ hadm_id , subject_id ]
+	 
+#2 = Scan Table [ d_labitems ]
+	 Predicate [ label = 'bilirubin, direct' ]
+	 Output [ itemid , label ]
+	 
+#3 = Scan Table [ labevents ]
+	 Output [ hadm_id , itemid , charttime , valuenum ]
+	 
+#4 = Filter [ #3 ]
+	 Predicate [ charttime MET_BY TIME_POINT_START_OF(2100, 5, NULL) ]
+	 Output [ hadm_id , itemid , valuenum , format(charttime, 'yyyy-MM') AS format_charttime_yyyy_MM_1 ]
+	 
+#5 = Join [ #2 , #4 ]
+	 Predicate [ #2.itemid = #4.itemid ]
+	 Output [ #4.hadm_id , #4.valuenum , #4.format_charttime_yyyy_MM_1 ]
+	 
+#6 = Join [ #1 , #5 ]
+	 Predicate [ #1.hadm_id = #5.hadm_id ]
+	 Output [ #5.valuenum , #5.format_charttime_yyyy_MM_1 ]
+	 
+#7 = Aggregate [ #6 ]
+	 GroupBy [ format_charttime_yyyy_MM_1 ]
+	 Output [ AVG(valuenum) AS Avg_valuenum ]
+
+
+
+<RelOp NodeId="0" PhysicalOp="Compute Scalar" LogicalOp="Compute Scalar" >
+	<OutputList>
+		<ColumnReference Column="Expr1007"/>
+	
+	<ComputeScalar>
+		<DefinedValues>
+			<DefinedValue>
+				<ColumnReference Column="Expr1007"/>
+				<ScalarOperator ScalarString="CASE WHEN Expr1012=(0) THEN NULL ELSE Expr1013/CONVERT_IMPLICIT(float(53),Expr1012,0) END">
+					<IF>
+						<Condition>
+							<ScalarOperator>
+								<Compare CompareOp="EQ">
+									<ScalarOperator>
+										<Identifier>
+											<ColumnReference Column="Expr1012"/>
+									<ScalarOperator>
+										<Const ConstValue="(0)"/>
+						<Then>
+							<ScalarOperator>
+								<Const ConstValue="NULL"/>
+						<Else>
+							<ScalarOperator>
+								<Arithmetic Operation="DIV">
+									<ScalarOperator>
+										<Identifier>
+											<ColumnReference Column="Expr1013"/>
+									<ScalarOperator>
+										<Convert DataType="float" Precision="53" Style="0" Implicit="1">
+											<ScalarOperator>
+												<Identifier>
+													<ColumnReference Column="Expr1012"/>
+		<RelOp NodeId="1" PhysicalOp="Stream Aggregate" LogicalOp="Aggregate" >
+			<OutputList>
+				<ColumnReference Column="Expr1012"/>
+				<ColumnReference Column="Expr1013"/>
+			
+			<StreamAggregate>
+				<DefinedValues>
+					<DefinedValue>
+						<ColumnReference Column="Expr1012"/>
+						<ScalarOperator ScalarString="COUNT_BIG( labevents.valuenum)">
+							<Aggregate Distinct="0" AggType="COUNT_BIG">
+								<ScalarOperator>
+									<Identifier>
+										<ColumnReference   Table="labevents" Column="valuenum"/>
+					<DefinedValue>
+						<ColumnReference Column="Expr1013"/>
+						<ScalarOperator ScalarString="SUM( labevents.valuenum)">
+							<Aggregate Distinct="0" AggType="SUM">
+								<ScalarOperator>
+									<Identifier>
+										<ColumnReference   Table="labevents" Column="valuenum"/>
+				<GroupBy>
+					<ColumnReference Column="Expr1006"/>
+				
+				<RelOp NodeId="2" PhysicalOp="Sort" LogicalOp="Sort" >
+					<OutputList>
+						<ColumnReference   Table="labevents" Column="valuenum"/>
+						<ColumnReference Column="Expr1006"/>
+					
+					<Sort Distinct="0">
+						<OrderBy>
+							<OrderByColumn Ascending="1">
+								<ColumnReference Column="Expr1006"/>
+						<RelOp NodeId="5" PhysicalOp="Hash Match" LogicalOp="Inner Join" >
+							<OutputList>
+								<ColumnReference   Table="labevents" Column="valuenum"/>
+								<ColumnReference Column="Expr1006"/>
+							
+							<Hash>
+								<DefinedValues/>
+								<HashKeysBuild>
+									<ColumnReference   Table="admissions" Column="hadm_id"/>
+								
+								<HashKeysProbe>
+									<ColumnReference   Table="labevents" Column="hadm_id"/>
+								
+								<RelOp NodeId="6" PhysicalOp="Clustered Index Scan" LogicalOp="Clustered Index Scan" >
+									<OutputList>
+										<ColumnReference   Table="admissions" Column="hadm_id"/>
+									
+									<IndexScan >
+										<DefinedValues>
+											<DefinedValue>
+												<ColumnReference   Table="admissions" Column="hadm_id"/>
+										<Object   Table="admissions" >
+										<Predicate>
+											<ScalarOperator ScalarString=" admissions.subject_id=(10021487)">
+												<Compare CompareOp="EQ">
+													<ScalarOperator>
+														<Identifier>
+															<ColumnReference   Table="admissions" Column="subject_id"/>
+													<ScalarOperator>
+														<Const ConstValue="(10021487)"/>
+								<RelOp NodeId="7" PhysicalOp="Hash Match" LogicalOp="Inner Join" >
+									<OutputList>
+										<ColumnReference   Table="labevents" Column="hadm_id"/>
+										<ColumnReference   Table="labevents" Column="valuenum"/>
+										<ColumnReference Column="Expr1006"/>
+									
+									<Hash>
+										<DefinedValues/>
+										<HashKeysBuild>
+											<ColumnReference   Table="d_labitems" Column="itemid"/>
+										
+										<HashKeysProbe>
+											<ColumnReference   Table="labevents" Column="itemid"/>
+										
+										<RelOp NodeId="8" PhysicalOp="Clustered Index Scan" LogicalOp="Clustered Index Scan" >
+											<OutputList>
+												<ColumnReference   Table="d_labitems" Column="itemid"/>
+											
+											<IndexScan >
+												<DefinedValues>
+													<DefinedValue>
+														<ColumnReference   Table="d_labitems" Column="itemid"/>
+												<Object   Table="d_labitems" >
+												<Predicate>
+													<ScalarOperator ScalarString=" d_labitems.label='bilirubin, direct'">
+														<Compare CompareOp="EQ">
+															<ScalarOperator>
+																<Identifier>
+																	<ColumnReference   Table="d_labitems" Column="label"/>
+															<ScalarOperator>
+																<Const ConstValue="'bilirubin, direct'"/>
+										<RelOp NodeId="9" PhysicalOp="Compute Scalar" LogicalOp="Compute Scalar" >
+											<OutputList>
+												<ColumnReference   Table="labevents" Column="hadm_id"/>
+												<ColumnReference   Table="labevents" Column="itemid"/>
+												<ColumnReference   Table="labevents" Column="valuenum"/>
+												<ColumnReference Column="Expr1006"/>
+											
+											<ComputeScalar>
+												<DefinedValues>
+													<DefinedValue>
+														<ColumnReference Column="Expr1006"/>
+														<ScalarOperator ScalarString="format(CONVERT_IMPLICIT(datetime2(3), labevents.charttime,0),N'yyyy-MM')">
+															<Intrinsic FunctionName="format">
+																<ScalarOperator>
+																	<Convert DataType="datetime2" Scale="3" Style="0" Implicit="1">
+																		<ScalarOperator>
+																			<Identifier>
+																				<ColumnReference   Table="labevents" Column="charttime"/>
+																<ScalarOperator>
+																	<Const ConstValue="N'yyyy-MM'"/>
+																
+																<ScalarOperator>
+																	<Const ConstValue=""/>
+												<RelOp NodeId="10" PhysicalOp="Filter" LogicalOp="Filter" >
+													<OutputList>
+														<ColumnReference   Table="labevents" Column="hadm_id"/>
+														<ColumnReference   Table="labevents" Column="itemid"/>
+														<ColumnReference   Table="labevents" Column="charttime"/>
+														<ColumnReference   Table="labevents" Column="valuenum"/>
+													
+													<Filter >
+														<RelOp NodeId="11" PhysicalOp="Clustered Index Scan" LogicalOp="Clustered Index Scan" >
+															<OutputList>
+																<ColumnReference   Table="labevents" Column="hadm_id"/>
+																<ColumnReference   Table="labevents" Column="itemid"/>
+																<ColumnReference   Table="labevents" Column="charttime"/>
+																<ColumnReference   Table="labevents" Column="valuenum"/>
+															
+															<IndexScan >
+																<DefinedValues>
+																	<DefinedValue>
+																		<ColumnReference   Table="labevents" Column="hadm_id"/>
+																	
+																	<DefinedValue>
+																		<ColumnReference   Table="labevents" Column="itemid"/>
+																	
+																	<DefinedValue>
+																		<ColumnReference   Table="labevents" Column="charttime"/>
+																	
+																	<DefinedValue>
+																		<ColumnReference   Table="labevents" Column="valuenum"/>
+																<Object   Table="labevents" >
+														<Predicate>
+															<ScalarOperator ScalarString=" MET_BY( labevents.charttime, TIME_POINT_START_OF_YMD((2100),(5),NULL))=(1)">
+																<Compare CompareOp="EQ">
+																	<ScalarOperator>
+																		<UserDefinedFunction FunctionName=" MET_BY">
+																			<ScalarOperator>
+																				<Identifier>
+																					<ColumnReference   Table="labevents" Column="charttime"/>
+																			<ScalarOperator>
+																				<UserDefinedFunction FunctionName=" TIME_POINT_START_OF_YMD">
+																					<ScalarOperator>
+																						<Const ConstValue="(2100)"/>
+																					
+																					<ScalarOperator>
+																						<Const ConstValue="(5)"/>
+																					
+																					<ScalarOperator>
+																						<Const ConstValue="NULL"/>
+																	<ScalarOperator>
+																		<Const ConstValue="(1)"/>
+
+
+======================================================================================================================================================
+
+4:
+
+SELECT TOP 1 24 * (DATEDIFF(DAY, labevents.charttime, GETDATE()))
+FROM labevents
+WHERE labevents.itemid IN
+    (SELECT d_labitems.itemid
+     FROM d_labitems
+     WHERE d_labitems.label = 'asparate aminotransferase (ast)')
+  AND labevents.hadm_id IN
+    (SELECT admissions.hadm_id
+     FROM admissions
+     WHERE admissions.subject_id = 10021487
+       AND admissions.dischtime IS NULL)
+ORDER BY labevents.charttime ASC
+
+
+
+#1 = Scan Table [ admissions ]
+	 Predicate [ subject_id = 10021487 AND 
+	             dischtime IS NULL ]
+	 Output [ hadm_id , subject_id , dischtime ]
+	 
+#2 = Scan Table [ d_labitems ]
+	 Predicate [ label = 'asparate aminotransferase (ast)' ]
+	 Output [ itemid , label ]
+	 
+#3 = Scan Table [ labevents ]
+	 Output [ hadm_id , itemid , charttime ]
+	 
+#4 = Join [ #2 , #3 ]
+	 Predicate [ #2.itemid = #3.itemid ]
+	 Output [ #3.hadm_id , #3.charttime ]
+	 
+#5 = Join [ #1 , #4 ]
+	 Predicate [ #1.hadm_id = #4.hadm_id ]
+	 Output [ #4.charttime ]
+	 
+#6 = TopSort [ #5 ]
+	 Rows [ 1 ]
+	 OrderBy [ charttime ASC ]
+	 Output [ 24 * datediff(day, charttime, getdate()) AS _24_Mul_datediff_day_charttime_getdate_1 ]
+
+
+
+<RelOp NodeId="0" PhysicalOp="Compute Scalar" LogicalOp="Compute Scalar" >
+	<OutputList>
+		<ColumnReference Column="Expr1006"/>
+	
+	<ComputeScalar>
+		<DefinedValues>
+			<DefinedValue>
+				<ColumnReference Column="Expr1006"/>
+				<ScalarOperator ScalarString="(24)*datediff(day, labevents.charttime,getdate())">
+					<Arithmetic Operation="MULT">
+						<ScalarOperator>
+							<Const ConstValue="(24)"/>
+						
+						<ScalarOperator>
+							<Intrinsic FunctionName="datediff">
+								<ScalarOperator>
+									<Const ConstValue="(4)"/>
+								
+								<ScalarOperator>
+									<Identifier>
+										<ColumnReference   Table="labevents" Column="charttime"/>
+								<ScalarOperator>
+									<Identifier>
+										<ColumnReference Column="ConstExpr1007">
+											<ScalarOperator>
+												<Intrinsic FunctionName="getdate"/>
+		<RelOp NodeId="1" PhysicalOp="Sort" LogicalOp="TopN Sort" >
+			<OutputList>
+				<ColumnReference   Table="labevents" Column="charttime"/>
+			
+			<TopSort Distinct="0" Rows="1">
+				<OrderBy>
+					<OrderByColumn Ascending="1">
+						<ColumnReference   Table="labevents" Column="charttime"/>
+				<RelOp NodeId="4" PhysicalOp="Hash Match" LogicalOp="Inner Join" >
+					<OutputList>
+						<ColumnReference   Table="labevents" Column="charttime"/>
+					
+					<Hash>
+						<DefinedValues/>
+						<HashKeysBuild>
+							<ColumnReference   Table="admissions" Column="hadm_id"/>
+						
+						<HashKeysProbe>
+							<ColumnReference   Table="labevents" Column="hadm_id"/>
+						
+						<RelOp NodeId="5" PhysicalOp="Clustered Index Scan" LogicalOp="Clustered Index Scan" >
+							<OutputList>
+								<ColumnReference   Table="admissions" Column="hadm_id"/>
+							
+							<IndexScan >
+								<DefinedValues>
+									<DefinedValue>
+										<ColumnReference   Table="admissions" Column="hadm_id"/>
+								<Object   Table="admissions" >
+								<Predicate>
+									<ScalarOperator ScalarString=" admissions.subject_id=(10021487) AND  admissions.dischtime IS NULL">
+										<Logical Operation="AND">
+											<ScalarOperator>
+												<Compare CompareOp="EQ">
+													<ScalarOperator>
+														<Identifier>
+															<ColumnReference   Table="admissions" Column="subject_id"/>
+													<ScalarOperator>
+														<Const ConstValue="(10021487)"/>
+											<ScalarOperator>
+												<Compare CompareOp="IS">
+													<ScalarOperator>
+														<Identifier>
+															<ColumnReference   Table="admissions" Column="dischtime"/>
+													<ScalarOperator>
+														<Const ConstValue="NULL"/>
+						<RelOp NodeId="6" PhysicalOp="Hash Match" LogicalOp="Inner Join" >
+							<OutputList>
+								<ColumnReference   Table="labevents" Column="hadm_id"/>
+								<ColumnReference   Table="labevents" Column="charttime"/>
+							
+							<Hash>
+								<DefinedValues/>
+								<HashKeysBuild>
+									<ColumnReference   Table="d_labitems" Column="itemid"/>
+								
+								<HashKeysProbe>
+									<ColumnReference   Table="labevents" Column="itemid"/>
+								
+								<RelOp NodeId="7" PhysicalOp="Clustered Index Scan" LogicalOp="Clustered Index Scan" >
+									<OutputList>
+										<ColumnReference   Table="d_labitems" Column="itemid"/>
+									
+									<IndexScan >
+										<DefinedValues>
+											<DefinedValue>
+												<ColumnReference   Table="d_labitems" Column="itemid"/>
+										<Object   Table="d_labitems" >
+										<Predicate>
+											<ScalarOperator ScalarString=" d_labitems.label='asparate aminotransferase (ast)'">
+												<Compare CompareOp="EQ">
+													<ScalarOperator>
+														<Identifier>
+															<ColumnReference   Table="d_labitems" Column="label"/>
+													<ScalarOperator>
+														<Const ConstValue="'asparate aminotransferase (ast)'"/>
+								<RelOp NodeId="8" PhysicalOp="Clustered Index Scan" LogicalOp="Clustered Index Scan" >
+									<OutputList>
+										<ColumnReference   Table="labevents" Column="hadm_id"/>
+										<ColumnReference   Table="labevents" Column="itemid"/>
+										<ColumnReference   Table="labevents" Column="charttime"/>
+									
+									<IndexScan >
+										<DefinedValues>
+											<DefinedValue>
+												<ColumnReference   Table="labevents" Column="hadm_id"/>
+											
+											<DefinedValue>
+												<ColumnReference   Table="labevents" Column="itemid"/>
+											
+											<DefinedValue>
+												<ColumnReference   Table="labevents" Column="charttime"/>
+										<Object   Table="labevents" >
+
+
+======================================================================================================================================================
+
+5:
+
+SELECT IIF(COUNT_BIG(*) > 0, 1, 0)
+FROM prescriptions
+WHERE prescriptions.hadm_id IN
+    (SELECT admissions.hadm_id
+     FROM admissions
+     WHERE admissions.subject_id = 10020944)
+  AND prescriptions.drug = 'glucose gel'
+  AND dbo.DURING(prescriptions.starttime, dbo.TIME_INTERVAL_YMD(2100, 03, NULL)) = 1
+
+
+
+#1 = Scan Table [ admissions ]
+	 Predicate [ subject_id = 10020944 ]
+	 Output [ hadm_id , subject_id ]
+	 
+#2 = Scan Table [ prescriptions ]
+	 Predicate [ drug = 'glucose gel' ]
+	 Output [ hadm_id , starttime , drug ]
+	 
+#3 = Filter [ #2 ]
+	 Predicate [ starttime DURING TIME_INTERVAL(2100, 3, NULL) ]
+	 Output [ hadm_id ]
+	 
+#4 = Join [ #1 , #3 ]
+	 Predicate [ #1.hadm_id = #3.hadm_id ]
+	 Output [ #1.hadm_id , #1.subject_id ]
+	 
+#5 = Aggregate [ #4 ]
+	 Output [ countstar > 0 AS Count_Star_Gr_0 ]
+
+
+
+<RelOp NodeId="0" PhysicalOp="Compute Scalar" LogicalOp="Compute Scalar" >
+	<OutputList>
+		<ColumnReference Column="Expr1005"/>
+	
+	<ComputeScalar>
+		<DefinedValues>
+			<DefinedValue>
+				<ColumnReference Column="Expr1005"/>
+				<ScalarOperator ScalarString="CASE WHEN Expr1004 > (0) THEN (1) ELSE (0) END">
+					<IF>
+						<Condition>
+							<ScalarOperator>
+								<Compare CompareOp="GT">
+									<ScalarOperator>
+										<Identifier>
+											<ColumnReference Column="Expr1004"/>
+									<ScalarOperator>
+										<Const ConstValue="(0)"/>
+						<Then>
+							<ScalarOperator>
+								<Const ConstValue="(1)"/>
+						<Else>
+							<ScalarOperator>
+								<Const ConstValue="(0)"/>
+		<RelOp NodeId="1" PhysicalOp="Stream Aggregate" LogicalOp="Aggregate" >
+			<OutputList>
+				<ColumnReference Column="Expr1004"/>
+			
+			<StreamAggregate>
+				<DefinedValues>
+					<DefinedValue>
+						<ColumnReference Column="Expr1004"/>
+						<ScalarOperator ScalarString="Count(*)">
+							<Aggregate AggType="countstar" Distinct="0"/>
+				<RelOp NodeId="3" PhysicalOp="Hash Match" LogicalOp="Inner Join" >
+					<OutputList/>
+					<Hash>
+						<DefinedValues/>
+						<HashKeysBuild>
+							<ColumnReference   Table="admissions" Column="hadm_id"/>
+						
+						<HashKeysProbe>
+							<ColumnReference   Table="prescriptions" Column="hadm_id"/>
+						
+						<RelOp NodeId="4" PhysicalOp="Clustered Index Scan" LogicalOp="Clustered Index Scan" >
+							<OutputList>
+								<ColumnReference   Table="admissions" Column="hadm_id"/>
+							
+							<IndexScan >
+								<DefinedValues>
+									<DefinedValue>
+										<ColumnReference   Table="admissions" Column="hadm_id"/>
+								<Object   Table="admissions" >
+								<Predicate>
+									<ScalarOperator ScalarString=" admissions.subject_id=(10020944)">
+										<Compare CompareOp="EQ">
+											<ScalarOperator>
+												<Identifier>
+													<ColumnReference   Table="admissions" Column="subject_id"/>
+											<ScalarOperator>
+												<Const ConstValue="(10020944)"/>
+						<RelOp NodeId="5" PhysicalOp="Filter" LogicalOp="Filter" >
+							<OutputList>
+								<ColumnReference   Table="prescriptions" Column="hadm_id"/>
+							
+							<Filter >
+								<RelOp NodeId="6" PhysicalOp="Clustered Index Scan" LogicalOp="Clustered Index Scan" >
+									<OutputList>
+										<ColumnReference   Table="prescriptions" Column="hadm_id"/>
+										<ColumnReference   Table="prescriptions" Column="starttime"/>
+									
+									<IndexScan >
+										<DefinedValues>
+											<DefinedValue>
+												<ColumnReference   Table="prescriptions" Column="hadm_id"/>
+											
+											<DefinedValue>
+												<ColumnReference   Table="prescriptions" Column="starttime"/>
+										<Object   Table="prescriptions" >
+										<Predicate>
+											<ScalarOperator ScalarString=" prescriptions.drug='glucose gel'">
+												<Compare CompareOp="EQ">
+													<ScalarOperator>
+														<Identifier>
+															<ColumnReference   Table="prescriptions" Column="drug"/>
+													<ScalarOperator>
+														<Const ConstValue="'glucose gel'"/>
+								<Predicate>
+									<ScalarOperator ScalarString=" DURING( prescriptions.starttime, TIME_INTERVAL_YMD((2100),(3),NULL))=(1)">
+										<Compare CompareOp="EQ">
+											<ScalarOperator>
+												<UserDefinedFunction FunctionName=" DURING">
+													<ScalarOperator>
+														<Identifier>
+															<ColumnReference   Table="prescriptions" Column="starttime"/>
+													<ScalarOperator>
+														<UserDefinedFunction FunctionName=" TIME_INTERVAL_YMD">
+															<ScalarOperator>
+																<Const ConstValue="(2100)"/>
+															
+															<ScalarOperator>
+																<Const ConstValue="(3)"/>
+															
+															<ScalarOperator>
+																<Const ConstValue="NULL"/>
+											<ScalarOperator>
+												<Const ConstValue="(1)"/>
+
+
+======================================================================================================================================================
+
+6:
+
+SELECT MIN(chartevents.valuenum)
+FROM chartevents
+WHERE chartevents.stay_id IN
+    (SELECT icustays.stay_id
+     FROM icustays
+     WHERE icustays.hadm_id IN
+         (SELECT admissions.hadm_id
+          FROM admissions
+          WHERE admissions.subject_id = 10021487))
+  AND chartevents.itemid IN
+    (SELECT d_items.itemid
+     FROM d_items
+     WHERE d_items.label = 'respiratory rate'
+       AND d_items.linksto = 'chartevents')
+  AND dbo.DURING(chartevents.charttime, dbo.TIME_INTERVAL_YMD(YEAR(GETDATE()), MONTH(GETDATE()), 21)) = 1
+
+
+
+#1 = Scan Table [ d_items ]
+	 Predicate [ label = 'respiratory rate' AND 
+	             linksto = 'chartevents' ]
+	 Output [ itemid , label , linksto ]
+	 
+#2 = Scan Table [ admissions ]
+	 Predicate [ subject_id = 10021487 ]
+	 Output [ hadm_id , subject_id ]
+	 
+#3 = Scan Table [ icustays ]
+	 Output [ hadm_id , stay_id ]
+	 
+#4 = Join [ #2 , #3 ]
+	 Predicate [ #2.hadm_id = #3.hadm_id ]
+	 Output [ #3.stay_id ]
+	 
+#5 = Scan Table [ chartevents ]
+	 Output [ stay_id , itemid , charttime , valuenum ]
+	 
+#6 = Filter [ #5 ]
+	 Predicate [ charttime DURING TIME_INTERVAL(year(getdate()), month(getdate()), 21) ]
+	 Output [ stay_id , itemid , valuenum ]
+	 
+#7 = Join [ #4 , #6 ]
+	 Predicate [ #4.stay_id = #6.stay_id ]
+	 Output [ #6.itemid , #6.valuenum ]
+	 
+#8 = Join [ #1 , #7 ]
+	 Predicate [ #1.itemid = #7.itemid ]
+	 Output [ #7.valuenum ]
+	 
+#9 = Aggregate [ #8 ]
+	 Output [ MIN(valuenum) AS Min_valuenum ]
+
+
+
+<RelOp NodeId="0" PhysicalOp="Stream Aggregate" LogicalOp="Aggregate" >
+	<OutputList>
+		<ColumnReference Column="Expr1008"/>
+	
+	<StreamAggregate>
+		<DefinedValues>
+			<DefinedValue>
+				<ColumnReference Column="Expr1008"/>
+				<ScalarOperator ScalarString="MIN( chartevents.valuenum)">
+					<Aggregate Distinct="0" AggType="MIN">
+						<ScalarOperator>
+							<Identifier>
+								<ColumnReference   Table="chartevents" Column="valuenum"/>
+		<RelOp NodeId="3" PhysicalOp="Hash Match" LogicalOp="Inner Join" >
+			<OutputList>
+				<ColumnReference   Table="chartevents" Column="valuenum"/>
+			
+			<Hash>
+				<DefinedValues/>
+				<HashKeysBuild>
+					<ColumnReference   Table="d_items" Column="itemid"/>
+				
+				<HashKeysProbe>
+					<ColumnReference   Table="chartevents" Column="itemid"/>
+				
+				<RelOp NodeId="4" PhysicalOp="Clustered Index Scan" LogicalOp="Clustered Index Scan" >
+					<OutputList>
+						<ColumnReference   Table="d_items" Column="itemid"/>
+					
+					<IndexScan >
+						<DefinedValues>
+							<DefinedValue>
+								<ColumnReference   Table="d_items" Column="itemid"/>
+						<Object   Table="d_items" >
+						<Predicate>
+							<ScalarOperator ScalarString=" d_items.label='respiratory rate' AND  d_items.linksto='chartevents'">
+								<Logical Operation="AND">
+									<ScalarOperator>
+										<Compare CompareOp="EQ">
+											<ScalarOperator>
+												<Identifier>
+													<ColumnReference   Table="d_items" Column="label"/>
+											<ScalarOperator>
+												<Const ConstValue="'respiratory rate'"/>
+									<ScalarOperator>
+										<Compare CompareOp="EQ">
+											<ScalarOperator>
+												<Identifier>
+													<ColumnReference   Table="d_items" Column="linksto"/>
+											<ScalarOperator>
+												<Const ConstValue="'chartevents'"/>
+				<RelOp NodeId="5" PhysicalOp="Hash Match" LogicalOp="Inner Join" >
+					<OutputList>
+						<ColumnReference   Table="chartevents" Column="itemid"/>
+						<ColumnReference   Table="chartevents" Column="valuenum"/>
+					
+					<Hash>
+						<DefinedValues/>
+						<HashKeysBuild>
+							<ColumnReference   Table="icustays" Column="stay_id"/>
+						
+						<HashKeysProbe>
+							<ColumnReference   Table="chartevents" Column="stay_id"/>
+						
+						<RelOp NodeId="6" PhysicalOp="Hash Match" LogicalOp="Inner Join" >
+							<OutputList>
+								<ColumnReference   Table="icustays" Column="stay_id"/>
+							
+							<Hash>
+								<DefinedValues/>
+								<HashKeysBuild>
+									<ColumnReference   Table="admissions" Column="hadm_id"/>
+								
+								<HashKeysProbe>
+									<ColumnReference   Table="icustays" Column="hadm_id"/>
+								
+								<RelOp NodeId="7" PhysicalOp="Clustered Index Scan" LogicalOp="Clustered Index Scan" >
+									<OutputList>
+										<ColumnReference   Table="admissions" Column="hadm_id"/>
+									
+									<IndexScan >
+										<DefinedValues>
+											<DefinedValue>
+												<ColumnReference   Table="admissions" Column="hadm_id"/>
+										<Object   Table="admissions" >
+										<Predicate>
+											<ScalarOperator ScalarString=" admissions.subject_id=(10021487)">
+												<Compare CompareOp="EQ">
+													<ScalarOperator>
+														<Identifier>
+															<ColumnReference   Table="admissions" Column="subject_id"/>
+													<ScalarOperator>
+														<Const ConstValue="(10021487)"/>
+								<RelOp NodeId="8" PhysicalOp="Clustered Index Scan" LogicalOp="Clustered Index Scan" >
+									<OutputList>
+										<ColumnReference   Table="icustays" Column="hadm_id"/>
+										<ColumnReference   Table="icustays" Column="stay_id"/>
+									
+									<IndexScan >
+										<DefinedValues>
+											<DefinedValue>
+												<ColumnReference   Table="icustays" Column="hadm_id"/>
+											
+											<DefinedValue>
+												<ColumnReference   Table="icustays" Column="stay_id"/>
+										<Object   Table="icustays" >
+						<RelOp NodeId="9" PhysicalOp="Filter" LogicalOp="Filter" >
+							<OutputList>
+								<ColumnReference   Table="chartevents" Column="stay_id"/>
+								<ColumnReference   Table="chartevents" Column="itemid"/>
+								<ColumnReference   Table="chartevents" Column="valuenum"/>
+							
+							<Filter >
+								<RelOp NodeId="10" PhysicalOp="Clustered Index Scan" LogicalOp="Clustered Index Scan" >
+									<OutputList>
+										<ColumnReference   Table="chartevents" Column="stay_id"/>
+										<ColumnReference   Table="chartevents" Column="itemid"/>
+										<ColumnReference   Table="chartevents" Column="charttime"/>
+										<ColumnReference   Table="chartevents" Column="valuenum"/>
+									
+									<IndexScan >
+										<DefinedValues>
+											<DefinedValue>
+												<ColumnReference   Table="chartevents" Column="stay_id"/>
+											
+											<DefinedValue>
+												<ColumnReference   Table="chartevents" Column="itemid"/>
+											
+											<DefinedValue>
+												<ColumnReference   Table="chartevents" Column="charttime"/>
+											
+											<DefinedValue>
+												<ColumnReference   Table="chartevents" Column="valuenum"/>
+										<Object   Table="chartevents" >
+								<Predicate>
+									<ScalarOperator ScalarString=" DURING( chartevents.charttime, TIME_INTERVAL_YMD(datepart(year,getdate()),datepart(month,getdate()),(21)))=(1)">
+										<Compare CompareOp="EQ">
+											<ScalarOperator>
+												<UserDefinedFunction FunctionName=" DURING">
+													<ScalarOperator>
+														<Identifier>
+															<ColumnReference   Table="chartevents" Column="charttime"/>
+													<ScalarOperator>
+														<UserDefinedFunction FunctionName=" TIME_INTERVAL_YMD">
+															<ScalarOperator>
+																<Identifier>
+																	<ColumnReference Column="ConstExpr1009">
+																		<ScalarOperator>
+																			<Intrinsic FunctionName="datepart">
+																				<ScalarOperator>
+																					<Const ConstValue="(0)"/>
+																				
+																				<ScalarOperator>
+																					<Intrinsic FunctionName="getdate"/>
+															<ScalarOperator>
+																<Identifier>
+																	<ColumnReference Column="ConstExpr1010">
+																		<ScalarOperator>
+																			<Intrinsic FunctionName="datepart">
+																				<ScalarOperator>
+																					<Const ConstValue="(2)"/>
+																				
+																				<ScalarOperator>
+																					<Intrinsic FunctionName="getdate"/>
+															<ScalarOperator>
+																<Const ConstValue="(21)"/>
+											<ScalarOperator>
+												<Const ConstValue="(1)"/>
+
+
+======================================================================================================================================================
+
+7:
+
+SELECT T3.test_name
+FROM
+  (SELECT T2.test_name AS test_name,
+          DENSE_RANK() OVER (
+                             ORDER BY COUNT_BIG(*) DESC) AS C1
+   FROM
+     (SELECT admissions.subject_id AS subject_id,
+             diagnoses_icd.charttime AS charttime
+      FROM diagnoses_icd
+      JOIN admissions ON diagnoses_icd.hadm_id = admissions.hadm_id
+      WHERE diagnoses_icd.icd_code =
+          (SELECT d_icd_diagnoses.icd_code
+           FROM d_icd_diagnoses
+           WHERE d_icd_diagnoses.long_title = 'dependence on respirator, status')
+        AND dbo.MET_BY(diagnoses_icd.charttime, dbo.TIME_POINT_START_OF_YMD(2100, NULL, NULL)) = 1) AS T1
+   JOIN
+     (SELECT admissions.subject_id AS subject_id,
+             microbiologyevents.test_name AS test_name,
+             microbiologyevents.charttime AS charttime
+      FROM microbiologyevents
+      JOIN admissions ON microbiologyevents.hadm_id = admissions.hadm_id
+      WHERE dbo.MET_BY(microbiologyevents.charttime, dbo.TIME_POINT_START_OF_YMD(2100, NULL, NULL)) = 1) AS T2 ON T1.subject_id = T2.subject_id
+   WHERE T1.charttime < T2.charttime
+     AND dbo.DURING(T1.charttime, dbo.TIME_INTERVAL_REL(T2.charttime, 'month')) = 1
+   GROUP BY T2.test_name) AS T3
+WHERE T3.C1 <= 5
+
+
+
+#1 = Scan Table [ d_icd_diagnoses ]
+	 Predicate [ long_title = 'dependence on respirator, status' ]
+	 Output [ icd_code ]
+	 
+#2 = Scan Table [ diagnoses_icd ]
+	 Output [ hadm_id , icd_code , charttime ]
+	 
+#3 = Filter [ #2 ]
+	 Predicate [ charttime MET_BY TIME_POINT_START_OF(2100, NULL, NULL) ]
+	 Output [ hadm_id , icd_code , charttime ]
+	 
+#4 = Join [ #1 , #3 ]
+	 Predicate [ #1.icd_code = #3.icd_code ]
+	 Output [ #3.hadm_id , #3.charttime ]
+	 
+#5 = Scan Table [ admissions ]
+	 Output [ subject_id , hadm_id ]
+	 
+#6 = Join [ #4 , #5 ]
+	 Predicate [ #4.hadm_id = #5.hadm_id ]
+	 Output [ #4.charttime , #5.subject_id ]
+	 
+#7 = Scan Table [ admissions ]
+	 Output [ subject_id , hadm_id ]
+	 
+#8 = Join [ #6 , #7 ]
+	 Predicate [ #6.subject_id = #7.subject_id ]
+	 Output [ #6.charttime , #7.hadm_id ]
+	 
+#9 = Scan Table [ microbiologyevents ]
+	 Output [ hadm_id , charttime , test_name ]
+	 
+#10 = Filter [ #9 ]
+	 Predicate [ charttime MET_BY TIME_POINT_START_OF(2100, NULL, NULL) ]
+	 Output [ hadm_id , charttime , test_name ]
+	 
+#11 = Join [ #8 , #10 ]
+	 Predicate [ #10.hadm_id = #8.hadm_id AND 
+	             #8.charttime < #10.charttime AND 
+	             #8.charttime DURING TIME_INTERVAL(#10.charttime, 'month') ]
+	 Output [ #10.test_name ]
+	 
+#12 = Aggregate [ #11 ]
+	 GroupBy [ test_name ]
+	 Output [ test_name , countstar AS Count_Star ]
+	 
+#13 = SequenceProject [ #12 ]
+	 Over [ Count_Star DESC ]
+	 Output [ test_name , dense_rank() AS dense_rank_1 ]
+	 
+#14 = Filter [ #13 ]
+	 Predicate [ dense_rank_1 <= 5 ]
+	 Output [ test_name ]
+
+
+
+<RelOp NodeId="0" PhysicalOp="Filter" LogicalOp="Filter" >
+	<OutputList>
+		<ColumnReference   Table="microbiologyevents" Column="test_name"/>
+	
+	<Filter >
+		<RelOp NodeId="1" PhysicalOp="Sequence Project" LogicalOp="Compute Scalar" >
+			<OutputList>
+				<ColumnReference   Table="microbiologyevents" Column="test_name"/>
+				<ColumnReference Column="Expr1012"/>
+			
+			<SequenceProject>
+				<DefinedValues>
+					<DefinedValue>
+						<ColumnReference Column="Expr1012"/>
+						<ScalarOperator ScalarString="dense_rank">
+							<Sequence FunctionName="dense_rank"/>
+				<RelOp NodeId="2" PhysicalOp="Segment" LogicalOp="Segment" >
+					<OutputList>
+						<ColumnReference   Table="microbiologyevents" Column="test_name"/>
+						<ColumnReference Column="Expr1011"/>
+						<ColumnReference Column="Segment1018"/>
+						<ColumnReference Column="Segment1019"/>
+					
+					<Segment>
+						<GroupBy>
+							<ColumnReference Column="Expr1011"/>
+						
+						<SegmentColumn>
+							<ColumnReference Column="Segment1019"/>
+						
+						<RelOp NodeId="3" PhysicalOp="Segment" LogicalOp="Segment" >
+							<OutputList>
+								<ColumnReference   Table="microbiologyevents" Column="test_name"/>
+								<ColumnReference Column="Expr1011"/>
+								<ColumnReference Column="Segment1018"/>
+							
+							<Segment>
+								<GroupBy/>
+								<SegmentColumn>
+									<ColumnReference Column="Segment1018"/>
+								
+								<RelOp NodeId="4" PhysicalOp="Sort" LogicalOp="Sort" >
+									<OutputList>
+										<ColumnReference   Table="microbiologyevents" Column="test_name"/>
+										<ColumnReference Column="Expr1011"/>
+									
+									<Sort Distinct="0">
+										<OrderBy>
+											<OrderByColumn Ascending="0">
+												<ColumnReference Column="Expr1011"/>
+										<RelOp NodeId="5" PhysicalOp="Stream Aggregate" LogicalOp="Aggregate" >
+											<OutputList>
+												<ColumnReference   Table="microbiologyevents" Column="test_name"/>
+												<ColumnReference Column="Expr1011"/>
+											
+											<StreamAggregate>
+												<DefinedValues>
+													<DefinedValue>
+														<ColumnReference Column="Expr1011"/>
+														<ScalarOperator ScalarString="Count(*)">
+															<Aggregate AggType="countstar" Distinct="0"/>
+												<GroupBy>
+													<ColumnReference   Table="microbiologyevents" Column="test_name"/>
+												
+												<RelOp NodeId="6" PhysicalOp="Sort" LogicalOp="Sort" >
+													<OutputList>
+														<ColumnReference   Table="microbiologyevents" Column="test_name"/>
+													
+													<Sort Distinct="0">
+														<OrderBy>
+															<OrderByColumn Ascending="1">
+																<ColumnReference   Table="microbiologyevents" Column="test_name"/>
+														<RelOp NodeId="7" PhysicalOp="Hash Match" LogicalOp="Inner Join" >
+															<OutputList>
+																<ColumnReference   Table="microbiologyevents" Column="test_name"/>
+															
+															<Hash>
+																<DefinedValues/>
+																<HashKeysBuild>
+																	<ColumnReference   Table="admissions" Column="hadm_id"/>
+																
+																<HashKeysProbe>
+																	<ColumnReference   Table="microbiologyevents" Column="hadm_id"/>
+																
+																<ProbeResidual>
+																	<ScalarOperator ScalarString=" microbiologyevents.hadm_id= admissions.hadm_id AND  diagnoses_icd.charttime <  microbiologyevents.charttime AND  DURING( diagnoses_icd.charttime, TIME_INTERVAL_REL( microbiologyevents.charttime,'month'))=(1)">
+																		<Logical Operation="AND">
+																			<ScalarOperator>
+																				<Compare CompareOp="EQ">
+																					<ScalarOperator>
+																						<Identifier>
+																							<ColumnReference   Table="microbiologyevents" Column="hadm_id"/>
+																					<ScalarOperator>
+																						<Identifier>
+																							<ColumnReference   Table="admissions" Column="hadm_id"/>
+																			<ScalarOperator>
+																				<Compare CompareOp="LT">
+																					<ScalarOperator>
+																						<Identifier>
+																							<ColumnReference   Table="diagnoses_icd" Column="charttime"/>
+																					<ScalarOperator>
+																						<Identifier>
+																							<ColumnReference   Table="microbiologyevents" Column="charttime"/>
+																			<ScalarOperator>
+																				<Compare CompareOp="EQ">
+																					<ScalarOperator>
+																						<UserDefinedFunction FunctionName=" DURING">
+																							<ScalarOperator>
+																								<Identifier>
+																									<ColumnReference   Table="diagnoses_icd" Column="charttime"/>
+																							<ScalarOperator>
+																								<UserDefinedFunction FunctionName=" TIME_INTERVAL_REL">
+																									<ScalarOperator>
+																										<Identifier>
+																											<ColumnReference   Table="microbiologyevents" Column="charttime"/>
+																									<ScalarOperator>
+																										<Const ConstValue="'month'"/>
+																					<ScalarOperator>
+																						<Const ConstValue="(1)"/>
+																<RelOp NodeId="8" PhysicalOp="Hash Match" LogicalOp="Inner Join" >
+																	<OutputList>
+																		<ColumnReference   Table="diagnoses_icd" Column="charttime"/>
+																		<ColumnReference   Table="admissions" Column="hadm_id"/>
+																	
+																	<Hash>
+																		<DefinedValues/>
+																		<HashKeysBuild>
+																			<ColumnReference   Table="admissions" Column="subject_id"/>
+																		
+																		<HashKeysProbe>
+																			<ColumnReference   Table="admissions" Column="subject_id"/>
+																		
+																		<RelOp NodeId="9" PhysicalOp="Hash Match" LogicalOp="Inner Join" >
+																			<OutputList>
+																				<ColumnReference   Table="diagnoses_icd" Column="charttime"/>
+																				<ColumnReference   Table="admissions" Column="subject_id"/>
+																			
+																			<Hash>
+																				<DefinedValues/>
+																				<HashKeysBuild>
+																					<ColumnReference   Table="diagnoses_icd" Column="hadm_id"/>
+																				
+																				<HashKeysProbe>
+																					<ColumnReference   Table="admissions" Column="hadm_id"/>
+																				
+																				<RelOp NodeId="10" PhysicalOp="Hash Match" LogicalOp="Inner Join" >
+																					<OutputList>
+																						<ColumnReference   Table="diagnoses_icd" Column="hadm_id"/>
+																						<ColumnReference   Table="diagnoses_icd" Column="charttime"/>
+																					
+																					<Hash>
+																						<DefinedValues/>
+																						<HashKeysBuild>
+																							<ColumnReference Column="Expr1014"/>
+																						
+																						<HashKeysProbe>
+																							<ColumnReference   Table="diagnoses_icd" Column="icd_code"/>
+																						
+																						<ProbeResidual>
+																							<ScalarOperator ScalarString="Expr1014= diagnoses_icd.icd_code">
+																								<Compare CompareOp="EQ">
+																									<ScalarOperator>
+																										<Identifier>
+																											<ColumnReference Column="Expr1014"/>
+																									<ScalarOperator>
+																										<Identifier>
+																											<ColumnReference   Table="diagnoses_icd" Column="icd_code"/>
+																						<RelOp NodeId="11" PhysicalOp="Assert" LogicalOp="Assert" >
+																							<OutputList>
+																								<ColumnReference Column="Expr1014"/>
+																							
+																							<Assert >
+																								<RelOp NodeId="12" PhysicalOp="Stream Aggregate" LogicalOp="Aggregate" >
+																									<OutputList>
+																										<ColumnReference Column="Expr1013"/>
+																										<ColumnReference Column="Expr1014"/>
+																									
+																									<StreamAggregate>
+																										<DefinedValues>
+																											<DefinedValue>
+																												<ColumnReference Column="Expr1013"/>
+																												<ScalarOperator ScalarString="Count(*)">
+																													<Aggregate AggType="countstar" Distinct="0"/>
+																											<DefinedValue>
+																												<ColumnReference Column="Expr1014"/>
+																												<ScalarOperator ScalarString="ANY( d_icd_diagnoses.icd_code)">
+																													<Aggregate Distinct="0" AggType="ANY">
+																														<ScalarOperator>
+																															<Identifier>
+																																<ColumnReference   Table="d_icd_diagnoses" Column="icd_code"/>
+																										<RelOp NodeId="13" PhysicalOp="Clustered Index Scan" LogicalOp="Clustered Index Scan" >
+																											<OutputList>
+																												<ColumnReference   Table="d_icd_diagnoses" Column="icd_code"/>
+																											
+																											<IndexScan >
+																												<DefinedValues>
+																													<DefinedValue>
+																														<ColumnReference   Table="d_icd_diagnoses" Column="icd_code"/>
+																												<Object   Table="d_icd_diagnoses" >
+																												<Predicate>
+																													<ScalarOperator ScalarString=" d_icd_diagnoses.long_title='dependence on respirator, status'">
+																														<Compare CompareOp="EQ">
+																															<ScalarOperator>
+																																<Identifier>
+																																	<ColumnReference   Table="d_icd_diagnoses" Column="long_title"/>
+																															<ScalarOperator>
+																																<Const ConstValue="'dependence on respirator, status'"/>
+																								<Predicate>
+																									<ScalarOperator ScalarString="CASE WHEN Expr1013 > (1) THEN (0) ELSE NULL END">
+																										<IF>
+																											<Condition>
+																												<ScalarOperator>
+																													<Compare CompareOp="GT">
+																														<ScalarOperator>
+																															<Identifier>
+																																<ColumnReference Column="Expr1013"/>
+																														<ScalarOperator>
+																															<Const ConstValue="(1)"/>
+																											<Then>
+																												<ScalarOperator>
+																													<Const ConstValue="(0)"/>
+																											<Else>
+																												<ScalarOperator>
+																													<Const ConstValue="NULL"/>
+																						<RelOp NodeId="14" PhysicalOp="Filter" LogicalOp="Filter" >
+																							<OutputList>
+																								<ColumnReference   Table="diagnoses_icd" Column="hadm_id"/>
+																								<ColumnReference   Table="diagnoses_icd" Column="icd_code"/>
+																								<ColumnReference   Table="diagnoses_icd" Column="charttime"/>
+																							
+																							<Filter >
+																								<RelOp NodeId="15" PhysicalOp="Clustered Index Scan" LogicalOp="Clustered Index Scan" >
+																									<OutputList>
+																										<ColumnReference   Table="diagnoses_icd" Column="hadm_id"/>
+																										<ColumnReference   Table="diagnoses_icd" Column="icd_code"/>
+																										<ColumnReference   Table="diagnoses_icd" Column="charttime"/>
+																									
+																									<IndexScan >
+																										<DefinedValues>
+																											<DefinedValue>
+																												<ColumnReference   Table="diagnoses_icd" Column="hadm_id"/>
+																											
+																											<DefinedValue>
+																												<ColumnReference   Table="diagnoses_icd" Column="icd_code"/>
+																											
+																											<DefinedValue>
+																												<ColumnReference   Table="diagnoses_icd" Column="charttime"/>
+																										<Object   Table="diagnoses_icd" >
+																								<Predicate>
+																									<ScalarOperator ScalarString=" MET_BY( diagnoses_icd.charttime, TIME_POINT_START_OF_YMD((2100),NULL,NULL))=(1)">
+																										<Compare CompareOp="EQ">
+																											<ScalarOperator>
+																												<UserDefinedFunction FunctionName=" MET_BY">
+																													<ScalarOperator>
+																														<Identifier>
+																															<ColumnReference   Table="diagnoses_icd" Column="charttime"/>
+																													<ScalarOperator>
+																														<UserDefinedFunction FunctionName=" TIME_POINT_START_OF_YMD">
+																															<ScalarOperator>
+																																<Const ConstValue="(2100)"/>
+																															
+																															<ScalarOperator>
+																																<Const ConstValue="NULL"/>
+																															
+																															<ScalarOperator>
+																																<Const ConstValue="NULL"/>
+																											<ScalarOperator>
+																												<Const ConstValue="(1)"/>
+																				<RelOp NodeId="16" PhysicalOp="Clustered Index Scan" LogicalOp="Clustered Index Scan" >
+																					<OutputList>
+																						<ColumnReference   Table="admissions" Column="subject_id"/>
+																						<ColumnReference   Table="admissions" Column="hadm_id"/>
+																					
+																					<IndexScan >
+																						<DefinedValues>
+																							<DefinedValue>
+																								<ColumnReference   Table="admissions" Column="subject_id"/>
+																							
+																							<DefinedValue>
+																								<ColumnReference   Table="admissions" Column="hadm_id"/>
+																						<Object   Table="admissions" >
+																		<RelOp NodeId="17" PhysicalOp="Clustered Index Scan" LogicalOp="Clustered Index Scan" >
+																			<OutputList>
+																				<ColumnReference   Table="admissions" Column="subject_id"/>
+																				<ColumnReference   Table="admissions" Column="hadm_id"/>
+																			
+																			<IndexScan >
+																				<DefinedValues>
+																					<DefinedValue>
+																						<ColumnReference   Table="admissions" Column="subject_id"/>
+																					
+																					<DefinedValue>
+																						<ColumnReference   Table="admissions" Column="hadm_id"/>
+																				<Object   Table="admissions" >
+																<RelOp NodeId="18" PhysicalOp="Filter" LogicalOp="Filter" >
+																	<OutputList>
+																		<ColumnReference   Table="microbiologyevents" Column="hadm_id"/>
+																		<ColumnReference   Table="microbiologyevents" Column="charttime"/>
+																		<ColumnReference   Table="microbiologyevents" Column="test_name"/>
+																	
+																	<Filter >
+																		<RelOp NodeId="19" PhysicalOp="Clustered Index Scan" LogicalOp="Clustered Index Scan" >
+																			<OutputList>
+																				<ColumnReference   Table="microbiologyevents" Column="hadm_id"/>
+																				<ColumnReference   Table="microbiologyevents" Column="charttime"/>
+																				<ColumnReference   Table="microbiologyevents" Column="test_name"/>
+																			
+																			<IndexScan >
+																				<DefinedValues>
+																					<DefinedValue>
+																						<ColumnReference   Table="microbiologyevents" Column="hadm_id"/>
+																					
+																					<DefinedValue>
+																						<ColumnReference   Table="microbiologyevents" Column="charttime"/>
+																					
+																					<DefinedValue>
+																						<ColumnReference   Table="microbiologyevents" Column="test_name"/>
+																				<Object   Table="microbiologyevents" >
+																		<Predicate>
+																			<ScalarOperator ScalarString=" MET_BY( microbiologyevents.charttime, TIME_POINT_START_OF_YMD((2100),NULL,NULL))=(1)">
+																				<Compare CompareOp="EQ">
+																					<ScalarOperator>
+																						<UserDefinedFunction FunctionName=" MET_BY">
+																							<ScalarOperator>
+																								<Identifier>
+																									<ColumnReference   Table="microbiologyevents" Column="charttime"/>
+																							<ScalarOperator>
+																								<UserDefinedFunction FunctionName=" TIME_POINT_START_OF_YMD">
+																									<ScalarOperator>
+																										<Const ConstValue="(2100)"/>
+																									
+																									<ScalarOperator>
+																										<Const ConstValue="NULL"/>
+																									
+																									<ScalarOperator>
+																										<Const ConstValue="NULL"/>
+																					<ScalarOperator>
+																						<Const ConstValue="(1)"/>
+		<Predicate>
+			<ScalarOperator ScalarString="Expr1012 < =(5)">
+				<Compare CompareOp="LE">
+					<ScalarOperator>
+						<Identifier>
+							<ColumnReference Column="Expr1012"/>
+					<ScalarOperator>
+						<Const ConstValue="(5)"/>
+
+
+======================================================================================================================================================
+
+8:
+
+SELECT DISTINCT T1.C1
+FROM
+  (SELECT labevents.valuenum AS valuenum,
+          PERCENT_RANK() OVER (
+                               ORDER BY labevents.valuenum) AS C1
+   FROM labevents
+   WHERE labevents.itemid IN
+       (SELECT d_labitems.itemid
+        FROM d_labitems
+        WHERE d_labitems.label = 'calculated total co2')
+     AND labevents.hadm_id IN
+       (SELECT admissions.hadm_id
+        FROM admissions
+        WHERE admissions.age =
+            (SELECT TOP 1 admissions.age
+             FROM admissions
+             WHERE admissions.subject_id = 10038999
+               AND NOT admissions.dischtime IS NULL
+             ORDER BY admissions.admittime ASC))) AS T1
+WHERE T1.valuenum = 30.0
+
+
+
+#1 = Scan Table [ admissions ]
+	 Predicate [ subject_id = 10038999 AND 
+	             dischtime IS NOT NULL ]
+	 Output [ admittime , age , subject_id , dischtime ]
+	 
+#2 = TopSort [ #1 ]
+	 Rows [ 1 ]
+	 OrderBy [ admittime ASC ]
+	 Output [ admittime , age ]
+	 
+#3 = Scan Table [ admissions ]
+	 Output [ hadm_id , age ]
+	 
+#4 = Join [ #2 , #3 ]
+	 Predicate [ #2.age = #3.age ]
+	 Output [ #3.hadm_id ]
+	 
+#5 = Scan Table [ d_labitems ]
+	 Predicate [ label = 'calculated total co2' ]
+	 Output [ itemid , label ]
+	 
+#6 = Scan Table [ labevents ]
+	 Output [ hadm_id , itemid , valuenum ]
+	 
+#7 = Join [ #5 , #6 ]
+	 Predicate [ #5.itemid = #6.itemid ]
+	 Output [ #6.hadm_id , #6.valuenum ]
+	 
+#8 = Join [ #4 , #7 ]
+	 Predicate [ #4.hadm_id = #7.hadm_id ]
+	 Output [ #7.valuenum ]
+	 
+#9 = SequenceProject [ #8 ]
+	 Over [ valuenum ASC ]
+	 Output [ valuenum , percent_rank() AS percent_rank_1 ]
+	 
+#10 = Filter [ #9 ]
+	 Predicate [ valuenum = 30.0 ]
+	 Distinct [ true ]
+	 Output [ percent_rank_1 ]
+
+
+
+<RelOp NodeId="0" PhysicalOp="Sort" LogicalOp="Distinct Sort" >
+	<OutputList>
+		<ColumnReference Column="Expr1009"/>
+	
+	<Sort Distinct="1">
+		<OrderBy>
+			<OrderByColumn Ascending="1">
+				<ColumnReference Column="Expr1009"/>
+		<RelOp NodeId="1" PhysicalOp="Filter" LogicalOp="Filter" >
+			<OutputList>
+				<ColumnReference Column="Expr1009"/>
+			
+			<Filter >
+				<RelOp NodeId="2" PhysicalOp="Compute Scalar" LogicalOp="Compute Scalar" >
+					<OutputList>
+						<ColumnReference   Table="labevents" Column="valuenum"/>
+						<ColumnReference Column="Expr1009"/>
+					
+					<ComputeScalar>
+						<DefinedValues>
+							<DefinedValue>
+								<ColumnReference Column="Expr1009"/>
+								<ScalarOperator ScalarString="CASE WHEN AggResult1010=(1) THEN (0.0000000000000000e+000) ELSE (CONVERT_IMPLICIT(float(53),Rank1011,0)-(1.0000000000000000e+000))/(CONVERT_IMPLICIT(float(53),AggResult1010,0)-(1.0000000000000000e+000)) END">
+									<IF>
+										<Condition>
+											<ScalarOperator>
+												<Compare CompareOp="EQ">
+													<ScalarOperator>
+														<Identifier>
+															<ColumnReference Column="AggResult1010"/>
+													<ScalarOperator>
+														<Const ConstValue="(1)"/>
+										<Then>
+											<ScalarOperator>
+												<Const ConstValue="(0.0000000000000000e+000)"/>
+										<Else>
+											<ScalarOperator>
+												<Arithmetic Operation="DIV">
+													<ScalarOperator>
+														<Arithmetic Operation="SUB">
+															<ScalarOperator>
+																<Convert DataType="float" Precision="53" Style="0" Implicit="1">
+																	<ScalarOperator>
+																		<Identifier>
+																			<ColumnReference Column="Rank1011"/>
+															<ScalarOperator>
+																<Const ConstValue="(1.0000000000000000e+000)"/>
+													<ScalarOperator>
+														<Arithmetic Operation="SUB">
+															<ScalarOperator>
+																<Convert DataType="float" Precision="53" Style="0" Implicit="1">
+																	<ScalarOperator>
+																		<Identifier>
+																			<ColumnReference Column="AggResult1010"/>
+															<ScalarOperator>
+																<Const ConstValue="(1.0000000000000000e+000)"/>
+						<RelOp NodeId="3" PhysicalOp="Sequence Project" LogicalOp="Compute Scalar" >
+							<OutputList>
+								<ColumnReference   Table="labevents" Column="valuenum"/>
+								<ColumnReference Column="AggResult1010"/>
+								<ColumnReference Column="Rank1011"/>
+							
+							<SequenceProject>
+								<DefinedValues>
+									<DefinedValue>
+										<ColumnReference Column="Rank1011"/>
+										<ScalarOperator ScalarString="rank">
+											<Sequence FunctionName="rank"/>
+								<RelOp NodeId="4" PhysicalOp="Segment" LogicalOp="Segment" >
+									<OutputList>
+										<ColumnReference   Table="labevents" Column="valuenum"/>
+										<ColumnReference Column="AggResult1010"/>
+										<ColumnReference Column="Segment1013"/>
+										<ColumnReference Column="Segment1014"/>
+									
+									<Segment>
+										<GroupBy>
+											<ColumnReference   Table="labevents" Column="valuenum"/>
+										
+										<SegmentColumn>
+											<ColumnReference Column="Segment1014"/>
+										
+										<RelOp NodeId="5" PhysicalOp="Segment" LogicalOp="Segment" >
+											<OutputList>
+												<ColumnReference   Table="labevents" Column="valuenum"/>
+												<ColumnReference Column="AggResult1010"/>
+												<ColumnReference Column="Segment1013"/>
+											
+											<Segment>
+												<GroupBy/>
+												<SegmentColumn>
+													<ColumnReference Column="Segment1013"/>
+												
+												<RelOp NodeId="6" PhysicalOp="Nested Loops" LogicalOp="Inner Join" >
+													<OutputList>
+														<ColumnReference   Table="labevents" Column="valuenum"/>
+														<ColumnReference Column="AggResult1010"/>
+													
+													<NestedLoops Optimized="0">
+														<RelOp NodeId="7" PhysicalOp="Table Spool" LogicalOp="Lazy Spool" >
+															<OutputList>
+																<ColumnReference   Table="labevents" Column="valuenum"/>
+															
+															<Spool>
+																<RelOp NodeId="8" PhysicalOp="Segment" LogicalOp="Segment" >
+																	<OutputList>
+																		<ColumnReference   Table="labevents" Column="valuenum"/>
+																		<ColumnReference Column="Segment1012"/>
+																	
+																	<Segment>
+																		<GroupBy/>
+																		<SegmentColumn>
+																			<ColumnReference Column="Segment1012"/>
+																		
+																		<RelOp NodeId="9" PhysicalOp="Sort" LogicalOp="Sort" >
+																			<OutputList>
+																				<ColumnReference   Table="labevents" Column="valuenum"/>
+																			
+																			<Sort Distinct="0">
+																				<OrderBy>
+																					<OrderByColumn Ascending="1">
+																						<ColumnReference   Table="labevents" Column="valuenum"/>
+																				<RelOp NodeId="11" PhysicalOp="Hash Match" LogicalOp="Inner Join" >
+																					<OutputList>
+																						<ColumnReference   Table="labevents" Column="valuenum"/>
+																					
+																					<Hash>
+																						<DefinedValues/>
+																						<HashKeysBuild>
+																							<ColumnReference   Table="admissions" Column="hadm_id"/>
+																						
+																						<HashKeysProbe>
+																							<ColumnReference   Table="labevents" Column="hadm_id"/>
+																						
+																						<RelOp NodeId="12" PhysicalOp="Hash Match" LogicalOp="Inner Join" >
+																							<OutputList>
+																								<ColumnReference   Table="admissions" Column="hadm_id"/>
+																							
+																							<Hash>
+																								<DefinedValues/>
+																								<HashKeysBuild>
+																									<ColumnReference   Table="admissions" Column="age"/>
+																								
+																								<HashKeysProbe>
+																									<ColumnReference   Table="admissions" Column="age"/>
+																								
+																								<RelOp NodeId="13" PhysicalOp="Sort" LogicalOp="TopN Sort" >
+																									<OutputList>
+																										<ColumnReference   Table="admissions" Column="admittime"/>
+																										<ColumnReference   Table="admissions" Column="age"/>
+																									
+																									<TopSort Distinct="0" Rows="1">
+																										<OrderBy>
+																											<OrderByColumn Ascending="1">
+																												<ColumnReference   Table="admissions" Column="admittime"/>
+																										<RelOp NodeId="14" PhysicalOp="Clustered Index Scan" LogicalOp="Clustered Index Scan" >
+																											<OutputList>
+																												<ColumnReference   Table="admissions" Column="admittime"/>
+																												<ColumnReference   Table="admissions" Column="age"/>
+																											
+																											<IndexScan >
+																												<DefinedValues>
+																													<DefinedValue>
+																														<ColumnReference   Table="admissions" Column="admittime"/>
+																													
+																													<DefinedValue>
+																														<ColumnReference   Table="admissions" Column="age"/>
+																												<Object   Table="admissions" >
+																												<Predicate>
+																													<ScalarOperator ScalarString=" admissions.subject_id=(10038999) AND  admissions.dischtime IS NOT NULL">
+																														<Logical Operation="AND">
+																															<ScalarOperator>
+																																<Compare CompareOp="EQ">
+																																	<ScalarOperator>
+																																		<Identifier>
+																																			<ColumnReference   Table="admissions" Column="subject_id"/>
+																																	<ScalarOperator>
+																																		<Const ConstValue="(10038999)"/>
+																															<ScalarOperator>
+																																<Compare CompareOp="IS NOT">
+																																	<ScalarOperator>
+																																		<Identifier>
+																																			<ColumnReference   Table="admissions" Column="dischtime"/>
+																																	<ScalarOperator>
+																																		<Const ConstValue="NULL"/>
+																								<RelOp NodeId="15" PhysicalOp="Clustered Index Scan" LogicalOp="Clustered Index Scan" >
+																									<OutputList>
+																										<ColumnReference   Table="admissions" Column="hadm_id"/>
+																										<ColumnReference   Table="admissions" Column="age"/>
+																									
+																									<IndexScan >
+																										<DefinedValues>
+																											<DefinedValue>
+																												<ColumnReference   Table="admissions" Column="hadm_id"/>
+																											
+																											<DefinedValue>
+																												<ColumnReference   Table="admissions" Column="age"/>
+																										<Object   Table="admissions" >
+																						<RelOp NodeId="17" PhysicalOp="Hash Match" LogicalOp="Inner Join" >
+																							<OutputList>
+																								<ColumnReference   Table="labevents" Column="hadm_id"/>
+																								<ColumnReference   Table="labevents" Column="valuenum"/>
+																							
+																							<Hash>
+																								<DefinedValues/>
+																								<HashKeysBuild>
+																									<ColumnReference   Table="d_labitems" Column="itemid"/>
+																								
+																								<HashKeysProbe>
+																									<ColumnReference   Table="labevents" Column="itemid"/>
+																								
+																								<RelOp NodeId="18" PhysicalOp="Clustered Index Scan" LogicalOp="Clustered Index Scan" >
+																									<OutputList>
+																										<ColumnReference   Table="d_labitems" Column="itemid"/>
+																									
+																									<IndexScan >
+																										<DefinedValues>
+																											<DefinedValue>
+																												<ColumnReference   Table="d_labitems" Column="itemid"/>
+																										<Object   Table="d_labitems" >
+																										<Predicate>
+																											<ScalarOperator ScalarString=" d_labitems.label='calculated total co2'">
+																												<Compare CompareOp="EQ">
+																													<ScalarOperator>
+																														<Identifier>
+																															<ColumnReference   Table="d_labitems" Column="label"/>
+																													<ScalarOperator>
+																														<Const ConstValue="'calculated total co2'"/>
+																								<RelOp NodeId="19" PhysicalOp="Clustered Index Scan" LogicalOp="Clustered Index Scan" >
+																									<OutputList>
+																										<ColumnReference   Table="labevents" Column="hadm_id"/>
+																										<ColumnReference   Table="labevents" Column="itemid"/>
+																										<ColumnReference   Table="labevents" Column="valuenum"/>
+																									
+																									<IndexScan >
+																										<DefinedValues>
+																											<DefinedValue>
+																												<ColumnReference   Table="labevents" Column="hadm_id"/>
+																											
+																											<DefinedValue>
+																												<ColumnReference   Table="labevents" Column="itemid"/>
+																											
+																											<DefinedValue>
+																												<ColumnReference   Table="labevents" Column="valuenum"/>
+																										<Object   Table="labevents" >
+														<RelOp NodeId="20" PhysicalOp="Nested Loops" LogicalOp="Inner Join" >
+															<OutputList>
+																<ColumnReference   Table="labevents" Column="valuenum"/>
+																<ColumnReference Column="AggResult1010"/>
+															
+															<NestedLoops Optimized="0">
+																<Predicate>
+																	<ScalarOperator ScalarString="(1)">
+																		<Const ConstValue="(1)"/>
+																<RelOp NodeId="21" PhysicalOp="Stream Aggregate" LogicalOp="Aggregate" >
+																	<OutputList>
+																		<ColumnReference Column="AggResult1010"/>
+																		<ColumnReference Column="AggResult1010"/>
+																	
+																	<StreamAggregate>
+																		<DefinedValues>
+																			<DefinedValue>
+																				<ColumnReference Column="AggResult1010"/>
+																				<ScalarOperator ScalarString="Count(*)">
+																					<Aggregate AggType="countstar" Distinct="0"/>
+																		<RelOp NodeId="22" PhysicalOp="Table Spool" LogicalOp="Lazy Spool" >
+																			<OutputList>
+																				<ColumnReference   Table="labevents" Column="valuenum"/>
+																			
+																			<Spool PrimaryNodeId="7"/>
+																<RelOp NodeId="23" PhysicalOp="Table Spool" LogicalOp="Lazy Spool" >
+																	<OutputList>
+																		<ColumnReference   Table="labevents" Column="valuenum"/>
+																	
+																	<Spool PrimaryNodeId="7"/>
+				<Predicate>
+					<ScalarOperator ScalarString=" labevents.valuenum=(3.0000000000000000e+001)">
+						<Compare CompareOp="EQ">
+							<ScalarOperator>
+								<Identifier>
+									<ColumnReference   Table="labevents" Column="valuenum"/>
+							<ScalarOperator>
+								<Const ConstValue="(3.0000000000000000e+001)"/>

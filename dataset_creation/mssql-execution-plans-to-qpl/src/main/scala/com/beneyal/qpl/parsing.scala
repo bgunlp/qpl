@@ -29,18 +29,25 @@ object parsing {
         parseComputeScalar((node \ "ComputeScalar").head)
       case ("Concatenation", "Concatenation") =>
         parseConcat((node \ "Concat").head)
-      case ("Filter", "Filter") | ("Assert", "Assert") =>
+      case ("Filter", "Filter") =>
         parseFilter((node \ logicalOp).head)
+
+      case ("Assert", "Assert") =>
+        parseAssert((node \ logicalOp).head)
+
       case ("Inner Join", "Hash Match") =>
         parseHashJoin((node \ "Hash").head)
+
       case ("Aggregate", "Hash Match") =>
         parseHashAggregate((node \ "Hash").head)
       case (s"$dir Anti Semi Join", "Hash Match") =>
         if (dir == "Left") parseHashExcept((node \ "Hash").head, Direction.Left)
         else parseHashExcept((node \ "Hash").head, Direction.Right)
+      
       case ("Clustered Index Scan", "Clustered Index Scan") | ("Clustered Index Seek", "Clustered Index Seek") |
           ("Index Scan", "Index Scan") | ("Index Seek", "Index Seek") =>
         parseIndexScan((node \ "IndexScan").head)
+     
       case ("Union", "Merge Join") | ("Concatenation", "Merge Join") =>
         parseMergeUnion((node \ "Merge").head)
       case ("Inner Join", "Merge Join") | ("Left Semi Join", "Merge Join") =>
@@ -48,32 +55,57 @@ object parsing {
       case (s"$dir Anti Semi Join", "Merge Join") =>
         if (dir == "Left") parseMergeExcept((node \ "Merge").head, Direction.Left)
         else parseMergeExcept((node \ "Merge").head, Direction.Right)
+      
+      
+      
       case ("Inner Join", "Nested Loops") =>
         parseNestedLoopsJoin((node \ "NestedLoops").head)
+      
       case ("Left Anti Semi Join", "Nested Loops") =>
         parseNestedLoopsExcept((node \ "NestedLoops").head)
+      
       case ("Left Semi Join", "Nested Loops") =>
         parseIntersect((node \ "NestedLoops").head)
+
+      // case ("Left Outer Join", "Nested Loops") =>  // !! 
+      //   parseNestedLoopsLeftOuterJoin((node \ "NestedLoops").head)
+
+      // 2 !!
+      case ("Compute Scalar", "Sequence Project") =>  
+        parseSequenceProject((node \ "SequenceProject").head)
+      
+      
+      
       case (s"$dir Semi Join", "Hash Match") =>
         if (dir == "Left") parseHashIntersect((node \ "Hash").head, Direction.Left)
         else parseHashIntersect((node \ "Hash").head, Direction.Right)
       case ("Union", "Hash Match") =>
         parseHashUnion((node \ "Hash").head)
+      
       case ("Lazy Spool", "Table Spool") | ("Eager Spool", "Table Spool") | ("Eager Spool", "Index Spool") =>
         val spoolNode  = (node \ "Spool").head
         val maybeRelop = (spoolNode \ "RelOp").headOption
         maybeRelop.map(_ => parseSpool(spoolNode)).getOrElse(EmptySpool)
+      
       case ("Lazy Spool", "Row Count Spool") =>
         parseSpool((node \ "RowCountSpool").head)
       case ("Distinct Sort", "Sort") | ("Sort", "Sort") =>
         parseSort((node \ "Sort").head)
       case ("Aggregate", "Stream Aggregate") =>
         parseStreamAggregate((node \ "StreamAggregate").head)
+      
       case ("Table Scan", "Table Scan") =>
         if ((node \ "TableScan").nonEmpty) parseTableScan((node \ "TableScan").head)
         else parseIndexScan((node \ "IndexScan").head)
+
+      // case ("Constant Scan", "Constant Scan") =>
+      //   ConstantScan
+      //   //EmptySpool
+      //   //parseConstantScan(node)  // !!
+      
       case ("Top", "Top") =>
         parseTop((node \ "Top").head)
+
       case ("TopN Sort", "Sort") =>
         parseTopSort((node \ "TopSort").head)
       case _ =>
@@ -120,9 +152,13 @@ object parsing {
     val definedValues = parseDefinedValues(node)
     val ordered       = (node \@ "Ordered") == "true"
     val seekPredicate = (node \ "SeekPredicates" \ "SeekPredicateNew" \ "SeekKeys").headOption.map(parseSeekPredicate)
-    val predicate     = (node \ "Predicate").map(parsePredicate).headOption
+    val predicate     = (node \ "Predicate").map(parsePredicate).headOption 
     IndexScan(ordered, obj, seekPredicate, predicate, definedValues)
   }
+
+  // private def parseConstantScan(node: Node): ConstantScan = {
+  //   ConstantScan()   // !!
+  // }
 
   private def parseSort(node: Node): Sort = {
     val distinct      = node \@ "Distinct" == "1"
@@ -131,6 +167,8 @@ object parsing {
     val definedValues = parseDefinedValues(node)
     Sort(distinct, orderBy, relop, definedValues)
   }
+
+
 
   private def parseNestedLoopsJoin(node: Node): NestedLoopsJoin = {
     val relops        = node \ "RelOp"
@@ -160,12 +198,42 @@ object parsing {
     Intersect(top, bottom, predicate, definedValues)
   }
 
+  //   private def parseNestedLoopsLeftOuterJoin(node: Node): NestedLoopsLeftOuterJoin = {  // !!
+  //   val relops        = node \ "RelOp"
+  //   val top           = parseRelOp(relops(0))
+  //   val bottom        = parseRelOp(relops(1))
+  //   val definedValues = parseDefinedValues(node)
+  //   val predicate     = (node \ "Predicate").headOption.map(parsePredicate)
+  //   NestedLoopsLeftOuterJoin(top, bottom, predicate, definedValues)
+  // }
+
+  // 3 !!
+  private def parseSequenceProject(node: Node): SequenceProject = {
+    val relop = parseRelOp(
+      (node \\ "RelOp").
+      find(n => (n \@ "PhysicalOp") == "Sort").
+      getOrElse(throw new RuntimeException("parseSequenceProject: RelOp with PhysicalOp=Sort not found"))
+    )
+    val definedValues = parseDefinedValues(node)
+    SequenceProject(relop, definedValues)
+  }
+
+
+
   private def parseFilter(node: Node): Filter = {
     val startupExpression = node \@ "StartupExpression" == "1"
     val relop             = parseRelOp((node \ "RelOp").head)
     val predicate         = parsePredicate((node \ "Predicate").head)
     val definedValues     = parseDefinedValues(node)
     Filter(startupExpression, relop, predicate, definedValues)
+  }
+
+  private def parseAssert(node: Node): Assert = {
+    val startupExpression = node \@ "StartupExpression" == "1"
+    val relop             = parseRelOp((node \ "RelOp").head)
+    val predicate         = parsePredicate((node \ "Predicate").head)
+    val definedValues     = parseDefinedValues(node)
+    Assert(startupExpression, relop, predicate, definedValues)
   }
 
   private def parseTopSort(node: Node): TopSort = {
@@ -179,10 +247,11 @@ object parsing {
 
   private def parseTop(node: Node): Top = {
     val topExpression = parseScalarOperator((node \ "TopExpression" \ "ScalarOperator").head)
+    val offsetExpression = (node \ "OffsetExpression" \ "ScalarOperator").headOption.map(parseScalarOperator)
     val tieColumns    = (node \ "TieColumns").map(parseColumnReference).to(Chunk)
     val relop         = parseRelOp((node \ "RelOp").head)
     val definedValues = parseDefinedValues(node)
-    Top(tieColumns, topExpression, relop, definedValues)
+    Top(tieColumns, topExpression, offsetExpression, relop, definedValues)
   }
 
   private def parseMergeUnion(node: Node): MergeUnion = {
@@ -223,11 +292,11 @@ object parsing {
     MergeExcept(top, bottom, joinColumns, dir, definedValues)
   }
 
-  private def parseTableScan(node: Node): TableScan = {
+  private def parseTableScan(node: Node): TableScan = { // !!
     val ordered       = node \@ "Ordered" == "1"
     val obj           = parseObject((node \ "Object").head)
     val definedValues = parseDefinedValues(node)
-    val predicate     = (node \ "Predicate").headOption.map(parsePredicate)
+    val predicate     = (node \ "Predicate").headOption.map(parsePredicate)  // !!
     TableScan(ordered, obj, predicate, definedValues)
   }
 
@@ -238,7 +307,8 @@ object parsing {
     val hashKeysBuild = (node \ "HashKeysBuild" \ "ColumnReference").map(parseColumnReference).to(Chunk)
     val hashKeysProbe = (node \ "HashKeysProbe" \ "ColumnReference").map(parseColumnReference).to(Chunk)
     val definedValues = parseDefinedValues(node)
-    HashJoin(top, bottom, hashKeysBuild, hashKeysProbe, definedValues)
+    val probeResidual = (node \ "ProbeResidual" \ "ScalarOperator").headOption.map(parseScalarOperator)
+    HashJoin(top, bottom, hashKeysBuild, hashKeysProbe, definedValues, probeResidual)
   }
 
   private def parseHashUnion(node: Node): HashUnion = {
@@ -300,10 +370,47 @@ object parsing {
         val operation      = operator \@ "Operation"
         val List(lhs, rhs) = operator.child.map(parseScalarOperator).toList
         Arithmetic(ArithmeticOperation.valueOf(operation), lhs, rhs)
+      
       case "Compare" =>
+        // val child_1st = operator.child.head
+        // if (child_1st.label == "ScalarOperator"){
+        //   if (child_1st.child.head.label == "UserDefinedFunction"){
+        //     val funcName = child_1st.child.head \@ "FunctionName"
+        //     if (funcName.contains("MET_BY") || funcName.contains("MEETS") || funcName.contains("DURING")) {  
+        //        val rootParentString = node \@ "ScalarString"
+        //        return TimeIntervalPredicate(s"{ $rootParentString }")
+        //     }
+        //   }
+        // }
         val comparisonOperation = operator \@ "CompareOp"
         val List(lhs, rhs)      = operator.child.map(parseScalarOperator).toList
         Compare(ComparisonOperation.valueOf(comparisonOperation), lhs, rhs)
+      
+      // !!
+      case "UserDefinedFunction" =>
+        def extractFunctionName(functionNameRaw: String): String = {
+            // extracts from functionName the substring after last '[' and before last ']':
+            val functionName = functionNameRaw.lastIndexOf('[') match {
+              case -1 => ""
+              case start =>
+                val end = functionNameRaw.lastIndexOf(']')
+                if (end > start) functionNameRaw.substring(start + 1, end)
+                else ""
+            }
+
+            //if 'functionName' has a suffix from 'suffixes' then remove the suffix
+            val suffixes = List("_YMD", "_YMDHMS", "_REL")
+            suffixes.find(functionName.endsWith) match {
+              case Some(suffix) => functionName.stripSuffix(suffix)
+              case None => functionName
+            }
+          }
+
+        val functionNameRaw = operator \@ "FunctionName"
+        val functionName = extractFunctionName(functionNameRaw)
+        val scalarOperators = operator.child.map(parseScalarOperator)  
+        UserDefinedFunction(functionName, scalarOperators.to(Chunk))
+
       case "Const" =>
         val stringValue = operator \@ "ConstValue"
         val value =
@@ -328,14 +435,39 @@ object parsing {
       case "Identifier" =>
         val columnReference = parseColumnReference((operator \ "ColumnReference").head)
         Identifier(columnReference)
+      
+      // case "Intrinsic" =>
+      //   val functionName   = operator \@ "FunctionName"
+      //   val List(lhs, rhs) = operator.child.map(parseScalarOperator).toList
+      //   Intrinsic(functionName, lhs, rhs)
+
+      // 
       case "Intrinsic" =>
-        val functionName   = operator \@ "FunctionName"
-        val List(lhs, rhs) = operator.child.map(parseScalarOperator).toList
-        Intrinsic(functionName, lhs, rhs)
+        val functionName = operator \@ "FunctionName"
+        // if (operator.child.size == 2) {  // operator.child.nonEmpty
+        //     val List(lhs, rhs) = operator.child.map(parseScalarOperator).toList
+        //     return Intrinsic(functionName, lhs, rhs)
+        // } 
+        // if (operator.child.size > 2) {
+        //     val scalarOperators = operator.child.map(parseScalarOperator)
+        //     return IntrinsicMultyParam(functionName, scalarOperators.toList)
+        // } 
+        if (operator.child.size > 0) {
+            val scalarOperators = operator.child.map(parseScalarOperator)
+            return IntrinsicMultyParam(functionName, scalarOperators.toList)
+        } 
+        IntrinsicNoParam(functionName)
+ 
+     // 2 so !!
+     case "Sequence" =>
+        val functionName = operator \@ "FunctionName"
+        return Sequence(functionName) 
+          
       case "Logical" =>
         val operation       = operator \@ "Operation"
         val scalarOperators = operator.child.map(parseScalarOperator)
         Logical(LogicalOperation.valueOf(operation.replace(" ", "")), scalarOperators.to(Chunk))
+
       case other => throw new RuntimeException(s"Unknown ScalarOperator: $other")
     }
   }

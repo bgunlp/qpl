@@ -1,4 +1,5 @@
 import time
+import json
 from typing import Any
 
 from dataset_creation.ehrsql2024.dataset_translation import (
@@ -16,7 +17,7 @@ from dataset_creation.ehrsql2024.cte_creation import (
     dataset_validate_cte_answers,
 )
 from dataset_creation.ehrsql2024.util import (
-    json_load, json_list_write, get_progress_bar, dictify
+    json_load, json_list_write, get_progress_bar, dictify, file_write
 )
 from dataset_creation.ehrsql2024.constants import (
     tsql_qpl_cte_ans_eq_filepath, ehrsql2024_paths_tuples, tsql_qpl_cte_basename
@@ -52,6 +53,8 @@ def final_dataset_split(dataset_name='EHRSQL-2024-QPL'):
     total = 0
     total_orig = 0
 
+    missing_ids = {}
+
     for data_path, label_path, _, data_name in ehrsql2024_paths_tuples:
         print()
         data = json_load(data_path)
@@ -61,11 +64,14 @@ def final_dataset_split(dataset_name='EHRSQL-2024-QPL'):
         ehrsql2024_qpl_part = []
         ehrsql2024_qpl_part_filepath = f"out/{tsql_qpl_cte_basename}_{data_name}.json"
 
+        missing_ids_part = []
+
         first_iteration = True
         for query_data in get_progress_bar(data['data'], f'Creating final {dataset_name} dataset for [{data_name}]'):
             if first_iteration:  # Just to make it appear nice on screen
                 time.sleep(0.1)
                 first_iteration = False
+
             sqlite = label[query_data['id']]
             if sqlite == 'null':
                 queries_null += 1
@@ -74,6 +80,10 @@ def final_dataset_split(dataset_name='EHRSQL-2024-QPL'):
                 if query_data['id'] in tsql_qpl_cte_data_dct:
                     tsql_qpl_cte_data = tsql_qpl_cte_data_dct[query_data['id']]
                     ehrsql2024_qpl_part.append(_create_final_dataset_non_null_query_element(tsql_qpl_cte_data))
+                else:
+                    missing_ids_part.append(query_data['id'])
+
+        missing_ids[data_name] = missing_ids_part
 
         total += len(ehrsql2024_qpl_part)
         total_orig += len(data['data'])
@@ -88,6 +98,10 @@ def final_dataset_split(dataset_name='EHRSQL-2024-QPL'):
     print(f"\nFinal {dataset_name} contains {total} entries in total "
           f"(original amount: {total_orig}, "
           f"missing: {total_orig - total})\n\n")
+
+    missing_ids_filepath = "out/ehrsql2024_final_dataset_missing_ids.json"
+    print(f'Writing missing IDs data to [{missing_ids_filepath}]')
+    file_write(json.dumps(missing_ids, indent=4), missing_ids_filepath)
 
 def _create_final_dataset_non_null_query_element(query_data: dict[str, Any]) -> dict[str, Any]:
     return _create_final_dataset_element(

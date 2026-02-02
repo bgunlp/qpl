@@ -65,13 +65,12 @@ def main():
     # qpl_cr.tsql_to_ep(tsqls_temporal[0])
 
     """ Can compare against files suffixed with '_G' (gold), or between themselves to observe the translations: """
-    # qpl_cr.tsqls_to_qpls_raw(tsqls_temporal, '_TEST_TSQLs_to_QPLs_temporal')
-    # qpl_cr.tsqls_to_qpls_pp(tsqls_temporal, '_TEST_TSQLs_to_QPLs_temporal')
-    # cte_cr.tsqls_to_ctes(tsqls_temporal, '_TEST_TSQLs_to_QPLs_temporal')
+    # qpl_cr.tsqls_to_qpls_raw(tsqls_tmp, '_TEST_TSQLs_to_QPLs_TMP')
+    # qpl_cr.tsqls_to_qpls_pp(tsqls_tmp, '_TEST_TSQLs_to_QPLs_TMP')
+    # cte_cr.tsqls_to_ctes(tsqls_tmp, '_TEST_TSQLs_to_QPLs_TMP')
     # ---------------------------------------------------------------------
 
     ids_tmp = [
-        "10e5776d6866e2b43f77a084",
     ]
     ids_0 = [
         # Subtracting sub-queries:

@@ -1,8 +1,15 @@
+"""
+MMIMIC-IV version: 1.1.2
+https://github.com/glee4810/ehrsql-2024/tree/master/data/mimic_iv
+"""
+
+
 import time
 import json
 from typing import Any
 
 from dataset_creation.ehrsql2024.dataset_translation import (
+    dataset_add_sqlite_answers,
     dataset_translate_to_tsql,
     dataset_add_tsql_answers,
     dataset_validate_translated_tsql_answers,
@@ -20,11 +27,12 @@ from dataset_creation.ehrsql2024.util import (
     json_load, json_list_write, get_progress_bar, dictify, file_write
 )
 from dataset_creation.ehrsql2024.constants import (
-    tsql_qpl_cte_ans_eq_filepath, ehrsql2024_paths_tuples, tsql_qpl_cte_basename
+    tsql_filepath, tsql_qpl_cte_ans_eq_filepath, ehrsql2024_paths_tuples, tsql_qpl_cte_basename
 )
 
 def main():
     dataset_translate_to_tsql()
+    dataset_add_sqlite_answers(tsql_filepath)
     dataset_add_tsql_answers()
     dataset_validate_translated_tsql_answers()
 

@@ -5,6 +5,8 @@ import re
 
 from datetime import datetime as dt
 
+from sqlglot.optimizer.simplify import catch
+
 from dataset_creation.ehrsql2024.util import (
     json_load, json_list_write, get_progress_bar, file_remove,
     match_and_replace, MimicIvConnectionManager, get_capture_groups_matches
@@ -15,8 +17,134 @@ from dataset_creation.ehrsql2024.constants import (
 )
 
 # =========================================================
+#               Adding SQLite answers:
+# =========================================================
+def dataset_add_sqlite_answers(in_filepath, out_filepath=None, sqlite_attr_name='sqlite'):
+    import sqlite3
+    ehrsql2024_sqlite_db_path = r"C:\Users\Stas\Downloads\mimic_iv.sqlite"  # TODO: get from user args
+    print('\n')
+
+    out_filepath = in_filepath if out_filepath is None else out_filepath
+    sqlite_ans_attribute_name = f'{sqlite_attr_name}_ans'
+
+    if '_ok.json' in out_filepath:
+        ans_err_filepath = out_filepath.replace('_ok.json', '_err.json')
+        ans_empty_filepath = out_filepath.replace('_ok.json', '_empty.json')
+    else:
+        ans_err_filepath = out_filepath.replace('.json', '_err.json')
+        ans_empty_filepath = out_filepath.replace('.json', '_empty.json')
+
+    ok = []
+    err = []
+    empty = []
+    with sqlite3.connect(ehrsql2024_sqlite_db_path) as conn:
+        for tsql_data in get_progress_bar(json_load(in_filepath), f"Adding SQLite answers [dataset='{in_filepath}']"):
+            if sqlite_attr_name in tsql_data:
+                sqlite_post_processed = sqlite_post_process(tsql_data[sqlite_attr_name])
+                conn.row_factory = sqlite3.Row
+                cur = conn.cursor()
+                try:
+                    cur.execute(sqlite_post_processed)
+                    sqlite_ans = [[str(c) if c is not None else 'null' for c in list(row)]
+                                  for row in cur.fetchall()]
+                    tsql_data[sqlite_ans_attribute_name] = sqlite_ans
+                    if len(sqlite_ans) == 0 or sqlite_ans[0][0] == 'null':
+                        empty.append(tsql_data)
+                    else:
+                        ok.append(tsql_data)
+                except Exception as e:
+                    tsql_data[sqlite_ans_attribute_name] = str(e)
+                    err.append(tsql_data)
+
+    print(f"\n{len(ok)} successfully added non-empty SQLite answers")
+    json_list_write(ok, out_filepath)
+
+    print(f"\n{len(err)} failed attempts to add SQLite answer")
+    json_list_write(err, ans_err_filepath)
+
+    print(f"\n{len(empty)} empty SQLite answers")
+    json_list_write(empty, ans_empty_filepath)
+
+def sqlite_post_process(query):
+    """
+    According to https://github.com/glee4810/ehrsql-2024/blob/master/scoring_program/postprocessing.py
+    """
+
+    CURRENT_DATE = "2100-12-31"
+    CURRENT_TIME = "23:59:00"
+    NOW = f"{CURRENT_DATE} {CURRENT_TIME}"
+    PRECOMPUTED_DICT = {
+        'temperature': (35.5, 38.1),
+        'sao2': (95.0, 100.0),
+        'heart rate': (60.0, 100.0),
+        'respiration': (12.0, 18.0),
+        'systolic bp': (90.0, 120.0),
+        'diastolic bp': (60.0, 90.0),
+        'mean bp': (60.0, 110.0)
+    }
+    TIME_PATTERN = r"(DATE_SUB|DATE_ADD)\((\w+\(\)|'[^']+')[, ]+ INTERVAL (\d+) (MONTH|YEAR|DAY)\)"
+
+    def __convert_date_function(match):
+        function = match.group(1)
+        date = match.group(2)
+        number = match.group(3)
+        unit = match.group(4).lower()
+
+        # Use singular form when number is 1
+        if number == '1':
+            unit = unit.rstrip('s')
+        else:
+            unit += 's' if not unit.endswith('s') else ''
+
+        # Determine the sign based on the function (DATE_SUB or DATE_ADD)
+        sign = '-' if function == 'DATE_SUB' else '+'
+
+        return f"datetime({date}, '{sign}{number} {unit}')"
+
+    query = re.sub('[ ]+', ' ', query.replace('\n', ' ')).strip()
+    query = query.replace('> =', '>=').replace('< =', '<=').replace('! =', '!=')
+
+    query = query.replace('totalamount', "amount")  # inputevents.
+
+    # Convert MySQL to SQLite functions
+    query = re.sub(TIME_PATTERN, __convert_date_function, query)
+
+    if "current_time" in query:  # strftime('%J',current_time) => strftime('%J','2100-12-31 23:59:00')
+        query = query.replace("current_time", f"'{NOW}'")
+    if "current_date" in query:  # strftime('%J',current_date) => strftime('%J','2100-12-31')
+        query = query.replace("current_date", f"'{CURRENT_DATE}'")
+    if "'now'" in query:  # 'now' => '2100-12-31 23:59:00'
+        query = query.replace("'now'", f"'{NOW}'")
+    if "NOW()" in query:  # NOW() => '2100-12-31 23:59:00'
+        query = query.replace("NOW()", f"'{NOW}'")
+    if "CURDATE()" in query:  # CURDATE() => '2100-12-31'
+        query = query.replace("CURDATE()", f"'{CURRENT_DATE}'")
+    if "CURTIME()" in query:  # CURTIME() => '23:59:00'
+        query = query.replace("CURTIME()", f"'{CURRENT_TIME}'")
+
+    if re.search('[ \n]+([a-zA-Z0-9_]+_lower)', query) and re.search('[ \n]+([a-zA-Z0-9_]+_upper)', query):
+        vital_lower_expr = re.findall('[ \n]+([a-zA-Z0-9_]+_lower)', query)[0]
+        vital_upper_expr = re.findall('[ \n]+([a-zA-Z0-9_]+_upper)', query)[0]
+        vital_name_list = list(
+            set(re.findall('([a-zA-Z0-9_]+)_lower', vital_lower_expr) +
+                re.findall('([a-zA-Z0-9_]+)_upper', vital_upper_expr)))
+        if len(vital_name_list) == 1:
+            processed_vital_name = vital_name_list[0].replace('_', ' ')
+            if processed_vital_name in PRECOMPUTED_DICT:
+                vital_range = PRECOMPUTED_DICT[processed_vital_name]
+                query = query.replace(vital_lower_expr, f"{vital_range[0]}").replace(vital_upper_expr, f"{vital_range[1]}")
+
+    query = query.replace("%y", "%Y").replace('%j', '%J')
+
+    return query
+
+
+# =========================================================
 #               Translation validation:
 # =========================================================
+
+# ---- Comparing results: ----
+
 def dataset_validate_translated_tsql_answers():
     """
     Validate the answers of the T-SQLs against the answers of the corresponding SQLites they translated from
@@ -26,7 +154,7 @@ def dataset_validate_translated_tsql_answers():
     translated_ok_uneq = []
 
     for tsql_ans_data in json_load(tsql_ans_ok_filepath):
-        if is_equal_answers(tsql_ans_data['tsql_for_translation_validation_ans'], tsql_ans_data['sqlite_ans']):
+        if is_equal_answers(tsql_ans_data['tsql_for_translation_validation_ans'], tsql_ans_data['sqlite_ans'], tsql_ans_data['sqlite']):
             translated_ok_eq.append(tsql_ans_data)
         else:
             translated_ok_uneq.append(tsql_ans_data)
@@ -39,15 +167,17 @@ def dataset_validate_translated_tsql_answers():
 
     file_remove(tsql_ans_ok_filepath)
 
-def is_equal_answers(new_ans_rows: list[list[str]], expected_ans_rows: list[list[str]]) -> bool:
+def is_equal_answers(new_ans_rows: list[list[str]], expected_ans_rows: list[list[str]], query_gold) -> bool:
     """
     Assumption: each element of @new_ans_rows and @expected_ans_rows represent SQL result row containing a single cell
     """
     new_ans_cells: list[str] = [row[0] for row in new_ans_rows]  # according to assumption
     expected_ans_cells: list[str] = [row[0] for row in expected_ans_rows]  # according to assumption
-    is_equal_len = len(new_ans_cells) == len(expected_ans_cells)
-    if not is_equal_len:  # <- optional, more strict  # !!
-        return False
+
+    if query_gold.startswith("SELECT DISTINCT"):
+        is_equal_len = len(new_ans_cells) == len(expected_ans_cells)
+        if not is_equal_len:  # <- optional, more strict  # !!
+            return False
 
     new_ans_cells_unique = list(set(new_ans_cells))
     expected_ans_cells_unique = list(set(expected_ans_cells))
@@ -65,7 +195,7 @@ def is_equal_answers(new_ans_rows: list[list[str]], expected_ans_rows: list[list
 
     return all(eqs)  # <- essential  # !!
 
-def is_equal_ans_cells(new_ans_cell, expected_ans_cell):
+def is_equal_ans_cells(new_cell, expected_cell):
     def is_num(string):
         try:
             float(string)
@@ -95,8 +225,8 @@ def is_equal_ans_cells(new_ans_cell, expected_ans_cell):
         return ans == expected
 
     # Check if close numbers:
-    if is_num(new_ans_cell) and is_num(expected_ans_cell):
-        return compare_nums(new_ans_cell, expected_ans_cell)
+    if is_num(new_cell) and is_num(expected_cell):
+        return compare_nums(new_cell, expected_cell)
 
     # Check if same dates, omitting microseconds:
     # if is_full_date(ans_tsql_row) and is_full_date(ans_expected_row):
@@ -104,7 +234,10 @@ def is_equal_ans_cells(new_ans_cell, expected_ans_cell):
     #         return compare_full_dates(ans_tsql_row, ans_expected_row)
 
     # ... else, check if just same strings:
-    return new_ans_cell == expected_ans_cell
+    return new_cell == expected_cell
+
+
+# ---- Adding DB answers: ----
 
 def dataset_add_tsql_answers():
     print('\n')
@@ -138,7 +271,7 @@ def dataset_add_tsql_answers():
     print(f"\n{len(err)} failed attempts to add T-SQL answer")
     json_list_write(err, tsql_ans_err_filepath)
 
-    file_remove(tsql_filepath)
+    # file_remove(tsql_filepath)
 
 def tsql_modify_for_translation_validation(tsql: str) -> str:
     """
@@ -148,19 +281,53 @@ def tsql_modify_for_translation_validation(tsql: str) -> str:
 
     return match_and_replace(tsql_for_validation, [
         (r"DATEDIFF\(DAY, ", "dbo.JULIAN_DAY_DIFF("),  # due to numeric differences. see 'v2_temporal_operators_2.sql'
-        (orderby_mod_regex, orderby_mod_replacer)  # modify some 'order-by' clauses that might return duplicate values
+        # (orderby_mod_regex, orderby_mod_replacer)  # modify some 'order-by' clauses that might return duplicate values
     ], [re.IGNORECASE])
 
 def tsql_modify_for_validation(tsql: str) -> str:
-    return match_and_replace(tsql, [
-        (r"GETDATE\(\)", "CAST('2100-12-31 23:59:00' AS DATETIME)"),  # inject the "current time" from the paper
+    """
+    According to https://github.com/glee4810/ehrsql-2024/blob/master/scoring_program/postprocessing.py
+    """
+    tsql_pp = tsql_post_process(tsql)
+    return match_and_replace(tsql_pp, [
+        (r"GETDATE\(\)", "CAST('2100-12-31 23:59:00' AS DATETIME)"),
     ], [re.IGNORECASE])
+
+def tsql_post_process(tsql: str) -> str:
+    """
+    According to https://github.com/glee4810/ehrsql-2024/blob/master/scoring_program/postprocessing.py
+    """
+    PRECOMPUTED_DICT = {
+        'temperature': (35.5, 38.1),
+        'sao2': (95.0, 100.0),
+        'heart rate': (60.0, 100.0),
+        'respiration': (12.0, 18.0),
+        'systolic bp': (90.0, 120.0),
+        'diastolic bp': (60.0, 90.0),
+        'mean bp': (60.0, 110.0)
+    }
+    if re.search('[ \n]+([a-zA-Z0-9_]+_lower)', tsql) and re.search('[ \n]+([a-zA-Z0-9_]+_upper)', tsql):
+        vital_lower_expr = re.findall('[ \n]+([a-zA-Z0-9_]+_lower)', tsql)[0]
+        vital_upper_expr = re.findall('[ \n]+([a-zA-Z0-9_]+_upper)', tsql)[0]
+        vital_name_list = list(
+            set(re.findall('([a-zA-Z0-9_]+)_lower', vital_lower_expr) +
+                re.findall('([a-zA-Z0-9_]+)_upper', vital_upper_expr))
+        )
+        if len(vital_name_list) == 1:
+            processed_vital_name = vital_name_list[0].replace('_', ' ')
+            if processed_vital_name in PRECOMPUTED_DICT:
+                vital_range = PRECOMPUTED_DICT[processed_vital_name]
+                tsql = tsql.replace(vital_lower_expr, f"{vital_range[0]}").replace(vital_upper_expr, f"{vital_range[1]}")
+
+    return tsql.replace("totalamount",  # due to inconsistency between versions of MIMIC-IV:
+                        "amount")
 
 
 # =========================================================
 #               Dataset translation:
 # =========================================================
 def dataset_translate_to_tsql():
+    import ast
     print()
     queries_null = 0
     translated_non_null = []
@@ -177,18 +344,17 @@ def dataset_translate_to_tsql():
                 queries_null += 1
             else:
                 tsql = sqlite_to_tsql(sqlite, translation_tuples)
-                sqlite_ans = json.loads(answer[query_data['id']].replace("'", "\""))
+                sqlite_ans = ast.literal_eval(answer[query_data['id']])
 
                 # Those 3 SQLite answers are truncated in the original dataset, so they hardcoded here:
-                # TODO: get SQLite answers programatically
-                if query_data['id'] == '949dc9ac2dfec702b23219cc':
-                    sqlite_ans = [["other specified coagulation defects"], ["hyperlipidemia, unspecified"], ["hyperkalemia"], ["nicotine dependence, unspecified, uncomplicated"], ["nicotine dependence, cigarettes, uncomplicated"], ["anxiety disorder, unspecified"], ["epilepsy, unspecified, not intractable, without status epilepticus"], ["blindness, both eyes"], ["essential (primary) hypertension"], ["non-st elevation (nstemi) myocardial infarction"], ["atherosclerotic heart disease of native coronary artery with unstable angina pectoris"], ["atherosclerotic heart disease of native coronary artery with unspecified angina pectoris"], ["pericardial effusion (noninflammatory)"], ["disease of pericardium, unspecified"], ["dissection of abdominal aorta"], ["acute embolism and thrombosis of left iliac vein"], ["accidental puncture and laceration of a circulatory system organ or structure during a circulatory system procedure"], ["pleural effusion in other conditions classified elsewhere"], ["respiratory failure, unspecified with hypoxia"], ["atelectasis"], ["gastro-esophageal reflux disease without esophagitis"], ["bradycardia, unspecified"], ["other surgical procedures as the cause of abnormal reaction of the patient, or of later complication, without mention of misadventure at the time of the procedure"], ["operating room of hospital as the place of occurrence of the external cause"], ["encounter for immunization"], ["body mass index (bmi) 32.0-32.9, adult"], ["body mass index (bmi) 38.0-38.9, adult"], ["long term (current) use of antithrombotics/antiplatelets"], ["long term (current) use of aspirin"], ["presence of aortocoronary bypass graft"], ["presence of coronary angioplasty implant and graft"], ["septicemia due to escherichia coli [e. coli]"], ["malignant neoplasm of gallbladder"], ["secondary malignant neoplasm of other digestive organs and spleen"], ["unspecified acquired hypothyroidism"], ["diabetes mellitus without mention of complication, type ii or unspecified type, not stated as uncontrolled"], ["other and unspecified manifestations of thiamine deficiency"], ["other b-complex deficiencies"], ["gout, unspecified"], ["acidosis"], ["alkalosis"], ["other fluid overload"], ["hyperpotassemia"], ["obesity, unspecified"], ["acute posthemorrhagic anemia"], ["anemia, unspecified"], ["other secondary thrombocytopenia"], ["alcohol withdrawal"], ["autistic disorder, current or active state"], ["anxiety state, unspecified"], ["panic disorder without agoraphobia"], ["dysthymic disorder"], ["acute alcoholic intoxication in alcoholism, continuous"], ["other and unspecified alcohol dependence, continuous"], ["alcohol abuse, unspecified"], ["tobacco use disorder"], ["cocaine abuse, unspecified"], ["depressive disorder, not elsewhere classified"], ["attention deficit disorder with hyperactivity"], ["essential and other specified forms of tremor"], ["encephalopathy, unspecified"], ["mononeuritis of unspecified site"], ["alcoholic polyneuropathy"], ["unspecified essential hypertension"], ["hypertensive chronic kidney disease, unspecified, with chronic kidney disease stage i through stage iv, or unspecified"], ["coronary atherosclerosis of native coronary artery"], ["other chronic pulmonary heart diseases"], ["mitral valve disorders"], ["other primary cardiomyopathies"], ["right bundle branch block"], ["atrial fibrillation"], ["other specified cardiac dysrhythmias"], ["congestive heart failure, unspecified"], ["acute systolic heart failure"], ["acute on chronic diastolic heart failure"], ["other lymphedema"], ["other iatrogenic hypotension"], ["methicillin susceptible pneumonia due to staphylococcus aureus"], ["pneumonia, organism unspecified"], ["asthma, unspecified type, unspecified"], ["postinflammatory pulmonary fibrosis"], ["acute respiratory failure following trauma and surgery"], ["acute respiratory failure"], ["esophageal reflux"], ["chronic or unspecified duodenal ulcer with hemorrhage, without mention of obstruction"], ["duodenitis, without mention of hemorrhage"], ["acute vascular insufficiency of intestine"], ["constipation, unspecified"], ["irritable bowel syndrome"], ["acute and subacute necrosis of liver"], ["other chronic nonalcoholic liver disease"], ["acute and chronic cholecystitis"], ["cholangitis"], ["nephritis and nephropathy, not specified as acute or chronic, with other specified pathological lesion in kidney"], ["acute kidney failure with lesion of tubular necrosis"], ["chronic kidney disease, unspecified"], ["unspecified disorder of kidney and ureter"], ["edema of male genital organs"], ["prolapse of vaginal vault after hysterectomy"], ["vaginal enterocele, congenital or acquired"], ["contact dermatitis and other eczema due to plants [except food]"], ["ankylosing spondylitis"], ["backache, unspecified"], ["rhabdomyolysis"], ["myalgia and myositis, unspecified"], ["other anomalies of gallbladder, bile ducts, and liver"], ["other convulsions"], ["insomnia, unspecified"], ["postprocedural fever"], ["tachycardia, unspecified"], ["cardiogenic shock"], ["other specified retention of urine"], ["other abnormal glucose"], ["other abnormal blood chemistry"], ["closed fracture of nasal bones"], ["closed fracture of sixth cervical vertebra"], ["closed fracture of dorsal [thoracic] vertebra without mention of spinal cord injury"], ["closed fracture of lumbar vertebra without mention of spinal cord injury"], ["closed fracture of four ribs"], ["closed dislocation, multiple cervical vertebrae"], ["traumatic hemothorax without mention of open wound into thorax"], ["unspecified injury of heart without mention of open wound into thorax"], ["contusion of lung without mention of open wound into thorax"], ["injury to other gastrointestinal sites, without mention of open wound into cavity"], ["injury to liver without mention of open wound into cavity, hematoma and contusion"], ["injury to liver without mention of open wound into cavity laceration, unspecified"], ["injury to other intra-abdominal organs without mention of open wound into cavity, adrenal gland"], ["injury to other intra-abdominal organs without mention of open wound into cavity, peritoneum"], ["traumatic shock"], ["traumatic anuria"], ["other anaphylactic reaction"], ["severe sepsis"], ["cardiac complications, not elsewhere classified"], ["accidental puncture or laceration during a procedure, not elsewhere classified"], ["other motor vehicle traffic accident involving collision on the highway injuring driver of motor vehicle other than motorcycle"], ["accidents occurring in unspecified place"], ["accidental poisoning from other specified plants"], ["accidental cut, puncture, perforation or hemorrhage during heart catheterization"], ["other opiates and related narcotics causing adverse effects in therapeutic use"], ["unarmed fight or brawl"], ["asymptomatic human immunodeficiency virus [hiv] infection status"], ["personal history of malignant neoplasm of cervix uteri"], ["personal history of sudden cardiac arrest"], ["personal history of allergy to penicillin"], ["personal history of traumatic brain injury"], ["personal history of tobacco use"], ["bariatric surgery status"], ["long-term (current) use of anticoagulants"], ["long-term (current) use of insulin"], ["unemployment"], ["suicidal ideation"], ["body mass index 35.0-35.9, adult"]]
-
-                if query_data['id'] == 'b89ae914fde1da12628b1901':
-                    sqlite_ans = [["other specified coagulation defects"], ["hyperlipidemia, unspecified"], ["hyperkalemia"], ["nicotine dependence, unspecified, uncomplicated"], ["nicotine dependence, cigarettes, uncomplicated"], ["anxiety disorder, unspecified"], ["epilepsy, unspecified, not intractable, without status epilepticus"], ["blindness, both eyes"], ["essential (primary) hypertension"], ["non-st elevation (nstemi) myocardial infarction"], ["atherosclerotic heart disease of native coronary artery with unstable angina pectoris"], ["atherosclerotic heart disease of native coronary artery with unspecified angina pectoris"], ["pericardial effusion (noninflammatory)"], ["disease of pericardium, unspecified"], ["dissection of abdominal aorta"], ["acute embolism and thrombosis of left iliac vein"], ["accidental puncture and laceration of a circulatory system organ or structure during a circulatory system procedure"], ["pleural effusion in other conditions classified elsewhere"], ["respiratory failure, unspecified with hypoxia"], ["atelectasis"], ["gastro-esophageal reflux disease without esophagitis"], ["bradycardia, unspecified"], ["other surgical procedures as the cause of abnormal reaction of the patient, or of later complication, without mention of misadventure at the time of the procedure"], ["operating room of hospital as the place of occurrence of the external cause"], ["encounter for immunization"], ["body mass index (bmi) 32.0-32.9, adult"], ["body mass index (bmi) 38.0-38.9, adult"], ["long term (current) use of antithrombotics/antiplatelets"], ["long term (current) use of aspirin"], ["presence of aortocoronary bypass graft"], ["presence of coronary angioplasty implant and graft"], ["septicemia due to escherichia coli [e. coli]"], ["malignant neoplasm of gallbladder"], ["secondary malignant neoplasm of other digestive organs and spleen"], ["unspecified acquired hypothyroidism"], ["diabetes mellitus without mention of complication, type ii or unspecified type, not stated as uncontrolled"], ["other and unspecified manifestations of thiamine deficiency"], ["other b-complex deficiencies"], ["gout, unspecified"], ["acidosis"], ["alkalosis"], ["other fluid overload"], ["hyperpotassemia"], ["obesity, unspecified"], ["acute posthemorrhagic anemia"], ["anemia, unspecified"], ["other secondary thrombocytopenia"], ["alcohol withdrawal"], ["autistic disorder, current or active state"], ["anxiety state, unspecified"], ["panic disorder without agoraphobia"], ["dysthymic disorder"], ["acute alcoholic intoxication in alcoholism, continuous"], ["other and unspecified alcohol dependence, continuous"], ["alcohol abuse, unspecified"], ["tobacco use disorder"], ["cocaine abuse, unspecified"], ["depressive disorder, not elsewhere classified"], ["attention deficit disorder with hyperactivity"], ["essential and other specified forms of tremor"], ["encephalopathy, unspecified"], ["mononeuritis of unspecified site"], ["alcoholic polyneuropathy"], ["unspecified essential hypertension"], ["hypertensive chronic kidney disease, unspecified, with chronic kidney disease stage i through stage iv, or unspecified"], ["coronary atherosclerosis of native coronary artery"], ["other chronic pulmonary heart diseases"], ["mitral valve disorders"], ["other primary cardiomyopathies"], ["right bundle branch block"], ["atrial fibrillation"], ["other specified cardiac dysrhythmias"], ["congestive heart failure, unspecified"], ["acute systolic heart failure"], ["acute on chronic diastolic heart failure"], ["other lymphedema"], ["other iatrogenic hypotension"], ["methicillin susceptible pneumonia due to staphylococcus aureus"], ["pneumonia, organism unspecified"], ["asthma, unspecified type, unspecified"], ["postinflammatory pulmonary fibrosis"], ["acute respiratory failure following trauma and surgery"], ["acute respiratory failure"], ["esophageal reflux"], ["chronic or unspecified duodenal ulcer with hemorrhage, without mention of obstruction"], ["duodenitis, without mention of hemorrhage"], ["acute vascular insufficiency of intestine"], ["constipation, unspecified"], ["irritable bowel syndrome"], ["acute and subacute necrosis of liver"], ["other chronic nonalcoholic liver disease"], ["acute and chronic cholecystitis"], ["cholangitis"], ["nephritis and nephropathy, not specified as acute or chronic, with other specified pathological lesion in kidney"], ["acute kidney failure with lesion of tubular necrosis"], ["chronic kidney disease, unspecified"], ["unspecified disorder of kidney and ureter"], ["edema of male genital organs"], ["prolapse of vaginal vault after hysterectomy"], ["vaginal enterocele, congenital or acquired"], ["contact dermatitis and other eczema due to plants [except food]"], ["ankylosing spondylitis"], ["backache, unspecified"], ["rhabdomyolysis"], ["myalgia and myositis, unspecified"], ["other anomalies of gallbladder, bile ducts, and liver"], ["other convulsions"], ["insomnia, unspecified"], ["postprocedural fever"], ["tachycardia, unspecified"], ["cardiogenic shock"], ["other specified retention of urine"], ["other abnormal glucose"], ["other abnormal blood chemistry"], ["closed fracture of nasal bones"], ["closed fracture of sixth cervical vertebra"], ["closed fracture of dorsal [thoracic] vertebra without mention of spinal cord injury"], ["closed fracture of lumbar vertebra without mention of spinal cord injury"], ["closed fracture of four ribs"], ["closed dislocation, multiple cervical vertebrae"], ["traumatic hemothorax without mention of open wound into thorax"], ["unspecified injury of heart without mention of open wound into thorax"], ["contusion of lung without mention of open wound into thorax"], ["injury to other gastrointestinal sites, without mention of open wound into cavity"], ["injury to liver without mention of open wound into cavity, hematoma and contusion"], ["injury to liver without mention of open wound into cavity laceration, unspecified"], ["injury to other intra-abdominal organs without mention of open wound into cavity, adrenal gland"], ["injury to other intra-abdominal organs without mention of open wound into cavity, peritoneum"], ["traumatic shock"], ["traumatic anuria"], ["other anaphylactic reaction"], ["severe sepsis"], ["cardiac complications, not elsewhere classified"], ["accidental puncture or laceration during a procedure, not elsewhere classified"], ["other motor vehicle traffic accident involving collision on the highway injuring driver of motor vehicle other than motorcycle"], ["accidents occurring in unspecified place"], ["accidental poisoning from other specified plants"], ["accidental cut, puncture, perforation or hemorrhage during heart catheterization"], ["other opiates and related narcotics causing adverse effects in therapeutic use"], ["unarmed fight or brawl"], ["asymptomatic human immunodeficiency virus [hiv] infection status"], ["personal history of malignant neoplasm of cervix uteri"], ["personal history of sudden cardiac arrest"], ["personal history of allergy to penicillin"], ["personal history of traumatic brain injury"], ["personal history of tobacco use"], ["bariatric surgery status"], ["long-term (current) use of anticoagulants"], ["long-term (current) use of insulin"], ["unemployment"], ["suicidal ideation"], ["body mass index 35.0-35.9, adult"]]
-
-                if query_data['id'] == '9ab9f7bcf85120221b47db91':
-                    sqlite_ans = [["other specified coagulation defects"], ["hyperlipidemia, unspecified"], ["hyperkalemia"], ["nicotine dependence, unspecified, uncomplicated"], ["nicotine dependence, cigarettes, uncomplicated"], ["anxiety disorder, unspecified"], ["epilepsy, unspecified, not intractable, without status epilepticus"], ["blindness, both eyes"], ["essential (primary) hypertension"], ["non-st elevation (nstemi) myocardial infarction"], ["atherosclerotic heart disease of native coronary artery with unstable angina pectoris"], ["atherosclerotic heart disease of native coronary artery with unspecified angina pectoris"], ["pericardial effusion (noninflammatory)"], ["disease of pericardium, unspecified"], ["dissection of abdominal aorta"], ["acute embolism and thrombosis of left iliac vein"], ["accidental puncture and laceration of a circulatory system organ or structure during a circulatory system procedure"], ["pleural effusion in other conditions classified elsewhere"], ["respiratory failure, unspecified with hypoxia"], ["atelectasis"], ["gastro-esophageal reflux disease without esophagitis"], ["bradycardia, unspecified"], ["other surgical procedures as the cause of abnormal reaction of the patient, or of later complication, without mention of misadventure at the time of the procedure"], ["operating room of hospital as the place of occurrence of the external cause"], ["encounter for immunization"], ["body mass index (bmi) 32.0-32.9, adult"], ["body mass index (bmi) 38.0-38.9, adult"], ["long term (current) use of antithrombotics/antiplatelets"], ["long term (current) use of aspirin"], ["presence of aortocoronary bypass graft"], ["presence of coronary angioplasty implant and graft"], ["septicemia due to escherichia coli [e. coli]"], ["malignant neoplasm of gallbladder"], ["secondary malignant neoplasm of other digestive organs and spleen"], ["unspecified acquired hypothyroidism"], ["diabetes mellitus without mention of complication, type ii or unspecified type, not stated as uncontrolled"], ["other and unspecified manifestations of thiamine deficiency"], ["other b-complex deficiencies"], ["gout, unspecified"], ["acidosis"], ["alkalosis"], ["other fluid overload"], ["hyperpotassemia"], ["obesity, unspecified"], ["acute posthemorrhagic anemia"], ["anemia, unspecified"], ["other secondary thrombocytopenia"], ["alcohol withdrawal"], ["autistic disorder, current or active state"], ["anxiety state, unspecified"], ["panic disorder without agoraphobia"], ["dysthymic disorder"], ["acute alcoholic intoxication in alcoholism, continuous"], ["other and unspecified alcohol dependence, continuous"], ["alcohol abuse, unspecified"], ["tobacco use disorder"], ["cocaine abuse, unspecified"], ["depressive disorder, not elsewhere classified"], ["attention deficit disorder with hyperactivity"], ["essential and other specified forms of tremor"], ["encephalopathy, unspecified"], ["mononeuritis of unspecified site"], ["alcoholic polyneuropathy"], ["unspecified essential hypertension"], ["hypertensive chronic kidney disease, unspecified, with chronic kidney disease stage i through stage iv, or unspecified"], ["coronary atherosclerosis of native coronary artery"], ["other chronic pulmonary heart diseases"], ["mitral valve disorders"], ["other primary cardiomyopathies"], ["right bundle branch block"], ["atrial fibrillation"], ["other specified cardiac dysrhythmias"], ["congestive heart failure, unspecified"], ["acute systolic heart failure"], ["acute on chronic diastolic heart failure"], ["other lymphedema"], ["other iatrogenic hypotension"], ["methicillin susceptible pneumonia due to staphylococcus aureus"], ["pneumonia, organism unspecified"], ["asthma, unspecified type, unspecified"], ["postinflammatory pulmonary fibrosis"], ["acute respiratory failure following trauma and surgery"], ["acute respiratory failure"], ["esophageal reflux"], ["chronic or unspecified duodenal ulcer with hemorrhage, without mention of obstruction"], ["duodenitis, without mention of hemorrhage"], ["acute vascular insufficiency of intestine"], ["constipation, unspecified"], ["irritable bowel syndrome"], ["acute and subacute necrosis of liver"], ["other chronic nonalcoholic liver disease"], ["acute and chronic cholecystitis"], ["cholangitis"], ["nephritis and nephropathy, not specified as acute or chronic, with other specified pathological lesion in kidney"], ["acute kidney failure with lesion of tubular necrosis"], ["chronic kidney disease, unspecified"], ["unspecified disorder of kidney and ureter"], ["edema of male genital organs"], ["prolapse of vaginal vault after hysterectomy"], ["vaginal enterocele, congenital or acquired"], ["contact dermatitis and other eczema due to plants [except food]"], ["ankylosing spondylitis"], ["backache, unspecified"], ["rhabdomyolysis"], ["myalgia and myositis, unspecified"], ["other anomalies of gallbladder, bile ducts, and liver"], ["other convulsions"], ["insomnia, unspecified"], ["postprocedural fever"], ["tachycardia, unspecified"], ["cardiogenic shock"], ["other specified retention of urine"], ["other abnormal glucose"], ["other abnormal blood chemistry"], ["closed fracture of nasal bones"], ["closed fracture of sixth cervical vertebra"], ["closed fracture of dorsal [thoracic] vertebra without mention of spinal cord injury"], ["closed fracture of lumbar vertebra without mention of spinal cord injury"], ["closed fracture of four ribs"], ["closed dislocation, multiple cervical vertebrae"], ["traumatic hemothorax without mention of open wound into thorax"], ["unspecified injury of heart without mention of open wound into thorax"], ["contusion of lung without mention of open wound into thorax"], ["injury to other gastrointestinal sites, without mention of open wound into cavity"], ["injury to liver without mention of open wound into cavity, hematoma and contusion"], ["injury to liver without mention of open wound into cavity laceration, unspecified"], ["injury to other intra-abdominal organs without mention of open wound into cavity, adrenal gland"], ["injury to other intra-abdominal organs without mention of open wound into cavity, peritoneum"], ["traumatic shock"], ["traumatic anuria"], ["other anaphylactic reaction"], ["severe sepsis"], ["cardiac complications, not elsewhere classified"], ["accidental puncture or laceration during a procedure, not elsewhere classified"], ["other motor vehicle traffic accident involving collision on the highway injuring driver of motor vehicle other than motorcycle"], ["accidents occurring in unspecified place"], ["accidental poisoning from other specified plants"], ["accidental cut, puncture, perforation or hemorrhage during heart catheterization"], ["other opiates and related narcotics causing adverse effects in therapeutic use"], ["unarmed fight or brawl"], ["asymptomatic human immunodeficiency virus [hiv] infection status"], ["personal history of malignant neoplasm of cervix uteri"], ["personal history of sudden cardiac arrest"], ["personal history of allergy to penicillin"], ["personal history of traumatic brain injury"], ["personal history of tobacco use"], ["bariatric surgery status"], ["long-term (current) use of anticoagulants"], ["long-term (current) use of insulin"], ["unemployment"], ["suicidal ideation"], ["body mass index 35.0-35.9, adult"]]
+                # if query_data['id'] == '949dc9ac2dfec702b23219cc':
+                #     sqlite_ans = [["other specified coagulation defects"], ["hyperlipidemia, unspecified"], ["hyperkalemia"], ["nicotine dependence, unspecified, uncomplicated"], ["nicotine dependence, cigarettes, uncomplicated"], ["anxiety disorder, unspecified"], ["epilepsy, unspecified, not intractable, without status epilepticus"], ["blindness, both eyes"], ["essential (primary) hypertension"], ["non-st elevation (nstemi) myocardial infarction"], ["atherosclerotic heart disease of native coronary artery with unstable angina pectoris"], ["atherosclerotic heart disease of native coronary artery with unspecified angina pectoris"], ["pericardial effusion (noninflammatory)"], ["disease of pericardium, unspecified"], ["dissection of abdominal aorta"], ["acute embolism and thrombosis of left iliac vein"], ["accidental puncture and laceration of a circulatory system organ or structure during a circulatory system procedure"], ["pleural effusion in other conditions classified elsewhere"], ["respiratory failure, unspecified with hypoxia"], ["atelectasis"], ["gastro-esophageal reflux disease without esophagitis"], ["bradycardia, unspecified"], ["other surgical procedures as the cause of abnormal reaction of the patient, or of later complication, without mention of misadventure at the time of the procedure"], ["operating room of hospital as the place of occurrence of the external cause"], ["encounter for immunization"], ["body mass index (bmi) 32.0-32.9, adult"], ["body mass index (bmi) 38.0-38.9, adult"], ["long term (current) use of antithrombotics/antiplatelets"], ["long term (current) use of aspirin"], ["presence of aortocoronary bypass graft"], ["presence of coronary angioplasty implant and graft"], ["septicemia due to escherichia coli [e. coli]"], ["malignant neoplasm of gallbladder"], ["secondary malignant neoplasm of other digestive organs and spleen"], ["unspecified acquired hypothyroidism"], ["diabetes mellitus without mention of complication, type ii or unspecified type, not stated as uncontrolled"], ["other and unspecified manifestations of thiamine deficiency"], ["other b-complex deficiencies"], ["gout, unspecified"], ["acidosis"], ["alkalosis"], ["other fluid overload"], ["hyperpotassemia"], ["obesity, unspecified"], ["acute posthemorrhagic anemia"], ["anemia, unspecified"], ["other secondary thrombocytopenia"], ["alcohol withdrawal"], ["autistic disorder, current or active state"], ["anxiety state, unspecified"], ["panic disorder without agoraphobia"], ["dysthymic disorder"], ["acute alcoholic intoxication in alcoholism, continuous"], ["other and unspecified alcohol dependence, continuous"], ["alcohol abuse, unspecified"], ["tobacco use disorder"], ["cocaine abuse, unspecified"], ["depressive disorder, not elsewhere classified"], ["attention deficit disorder with hyperactivity"], ["essential and other specified forms of tremor"], ["encephalopathy, unspecified"], ["mononeuritis of unspecified site"], ["alcoholic polyneuropathy"], ["unspecified essential hypertension"], ["hypertensive chronic kidney disease, unspecified, with chronic kidney disease stage i through stage iv, or unspecified"], ["coronary atherosclerosis of native coronary artery"], ["other chronic pulmonary heart diseases"], ["mitral valve disorders"], ["other primary cardiomyopathies"], ["right bundle branch block"], ["atrial fibrillation"], ["other specified cardiac dysrhythmias"], ["congestive heart failure, unspecified"], ["acute systolic heart failure"], ["acute on chronic diastolic heart failure"], ["other lymphedema"], ["other iatrogenic hypotension"], ["methicillin susceptible pneumonia due to staphylococcus aureus"], ["pneumonia, organism unspecified"], ["asthma, unspecified type, unspecified"], ["postinflammatory pulmonary fibrosis"], ["acute respiratory failure following trauma and surgery"], ["acute respiratory failure"], ["esophageal reflux"], ["chronic or unspecified duodenal ulcer with hemorrhage, without mention of obstruction"], ["duodenitis, without mention of hemorrhage"], ["acute vascular insufficiency of intestine"], ["constipation, unspecified"], ["irritable bowel syndrome"], ["acute and subacute necrosis of liver"], ["other chronic nonalcoholic liver disease"], ["acute and chronic cholecystitis"], ["cholangitis"], ["nephritis and nephropathy, not specified as acute or chronic, with other specified pathological lesion in kidney"], ["acute kidney failure with lesion of tubular necrosis"], ["chronic kidney disease, unspecified"], ["unspecified disorder of kidney and ureter"], ["edema of male genital organs"], ["prolapse of vaginal vault after hysterectomy"], ["vaginal enterocele, congenital or acquired"], ["contact dermatitis and other eczema due to plants [except food]"], ["ankylosing spondylitis"], ["backache, unspecified"], ["rhabdomyolysis"], ["myalgia and myositis, unspecified"], ["other anomalies of gallbladder, bile ducts, and liver"], ["other convulsions"], ["insomnia, unspecified"], ["postprocedural fever"], ["tachycardia, unspecified"], ["cardiogenic shock"], ["other specified retention of urine"], ["other abnormal glucose"], ["other abnormal blood chemistry"], ["closed fracture of nasal bones"], ["closed fracture of sixth cervical vertebra"], ["closed fracture of dorsal [thoracic] vertebra without mention of spinal cord injury"], ["closed fracture of lumbar vertebra without mention of spinal cord injury"], ["closed fracture of four ribs"], ["closed dislocation, multiple cervical vertebrae"], ["traumatic hemothorax without mention of open wound into thorax"], ["unspecified injury of heart without mention of open wound into thorax"], ["contusion of lung without mention of open wound into thorax"], ["injury to other gastrointestinal sites, without mention of open wound into cavity"], ["injury to liver without mention of open wound into cavity, hematoma and contusion"], ["injury to liver without mention of open wound into cavity laceration, unspecified"], ["injury to other intra-abdominal organs without mention of open wound into cavity, adrenal gland"], ["injury to other intra-abdominal organs without mention of open wound into cavity, peritoneum"], ["traumatic shock"], ["traumatic anuria"], ["other anaphylactic reaction"], ["severe sepsis"], ["cardiac complications, not elsewhere classified"], ["accidental puncture or laceration during a procedure, not elsewhere classified"], ["other motor vehicle traffic accident involving collision on the highway injuring driver of motor vehicle other than motorcycle"], ["accidents occurring in unspecified place"], ["accidental poisoning from other specified plants"], ["accidental cut, puncture, perforation or hemorrhage during heart catheterization"], ["other opiates and related narcotics causing adverse effects in therapeutic use"], ["unarmed fight or brawl"], ["asymptomatic human immunodeficiency virus [hiv] infection status"], ["personal history of malignant neoplasm of cervix uteri"], ["personal history of sudden cardiac arrest"], ["personal history of allergy to penicillin"], ["personal history of traumatic brain injury"], ["personal history of tobacco use"], ["bariatric surgery status"], ["long-term (current) use of anticoagulants"], ["long-term (current) use of insulin"], ["unemployment"], ["suicidal ideation"], ["body mass index 35.0-35.9, adult"]]
+                #
+                # if query_data['id'] == 'b89ae914fde1da12628b1901':
+                #     sqlite_ans = [["other specified coagulation defects"], ["hyperlipidemia, unspecified"], ["hyperkalemia"], ["nicotine dependence, unspecified, uncomplicated"], ["nicotine dependence, cigarettes, uncomplicated"], ["anxiety disorder, unspecified"], ["epilepsy, unspecified, not intractable, without status epilepticus"], ["blindness, both eyes"], ["essential (primary) hypertension"], ["non-st elevation (nstemi) myocardial infarction"], ["atherosclerotic heart disease of native coronary artery with unstable angina pectoris"], ["atherosclerotic heart disease of native coronary artery with unspecified angina pectoris"], ["pericardial effusion (noninflammatory)"], ["disease of pericardium, unspecified"], ["dissection of abdominal aorta"], ["acute embolism and thrombosis of left iliac vein"], ["accidental puncture and laceration of a circulatory system organ or structure during a circulatory system procedure"], ["pleural effusion in other conditions classified elsewhere"], ["respiratory failure, unspecified with hypoxia"], ["atelectasis"], ["gastro-esophageal reflux disease without esophagitis"], ["bradycardia, unspecified"], ["other surgical procedures as the cause of abnormal reaction of the patient, or of later complication, without mention of misadventure at the time of the procedure"], ["operating room of hospital as the place of occurrence of the external cause"], ["encounter for immunization"], ["body mass index (bmi) 32.0-32.9, adult"], ["body mass index (bmi) 38.0-38.9, adult"], ["long term (current) use of antithrombotics/antiplatelets"], ["long term (current) use of aspirin"], ["presence of aortocoronary bypass graft"], ["presence of coronary angioplasty implant and graft"], ["septicemia due to escherichia coli [e. coli]"], ["malignant neoplasm of gallbladder"], ["secondary malignant neoplasm of other digestive organs and spleen"], ["unspecified acquired hypothyroidism"], ["diabetes mellitus without mention of complication, type ii or unspecified type, not stated as uncontrolled"], ["other and unspecified manifestations of thiamine deficiency"], ["other b-complex deficiencies"], ["gout, unspecified"], ["acidosis"], ["alkalosis"], ["other fluid overload"], ["hyperpotassemia"], ["obesity, unspecified"], ["acute posthemorrhagic anemia"], ["anemia, unspecified"], ["other secondary thrombocytopenia"], ["alcohol withdrawal"], ["autistic disorder, current or active state"], ["anxiety state, unspecified"], ["panic disorder without agoraphobia"], ["dysthymic disorder"], ["acute alcoholic intoxication in alcoholism, continuous"], ["other and unspecified alcohol dependence, continuous"], ["alcohol abuse, unspecified"], ["tobacco use disorder"], ["cocaine abuse, unspecified"], ["depressive disorder, not elsewhere classified"], ["attention deficit disorder with hyperactivity"], ["essential and other specified forms of tremor"], ["encephalopathy, unspecified"], ["mononeuritis of unspecified site"], ["alcoholic polyneuropathy"], ["unspecified essential hypertension"], ["hypertensive chronic kidney disease, unspecified, with chronic kidney disease stage i through stage iv, or unspecified"], ["coronary atherosclerosis of native coronary artery"], ["other chronic pulmonary heart diseases"], ["mitral valve disorders"], ["other primary cardiomyopathies"], ["right bundle branch block"], ["atrial fibrillation"], ["other specified cardiac dysrhythmias"], ["congestive heart failure, unspecified"], ["acute systolic heart failure"], ["acute on chronic diastolic heart failure"], ["other lymphedema"], ["other iatrogenic hypotension"], ["methicillin susceptible pneumonia due to staphylococcus aureus"], ["pneumonia, organism unspecified"], ["asthma, unspecified type, unspecified"], ["postinflammatory pulmonary fibrosis"], ["acute respiratory failure following trauma and surgery"], ["acute respiratory failure"], ["esophageal reflux"], ["chronic or unspecified duodenal ulcer with hemorrhage, without mention of obstruction"], ["duodenitis, without mention of hemorrhage"], ["acute vascular insufficiency of intestine"], ["constipation, unspecified"], ["irritable bowel syndrome"], ["acute and subacute necrosis of liver"], ["other chronic nonalcoholic liver disease"], ["acute and chronic cholecystitis"], ["cholangitis"], ["nephritis and nephropathy, not specified as acute or chronic, with other specified pathological lesion in kidney"], ["acute kidney failure with lesion of tubular necrosis"], ["chronic kidney disease, unspecified"], ["unspecified disorder of kidney and ureter"], ["edema of male genital organs"], ["prolapse of vaginal vault after hysterectomy"], ["vaginal enterocele, congenital or acquired"], ["contact dermatitis and other eczema due to plants [except food]"], ["ankylosing spondylitis"], ["backache, unspecified"], ["rhabdomyolysis"], ["myalgia and myositis, unspecified"], ["other anomalies of gallbladder, bile ducts, and liver"], ["other convulsions"], ["insomnia, unspecified"], ["postprocedural fever"], ["tachycardia, unspecified"], ["cardiogenic shock"], ["other specified retention of urine"], ["other abnormal glucose"], ["other abnormal blood chemistry"], ["closed fracture of nasal bones"], ["closed fracture of sixth cervical vertebra"], ["closed fracture of dorsal [thoracic] vertebra without mention of spinal cord injury"], ["closed fracture of lumbar vertebra without mention of spinal cord injury"], ["closed fracture of four ribs"], ["closed dislocation, multiple cervical vertebrae"], ["traumatic hemothorax without mention of open wound into thorax"], ["unspecified injury of heart without mention of open wound into thorax"], ["contusion of lung without mention of open wound into thorax"], ["injury to other gastrointestinal sites, without mention of open wound into cavity"], ["injury to liver without mention of open wound into cavity, hematoma and contusion"], ["injury to liver without mention of open wound into cavity laceration, unspecified"], ["injury to other intra-abdominal organs without mention of open wound into cavity, adrenal gland"], ["injury to other intra-abdominal organs without mention of open wound into cavity, peritoneum"], ["traumatic shock"], ["traumatic anuria"], ["other anaphylactic reaction"], ["severe sepsis"], ["cardiac complications, not elsewhere classified"], ["accidental puncture or laceration during a procedure, not elsewhere classified"], ["other motor vehicle traffic accident involving collision on the highway injuring driver of motor vehicle other than motorcycle"], ["accidents occurring in unspecified place"], ["accidental poisoning from other specified plants"], ["accidental cut, puncture, perforation or hemorrhage during heart catheterization"], ["other opiates and related narcotics causing adverse effects in therapeutic use"], ["unarmed fight or brawl"], ["asymptomatic human immunodeficiency virus [hiv] infection status"], ["personal history of malignant neoplasm of cervix uteri"], ["personal history of sudden cardiac arrest"], ["personal history of allergy to penicillin"], ["personal history of traumatic brain injury"], ["personal history of tobacco use"], ["bariatric surgery status"], ["long-term (current) use of anticoagulants"], ["long-term (current) use of insulin"], ["unemployment"], ["suicidal ideation"], ["body mass index 35.0-35.9, adult"]]
+                #
+                # if query_data['id'] == '9ab9f7bcf85120221b47db91':
+                #     sqlite_ans = [["other specified coagulation defects"], ["hyperlipidemia, unspecified"], ["hyperkalemia"], ["nicotine dependence, unspecified, uncomplicated"], ["nicotine dependence, cigarettes, uncomplicated"], ["anxiety disorder, unspecified"], ["epilepsy, unspecified, not intractable, without status epilepticus"], ["blindness, both eyes"], ["essential (primary) hypertension"], ["non-st elevation (nstemi) myocardial infarction"], ["atherosclerotic heart disease of native coronary artery with unstable angina pectoris"], ["atherosclerotic heart disease of native coronary artery with unspecified angina pectoris"], ["pericardial effusion (noninflammatory)"], ["disease of pericardium, unspecified"], ["dissection of abdominal aorta"], ["acute embolism and thrombosis of left iliac vein"], ["accidental puncture and laceration of a circulatory system organ or structure during a circulatory system procedure"], ["pleural effusion in other conditions classified elsewhere"], ["respiratory failure, unspecified with hypoxia"], ["atelectasis"], ["gastro-esophageal reflux disease without esophagitis"], ["bradycardia, unspecified"], ["other surgical procedures as the cause of abnormal reaction of the patient, or of later complication, without mention of misadventure at the time of the procedure"], ["operating room of hospital as the place of occurrence of the external cause"], ["encounter for immunization"], ["body mass index (bmi) 32.0-32.9, adult"], ["body mass index (bmi) 38.0-38.9, adult"], ["long term (current) use of antithrombotics/antiplatelets"], ["long term (current) use of aspirin"], ["presence of aortocoronary bypass graft"], ["presence of coronary angioplasty implant and graft"], ["septicemia due to escherichia coli [e. coli]"], ["malignant neoplasm of gallbladder"], ["secondary malignant neoplasm of other digestive organs and spleen"], ["unspecified acquired hypothyroidism"], ["diabetes mellitus without mention of complication, type ii or unspecified type, not stated as uncontrolled"], ["other and unspecified manifestations of thiamine deficiency"], ["other b-complex deficiencies"], ["gout, unspecified"], ["acidosis"], ["alkalosis"], ["other fluid overload"], ["hyperpotassemia"], ["obesity, unspecified"], ["acute posthemorrhagic anemia"], ["anemia, unspecified"], ["other secondary thrombocytopenia"], ["alcohol withdrawal"], ["autistic disorder, current or active state"], ["anxiety state, unspecified"], ["panic disorder without agoraphobia"], ["dysthymic disorder"], ["acute alcoholic intoxication in alcoholism, continuous"], ["other and unspecified alcohol dependence, continuous"], ["alcohol abuse, unspecified"], ["tobacco use disorder"], ["cocaine abuse, unspecified"], ["depressive disorder, not elsewhere classified"], ["attention deficit disorder with hyperactivity"], ["essential and other specified forms of tremor"], ["encephalopathy, unspecified"], ["mononeuritis of unspecified site"], ["alcoholic polyneuropathy"], ["unspecified essential hypertension"], ["hypertensive chronic kidney disease, unspecified, with chronic kidney disease stage i through stage iv, or unspecified"], ["coronary atherosclerosis of native coronary artery"], ["other chronic pulmonary heart diseases"], ["mitral valve disorders"], ["other primary cardiomyopathies"], ["right bundle branch block"], ["atrial fibrillation"], ["other specified cardiac dysrhythmias"], ["congestive heart failure, unspecified"], ["acute systolic heart failure"], ["acute on chronic diastolic heart failure"], ["other lymphedema"], ["other iatrogenic hypotension"], ["methicillin susceptible pneumonia due to staphylococcus aureus"], ["pneumonia, organism unspecified"], ["asthma, unspecified type, unspecified"], ["postinflammatory pulmonary fibrosis"], ["acute respiratory failure following trauma and surgery"], ["acute respiratory failure"], ["esophageal reflux"], ["chronic or unspecified duodenal ulcer with hemorrhage, without mention of obstruction"], ["duodenitis, without mention of hemorrhage"], ["acute vascular insufficiency of intestine"], ["constipation, unspecified"], ["irritable bowel syndrome"], ["acute and subacute necrosis of liver"], ["other chronic nonalcoholic liver disease"], ["acute and chronic cholecystitis"], ["cholangitis"], ["nephritis and nephropathy, not specified as acute or chronic, with other specified pathological lesion in kidney"], ["acute kidney failure with lesion of tubular necrosis"], ["chronic kidney disease, unspecified"], ["unspecified disorder of kidney and ureter"], ["edema of male genital organs"], ["prolapse of vaginal vault after hysterectomy"], ["vaginal enterocele, congenital or acquired"], ["contact dermatitis and other eczema due to plants [except food]"], ["ankylosing spondylitis"], ["backache, unspecified"], ["rhabdomyolysis"], ["myalgia and myositis, unspecified"], ["other anomalies of gallbladder, bile ducts, and liver"], ["other convulsions"], ["insomnia, unspecified"], ["postprocedural fever"], ["tachycardia, unspecified"], ["cardiogenic shock"], ["other specified retention of urine"], ["other abnormal glucose"], ["other abnormal blood chemistry"], ["closed fracture of nasal bones"], ["closed fracture of sixth cervical vertebra"], ["closed fracture of dorsal [thoracic] vertebra without mention of spinal cord injury"], ["closed fracture of lumbar vertebra without mention of spinal cord injury"], ["closed fracture of four ribs"], ["closed dislocation, multiple cervical vertebrae"], ["traumatic hemothorax without mention of open wound into thorax"], ["unspecified injury of heart without mention of open wound into thorax"], ["contusion of lung without mention of open wound into thorax"], ["injury to other gastrointestinal sites, without mention of open wound into cavity"], ["injury to liver without mention of open wound into cavity, hematoma and contusion"], ["injury to liver without mention of open wound into cavity laceration, unspecified"], ["injury to other intra-abdominal organs without mention of open wound into cavity, adrenal gland"], ["injury to other intra-abdominal organs without mention of open wound into cavity, peritoneum"], ["traumatic shock"], ["traumatic anuria"], ["other anaphylactic reaction"], ["severe sepsis"], ["cardiac complications, not elsewhere classified"], ["accidental puncture or laceration during a procedure, not elsewhere classified"], ["other motor vehicle traffic accident involving collision on the highway injuring driver of motor vehicle other than motorcycle"], ["accidents occurring in unspecified place"], ["accidental poisoning from other specified plants"], ["accidental cut, puncture, perforation or hemorrhage during heart catheterization"], ["other opiates and related narcotics causing adverse effects in therapeutic use"], ["unarmed fight or brawl"], ["asymptomatic human immunodeficiency virus [hiv] infection status"], ["personal history of malignant neoplasm of cervix uteri"], ["personal history of sudden cardiac arrest"], ["personal history of allergy to penicillin"], ["personal history of traumatic brain injury"], ["personal history of tobacco use"], ["bariatric surgery status"], ["long-term (current) use of anticoagulants"], ["long-term (current) use of insulin"], ["unemployment"], ["suicidal ideation"], ["body mass index 35.0-35.9, adult"]]
 
                 translated_non_null.append({'id': query_data['id'],
                                             'question': query_data['question'],

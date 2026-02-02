@@ -2,21 +2,29 @@ use  mimic_iv;
 
 UPDATE admissions
 SET dischtime = NULL
-WHERE YEAR(dischtime) < 2100
+WHERE YEAR(dischtime) < 2100;
 
 UPDATE icustays
 SET outtime = NULL
-WHERE YEAR(outtime) < 2100 
+WHERE YEAR(outtime) < 2100;
+
+UPDATE patients
+SET dod = NULL
+WHERE YEAR(dod) < 2100;
+
+UPDATE prescriptions
+SET stoptime = NULL
+WHERE YEAR(stoptime) < 2100;
 
 ----------------------------------------------------
 
 UPDATE microbiologyevents
 SET org_name = NULL
-WHERE org_name = ''
+WHERE org_name = '';
 
 UPDATE transfers
 SET careunit = NULL
-WHERE careunit = ''
+WHERE careunit = '';
 
 
 ----------------- TEMP: -----------------------------

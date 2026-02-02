@@ -8,7 +8,7 @@ from dataset_creation.ehrsql2024.util import (
     sql_pretty_print, ep_pretty_print, cte_pretty_print, file_write, json_file_create_pretty_print
 )
 from dataset_creation.ehrsql2024.constants import (
-    tsql_qpl_cte_ans_ok_filepath, tsql_qpl_pp_ok_filepath, tsql_ep_ok_filepath, tsql_qpl_cte_ans_eq_filepath,
+    tsql_qpl_cte_ans_ok_filepath, tsql_qpl_pp_ok_filepath, tsql_filepath, tsql_qpl_cte_ans_eq_filepath,
     tsql_qpl_cte_ans_uneq_filepath, cte_ans_missing_distinct_filepath, cte_ans_redundant_columns_filepath,
     tsql_qpl_cte_ok_filepath, tsql_qpl_cte_ans_err_filepath, tsql_qpl_cte_err_filepath
 )
@@ -29,7 +29,7 @@ def dataset_validate_cte_answers():
     missing_distinct = []
 
     for cte_data in json_load(tsql_qpl_cte_ans_ok_filepath):
-        if is_equal_answers(cte_data['cte_final_ans'], cte_data['tsql_final_ans']):
+        if is_equal_answers(cte_data['cte_final_ans'], cte_data['tsql_final_ans'], cte_data['sqlite']):
             ok_eq.append(cte_data)
         else:
             ok_uneq.append(cte_data)
@@ -270,7 +270,7 @@ def tsql_ids_to_ctes(tsql_ids: list[str], filename_pref='anonymous'):
     """
     For testing
     """
-    tsqls_data = get_from_json(tsql_ids, tsql_ep_ok_filepath)
+    tsqls_data = get_from_json(tsql_ids, tsql_filepath)
     tsqls = [tsql_data['tsql'] for tsql_data in tsqls_data]
     tsqls_to_ctes(tsqls, filename_pref)
 

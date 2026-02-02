@@ -7,9 +7,10 @@ from dataset_creation.ehrsql2024.util import (
     RuntimeCountManager, sql_pretty_print, qpl_pretty_print, ep_pretty_print, file_write
 )
 from dataset_creation.ehrsql2024.constants import (
-    tsql_qpl_raw_ok_filepath, tsql_qpl_pp_ok_filepath, tsql_qpl_pp_err_filepath, tsql_ep_ok_filepath,
+    tsql_qpl_raw_ok_filepath, tsql_qpl_pp_ok_filepath, tsql_qpl_pp_err_filepath, tsql_ep_ok_filepath, tsql_filepath,
     tsql_qpl_raw_err_filepath, ehrsql2024_path, tsql_ans_eq_filepath, tsql_ep_err_filepath
 )
+from dataset_creation.ehrsql2024.dataset_translation import tsql_post_process
 
 
 # =========================================================
@@ -60,7 +61,10 @@ def dataset_add_qpls_raw():
 
     for ep_data in tsqls_eps_data:
         del ep_data['ep']
-        ep_data['qpl_raw'] = raw_qpls_dict[ep_data['id']]['qpl'] if ep_data['id'] in raw_qpls_dict else 'null'
+        qpl_raw = raw_qpls_dict[ep_data['id']]['qpl'] if ep_data['id'] in raw_qpls_dict else 'null'
+        qpl_raw = qpl_raw.replace("inputevents.amount",  # due to inconsistency between versions of MIMIC-IV:
+                                  "inputevents.totalamount")
+        ep_data['qpl_raw'] = qpl_raw
         if (ep_data['qpl_raw']).startswith('mimic_iv |'):
             ok.append(ep_data)
         else:
@@ -159,7 +163,6 @@ def dataset_add_eps():
     file_remove(tsql_ans_eq_filepath)
 
 def tsql_finlize_for_ep_fetching(tsql: str) -> str:
-
     def rep(match):
         gd = match.groupdict()
         lhs = gd["lhs"]
@@ -179,8 +182,10 @@ def tsql_finlize_for_ep_fetching(tsql: str) -> str:
 
         return f"SELECT rhs.val - lhs.val FROM {rhs} as lhs CROSS APPLY {lhs} as rhs"
 
+    tsql_pp = tsql_post_process(tsql)
+
     p = r"^SELECT (?P<lhs>\(SELECT (TOP 1 |SUM\()?\w+\.\w+\)? FROM.*\))\s+\-\s+(?P<rhs>\(SELECT (TOP 1 |SUM\()?\w+\.\w+\)? FROM.*\))$"
-    tsql_final = match_and_replace(tsql, [
+    tsql_final = match_and_replace(tsql_pp, [
         (p, rep),
     ])
 
@@ -222,7 +227,7 @@ def tsql_ids_to_qpls_pp(tsql_ids: list[str], filename_pref='anonymous'):
     """
     For testing
     """
-    tsqls_data = get_from_json(tsql_ids, tsql_ep_ok_filepath)
+    tsqls_data = get_from_json(tsql_ids, tsql_filepath)
     tsqls = [tsql_data['tsql'] for tsql_data in tsqls_data]
     tsqls_to_qpls_pp(tsqls, filename_pref)
 
@@ -230,7 +235,7 @@ def tsql_ids_to_qpls_raw(tsql_ids: list[str], filename_pref='anonymous'):
     """
     For testing
     """
-    tsqls_data = get_from_json(tsql_ids, tsql_ep_ok_filepath)
+    tsqls_data = get_from_json(tsql_ids, tsql_filepath)
     tsqls = [tsql_data['tsql'] for tsql_data in tsqls_data]
     tsqls_to_qpls_raw(tsqls, filename_pref)
 

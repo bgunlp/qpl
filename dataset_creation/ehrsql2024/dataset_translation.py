@@ -104,7 +104,9 @@ def sqlite_post_process(query):
     query = re.sub('[ ]+', ' ', query.replace('\n', ' ')).strip()
     query = query.replace('> =', '>=').replace('< =', '<=').replace('! =', '!=')
 
-    query = query.replace('totalamount', "amount")  # inputevents.
+    query = query.replace(  # due to inconsistency between versions of MIMIC-IV:
+        'totalamount',  # inputevents.
+        "amount")      # inputevents.
 
     # Convert MySQL to SQLite functions
     query = re.sub(TIME_PATTERN, __convert_date_function, query)

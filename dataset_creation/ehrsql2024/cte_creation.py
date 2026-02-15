@@ -137,6 +137,11 @@ def _get_cte_answers(ctes_data, description):
     redundant_cols = []
 
     with MimicIvConnectionManager() as conn:
+        # Make sure correct settings:
+        conn.exec("SET SHOWPLAN_XML OFF")
+        conn.exec("ALTER DATABASE SCOPED CONFIGURATION SET TSQL_SCALAR_UDF_INLINING = ON")
+        conn.exec("ALTER DATABASE SCOPED CONFIGURATION SET MAXDOP = 0")
+
         for cte_data in get_progress_bar(ctes_data, description):
             cte_final = tsql_modify_for_validation(cte_data['cte'])
             cte_data['cte_final'] = cte_final
@@ -156,6 +161,12 @@ def _get_cte_answers_concurrent(ctes_data, description, async_workers=5):
     return asyncio.run(dataset_add_cte_answers_async(ctes_data, description, async_workers))
 
 async def dataset_add_cte_answers_async(ctes_data, description, async_workers):
+    # Make sure correct DB settings:
+    with MimicIvConnectionManager() as conn:
+        conn.exec("SET SHOWPLAN_XML OFF")
+        conn.exec("ALTER DATABASE SCOPED CONFIGURATION SET TSQL_SCALAR_UDF_INLINING = ON")
+        conn.exec("ALTER DATABASE SCOPED CONFIGURATION SET MAXDOP = 0")
+
     ans_ok_q = asyncio.Queue()
     ans_err_q = asyncio.Queue()
     redundant_cols_q = asyncio.Queue()

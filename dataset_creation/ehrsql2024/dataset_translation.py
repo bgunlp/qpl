@@ -284,6 +284,11 @@ def dataset_add_tsql_answers():
 
     tsqls_data = json_load(tsql_filepath)
     with MimicIvConnectionManager() as conn:
+        # Make sure correct settings:
+        conn.exec("SET SHOWPLAN_XML OFF")
+        conn.exec("ALTER DATABASE SCOPED CONFIGURATION SET TSQL_SCALAR_UDF_INLINING = ON")
+        conn.exec("ALTER DATABASE SCOPED CONFIGURATION SET MAXDOP = 0")
+
         for tsql_data in get_progress_bar(tsqls_data, f'Adding T-SQL answers'):
             tsql_for_translation_validation = tsql_modify_for_translation_validation(tsql_data['tsql'])
             tsql_data['tsql_for_translation_validation'] = tsql_for_translation_validation

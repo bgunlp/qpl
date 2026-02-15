@@ -357,8 +357,12 @@ def tsql_post_process(tsql: str) -> str:
                 vital_range = PRECOMPUTED_DICT[processed_vital_name]
                 tsql = tsql.replace(vital_lower_expr, f"{vital_range[0]}").replace(vital_upper_expr, f"{vital_range[1]}")
 
-    return tsql.replace("totalamount",  # due to inconsistency between versions of MIMIC-IV:
-                        "amount")
+    # due to inconsistency between versions of MIMIC-IV (TODO: remove after fixing in dataBASE):
+    query = query.replace(
+        'totalamount',  # inputevents.
+        "amount")  # inputevents.
+
+    return query
 
 
 # =========================================================
@@ -404,8 +408,16 @@ def finalize_translation(tsql):
     return match_and_replace(tsql, [
         ("DATEDIFFF", "DATEDIFF"),  # weird workaround for sqlglot weird behavior (see date_diff_replacer)
         (subquery_fix_regex, subquery_fix_replacer),  # add alias to sub-queries to make it valid T-SQL
-        (r"CAST\((?P<col>[\w\.]+) AS DATETIME2\)", lambda m: m.group('col'))  # remove redundant casting
-    ])
+        (r"CAST\((?P<col>[\w\.]+) AS DATETIME2\)", lambda m: m.group('col')),  # remove redundant casting
+        # modify GROUP BY "date-formatting" to use T-SQL date-part functions instead (faster):
+        (
+            r"GROUP BY FORMAT\(\s*((\w+\.)?\w+),\s*'([\w-]+)'\s*\)",
+            lambda m: f"GROUP BY YEAR({m.group(1)}), MONTH({m.group(1)}), DAY({m.group(1)})" if m.group(3) == 'yyyy-MM-dd' else
+                      f"GROUP BY YEAR({m.group(1)}), MONTH({m.group(1)})" if m.group(3) == 'yyyy-MM' else
+                      f"GROUP BY YEAR({m.group(1)})" if m.group(3) == 'yyyy' else
+                      m.group(0)
+        ),
+    ], [re.IGNORECASE])
 
 
 # ==================================================================
@@ -1033,21 +1045,41 @@ def between_replacer(match):
     raise ValueError(f"between_replace: unknown pattern matched, match = [{match.group(0)}]")
 
 
-# -----------------------------------------------------------
-#     Translation of JULIAN-DAY-DIFFERENCE time expressions:
-# -----------------------------------------------------------
-# strftime(...) <op> strftime(...)
-date_diff_regex = r"(?P<lhs>strftime\s*\(.+?\))\s*(?P<op>[=<>+\-\w]+)\s*(?P<rhs>strftime\s*\(.+?\))"
-date_diff_tests = [
-    # Q: ... number of days SINCE event
+# -----------------------------------------------------------------------------------
+#     Translation of JULIAN-DAY-DIFFERENCE and HOUR-DIFFERENCE time expressions:
+# -----------------------------------------------------------------------------------
+# <num> * ( strftime(...) <op> strftime(...) )
+date_diff_regex = r"(?P<lhs>strftime\s*\(.+?\))\s*(?P<op>[=<>+\-\w]+)\s*(?P<rhs>strftime\s*\(.+?\))"  # (\(\s+)?
+num_mul_datediff_regex = rf"((?P<num>\d+)\s+\*\s+)?(\(\s*)?{date_diff_regex}(\s*\))?"
+num_mul_datediff_tests = [
+    # Q: ... number of DAYS SINCE event
     ("strftime('%J',current_time) - strftime('%J', icustays.intime)",
-     "DATEDIFFF(DAY, icustays.intime, GETDATE())")
+     "DATEDIFFF(DAY, icustays.intime, GETDATE())"),
+
+    # Q: ... number of DAYS SINCE event
+    ("WHEN (strftime('%J',patients.dod) - strftime('%J',T1.charttime)) <",
+     "WHEN DATEDIFFF(DAY, T1.charttime, patients.dod) <"),
+
+    # Q: ... number of DAYS SINCE event
+    ("1 * (strftime('%J',current_time) - strftime('%J', icustays.intime))",
+     "DATEDIFFF(DAY, icustays.intime, GETDATE())"),
+
+    # Q: ... number of HOURS SINCE event
+    ("24 * (strftime('%J',current_time) - strftime('%J', icustays.intime))",
+     "DATEDIFFF(HOUR, icustays.intime, GETDATE())"),
+
+    # Q: ... number of HOURS SINCE event
+    ("SELECT 24 * ( strftime('%J',current_time) - strftime('%J', icustays.intime) ) FROM",
+     "SELECT DATEDIFFF(HOUR, icustays.intime, GETDATE()) FROM"),
 ]
-def date_diff_replacer(match):
+def num_mul_datediff_replacer(match):
     """
-        To be used with date_diff_regex, for:
-        strftime(...) <op> strftime(...)
+        To be used with num_mul_datediff_regex, for:
+        <num> * (strftime(...) <op> strftime(...))
+
+        (*) 'DATEDIFFF' instead of  'DATEDIFF' is a workaround for sqlglot's weird behavior, see 'finalize_translation'.
     """
+    num = match.group('num')  # <num>
     lhs = match.group('lhs')  # strftime(...)
     op = match.group('op')  # <op>
     rhs = match.group('rhs')  # strftime(...)
@@ -1055,13 +1087,19 @@ def date_diff_replacer(match):
     to_format_1st, to_format_2nd, to_format_3rd, to_datetime = strftime_clause_extract_parts(lhs)
     from_format_1st, from_format_2nd, from_format_3rd, from_datetime = strftime_clause_extract_parts(rhs)
 
-    # strftime('%J', <datetime>) - strftime('%J', <datetime>)
+    # <num> * (strftime('%J', <datetime>) - strftime('%J', <datetime>))
     if to_format_1st == 'J' and to_format_2nd is None and to_format_3rd is None and to_datetime is not None and \
             op == '-' and \
             from_format_1st == 'J' and from_format_2nd is None and from_format_3rd is None and from_datetime is not None:
 
-        # 'DATEDIFFF' should be 'DATEDIFF'. It's a workaround for sqlglot's weird behavior, see 'finalize_translation'.
-        return f'DATEDIFFF(DAY, {from_datetime}, {to_datetime})'
+        # strftime('%J', <datetime>) - strftime('%J', <datetime>),
+        # 1 * (strftime('%J', <datetime>) - strftime('%J', <datetime>)):
+        if num is None or num == '1':
+            return f'DATEDIFFF(DAY, {from_datetime}, {to_datetime})'  # (*)
+
+        # 24 * (strftime('%J', <datetime>) - strftime('%J', <datetime>)):
+        if num == '24':
+            return f'DATEDIFFF(HOUR, {from_datetime}, {to_datetime})'  # (*)
 
     raise ValueError(f"date_diff_replace: unknown pattern matched, match = [{match.group(0)}]")
 
@@ -1120,6 +1158,7 @@ def select_compare_2_replacer(match):
     comparison = match.group('comparison')  # (...) > (...)
     return f'SELECT IIF({comparison}, 1, 0) FROM'
 
+# =====================================================================================================================
 
 translation_tuples = [
     # regex                      replacer_function          test_pairs                  test_name:
@@ -1130,7 +1169,7 @@ translation_tuples = [
     (absolute_regex,             absolute_replacer,         absolute_tests,             'absolute'),
     (between_regex,              between_replacer,          between_tests,              'between'),
     (exact_absolute_regex,       exact_absolute_replacer,   exact_absolute_tests,       'exact_absolute'),
-    (date_diff_regex,            date_diff_replacer,        date_diff_tests,            'date_diff')
+    (num_mul_datediff_regex,     num_mul_datediff_replacer, num_mul_datediff_tests,     'num_mul_datediff'),
 ]
 
 post_translation_tuples = [

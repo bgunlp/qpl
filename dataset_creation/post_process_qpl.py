@@ -384,6 +384,7 @@ def post_process(flat_qpl: List[str]) -> List[str]:
                 '0': 'year',
                 '2': 'month',
                 '4': 'day',
+                '6': 'hour'
             }
             func_name = match.group('func_name')
             num = match.group('num')
@@ -558,15 +559,18 @@ def post_process(flat_qpl: List[str]) -> List[str]:
                 (function_call_pattern.pattern, inner_func_call_to_alias_replacer)
             ])
 
+        def _replace_func_calls_in_option_args(_option_args: str) -> str:
+            args_list = [x for x in _option_args.split(" , ") if x]
+            args_replaced_list = [_replace_func_call_with_alias(x) for x in args_list]
+            args_replaced = " , ".join(args_replaced_list)
+            return args_replaced
+
         def _repalce_option_args(_option_args: List[str], _option_names: List[str]):
             _option_args_new = []
             for _arg in _option_args:
                 _arg_new = replace_fq_and_ymd_nums(_arg)
-                if _mf := function_call_pattern.match(_arg_new):
-                    _func_call = _arg_new
-                    if _func_call in func_cache[ins[0]]:
-                        _alias_existing = func_cache[ins[0]][_func_call]  # retrieve existing alias
-                        _arg_new = _alias_existing
+                _arg_new = _replace_func_calls_in_option_args(_arg_new)
+
                 _option_args_new.append(_arg_new)
             option_new = dict(zip(_option_names, _option_args_new))
             return _option_args_new, option_new

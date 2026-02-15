@@ -135,7 +135,7 @@ def dataset_add_eps():
     tsqls_data = json_load(tsql_ans_eq_filepath)
     with MimicIvConnectionManager() as conn:
         conn.exec("EXEC sp_updatestats")
-        # conn.exec("ALTER DATABASE SCOPED CONFIGURATION SET MAXDOP = 1")  # not sure if it has an effect
+        conn.exec("ALTER DATABASE SCOPED CONFIGURATION SET MAXDOP = 1")  # not sure if it has an effect
         conn.exec("ALTER DATABASE SCOPED CONFIGURATION SET TSQL_SCALAR_UDF_INLINING = OFF")
         conn.exec("SET SHOWPLAN_XML ON")
 
@@ -152,7 +152,7 @@ def dataset_add_eps():
 
         conn.exec("SET SHOWPLAN_XML OFF")
         conn.exec("ALTER DATABASE SCOPED CONFIGURATION SET TSQL_SCALAR_UDF_INLINING = ON")
-        # conn.exec("ALTER DATABASE SCOPED CONFIGURATION SET MAXDOP = 0")
+        conn.exec("ALTER DATABASE SCOPED CONFIGURATION SET MAXDOP = 0")
 
     print(f"\n{len(ok)} successfully fetched execution plans")
     json_list_write(ok, tsql_ep_ok_filepath)
@@ -182,7 +182,7 @@ def tsql_finlize_for_ep_fetching(tsql: str) -> str:
 
         return f"SELECT rhs.val - lhs.val FROM {rhs} as lhs CROSS APPLY {lhs} as rhs"
 
-    tsql_pp = tsql_post_process(tsql)
+    tsql_pp = sql_post_process(tsql)
 
     p = r"^SELECT (?P<lhs>\(SELECT (TOP 1 |SUM\()?\w+\.\w+\)? FROM.*\))\s+\-\s+(?P<rhs>\(SELECT (TOP 1 |SUM\()?\w+\.\w+\)? FROM.*\))$"
     tsql_final = match_and_replace(tsql_pp, [

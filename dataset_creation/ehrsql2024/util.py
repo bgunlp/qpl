@@ -181,7 +181,7 @@ def get_capture_groups_matches(regex: str, text: str) -> dict[str, str]:  # , ig
 
 def match_and_replace(text: str | None,
                       regex_tuples: list[tuple[str, str | Callable[[re.Match], str]]],
-                      flags: list[int] = None) -> str | None:
+                      flags: list[re.RegexFlag] = None) -> str | None:
     """
     match_and_replace(text, [(regex, replacer), ...])
 

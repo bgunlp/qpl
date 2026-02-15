@@ -169,9 +169,10 @@ def dataset_validate_translated_tsql_answers():
 
     file_remove(tsql_ans_ok_filepath)
 
-def is_equal_answers(new_ans_rows: list[list[str]], expected_ans_rows: list[list[str]], query_gold) -> bool:
+def is_equal_answers(new_ans_rows: list[list[str]], expected_ans_rows: list[list[str]], query_gold: str) -> bool:
     """
-    Assumption: each element of @new_ans_rows and @expected_ans_rows represent SQL result row containing a single cell
+    Assumptions:
+        - Each element of @new_ans_rows and @expected_ans_rows represent SQL result row containing a single cell
     """
     new_ans_cells: list[str] = [row[0] for row in new_ans_rows]  # according to assumption
     expected_ans_cells: list[str] = [row[0] for row in expected_ans_rows]  # according to assumption
@@ -189,37 +190,72 @@ def is_equal_answers(new_ans_rows: list[list[str]], expected_ans_rows: list[list
 
     eqs = [False] * len(new_ans_cells_unique)
 
+    alt_check = query_gold.startswith("SELECT 24 * ( strftime(")
     for i, expected_cell in enumerate(expected_ans_cells_unique):
         for new_cell in new_ans_cells_unique:
-            if is_equal_ans_cells(new_cell, expected_cell):
+            if is_equal_ans_cells(new_cell, expected_cell, alt_check):
                 eqs[i] = True
                 break
 
     return all(eqs)  # <- essential  # !!
 
-def is_equal_ans_cells(new_cell, expected_cell):
-    def is_num(string):
-        try:
-            float(string)
-            return True
-        except ValueError:
-            return False
+def is_equal_ans_cells(new_cell, expected_cell, alt_check=False):
+    # Check if close numbers:
+    if is_num(new_cell) and is_num(expected_cell):
+        return compare_nums(new_cell, expected_cell, alt_check)
 
-    def compare_nums(ans, expected):
-        ans = float(ans)
-        expected = float(expected)
-        if abs(ans) >= 1 and abs(expected) >= 1:
-            return abs(ans - expected) < 0.1
-        return abs(ans - expected) < 0.001  # ans == expected
+    # Check if same dates, omitting microseconds:
+    if is_full_date(new_cell) and is_full_date(expected_cell):
+        return compare_full_dates(new_cell, expected_cell)
 
-    def is_full_date(string):
+    # ... else, check if just same strings:
+    return new_cell == expected_cell
+
+def compare_full_dates(ans, expected):
+    ans = dt.fromisoformat(ans)
+    expected = dt.fromisoformat(expected)
+    return ans == expected
+
+def compare_nums(ans, expected, alt_check=False):
+    ans = float(ans)
+    expected = float(expected)
+
+    if alt_check:
+        """
+        Specific case:
+        When validating *T-SQL* answers against gold *SQLite* answer, and there is a date-difference calculation in the 
+        query, T-SQL returns *integer* while SQLite returns *float*.
+        We want to consider the answers equal if their integer parts are equal:
+        """
+        if ans.is_integer():
+            return int(ans) == int(expected)
+
+    if abs(ans) >= 1 and abs(expected) >= 1:
+        return abs(ans - expected) <= 0.1
+
+    return abs(ans - expected) <= 0.001
+
+def is_full_date(string):
+    try:
+        return bool(dt.strptime(string, '%Y-%m-%d %H:%M:%S'))
+    except ValueError:
         try:
-            return bool(dt.strptime(string, '%Y-%m-%d %H:%M:%S'))
+            return bool(dt.strptime(string, '%Y-%m-%dT%H:%M:%S'))
         except ValueError:
             try:
                 return bool(dt.strptime(string, '%Y-%m-%d %H:%M:%S.%f'))
             except ValueError:
-                return False
+                try:
+                    return bool(dt.strptime(string, '%Y-%m-%dT%H:%M:%S.%f'))
+                except ValueError:
+                    return False
+
+def is_num(string):
+    try:
+        float(string)
+        return True
+    except ValueError:
+        return False
 
     def compare_full_dates(ans, expected):
         ans = dt.fromisoformat(ans).strftime('%Y-%m-%d %H:%M:%S')

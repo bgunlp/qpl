@@ -1,0 +1,2086 @@
+{
+    "mimic_iv": {
+        "patients": {
+            "table_name": "patients",
+            "columns": [
+                {
+                    "name": "row_id",
+                    "type": "INT",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": true
+                },
+                {
+                    "name": "subject_id",
+                    "type": "INT",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "gender",
+                    "type": "VARCHAR(5)",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [
+                        {
+                            "enum_value": "f",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "m",
+                            "translation": null
+                        }
+                    ],
+                    "display_enum_values_on_prompt": true,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "dob",
+                    "type": "TIMESTAMP(0)",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "dod",
+                    "type": "TIMESTAMP(0)",
+                    "notnull": 0,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                }
+            ],
+            "primary_keys": [
+                "row_id"
+            ],
+            "foreign_keys": []
+        },
+        "admissions": {
+            "table_name": "admissions",
+            "columns": [
+                {
+                    "name": "row_id",
+                    "type": "INT",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": true
+                },
+                {
+                    "name": "subject_id",
+                    "type": "INT",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "hadm_id",
+                    "type": "INT",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "admittime",
+                    "type": "TIMESTAMP(0)",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "dischtime",
+                    "type": "TIMESTAMP(0)",
+                    "notnull": 0,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "admission_type",
+                    "type": "VARCHAR(50)",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "admission_location",
+                    "type": "VARCHAR(50)",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "discharge_location",
+                    "type": "VARCHAR(50)",
+                    "notnull": 0,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "insurance",
+                    "type": "VARCHAR(255)",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [
+                        {
+                            "enum_value": "medicaid",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "other",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "medicare",
+                            "translation": null
+                        }
+                    ],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "language",
+                    "type": "VARCHAR(10)",
+                    "notnull": 0,
+                    "default_value": null,
+                    "enum_values": [
+                        {
+                            "enum_value": "english",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "?",
+                            "translation": null
+                        }
+                    ],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "marital_status",
+                    "type": "VARCHAR(50)",
+                    "notnull": 0,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "age",
+                    "type": "INT",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                }
+            ],
+            "primary_keys": [
+                "row_id"
+            ],
+            "foreign_keys": [
+                {
+                    "current_table": "admissions",
+                    "outer_table": "patients",
+                    "current_column": "subject_id",
+                    "outer_column": "subject_id",
+                    "relationship": "N:1"
+                }
+            ]
+        },
+        "d_icd_diagnoses": {
+            "table_name": "d_icd_diagnoses",
+            "columns": [
+                {
+                    "name": "row_id",
+                    "type": "INT",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": true
+                },
+                {
+                    "name": "icd_code",
+                    "type": "VARCHAR(10)",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "long_title",
+                    "type": "VARCHAR(255)",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                }
+            ],
+            "primary_keys": [
+                "row_id"
+            ],
+            "foreign_keys": []
+        },
+        "d_icd_procedures": {
+            "table_name": "d_icd_procedures",
+            "columns": [
+                {
+                    "name": "row_id",
+                    "type": "INT",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": true
+                },
+                {
+                    "name": "icd_code",
+                    "type": "VARCHAR(10)",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "long_title",
+                    "type": "VARCHAR(255)",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                }
+            ],
+            "primary_keys": [
+                "row_id"
+            ],
+            "foreign_keys": []
+        },
+        "d_labitems": {
+            "table_name": "d_labitems",
+            "columns": [
+                {
+                    "name": "row_id",
+                    "type": "INT",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": true
+                },
+                {
+                    "name": "itemid",
+                    "type": "INT",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "label",
+                    "type": "VARCHAR(200)",
+                    "notnull": 0,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                }
+            ],
+            "primary_keys": [
+                "row_id"
+            ],
+            "foreign_keys": []
+        },
+        "d_items": {
+            "table_name": "d_items",
+            "columns": [
+                {
+                    "name": "row_id",
+                    "type": "INT",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": true
+                },
+                {
+                    "name": "itemid",
+                    "type": "INT",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "label",
+                    "type": "VARCHAR(200)",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "abbreviation",
+                    "type": "VARCHAR(200)",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "linksto",
+                    "type": "VARCHAR(50)",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [
+                        {
+                            "enum_value": "chartevents",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "outputevents",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "inputevents",
+                            "translation": null
+                        }
+                    ],
+                    "display_enum_values_on_prompt": true,
+                    "is_primary_key": false
+                }
+            ],
+            "primary_keys": [
+                "row_id"
+            ],
+            "foreign_keys": []
+        },
+        "diagnoses_icd": {
+            "table_name": "diagnoses_icd",
+            "columns": [
+                {
+                    "name": "row_id",
+                    "type": "INT",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": true
+                },
+                {
+                    "name": "subject_id",
+                    "type": "INT",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "hadm_id",
+                    "type": "INT",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "icd_code",
+                    "type": "VARCHAR(10)",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "charttime",
+                    "type": "TIMESTAMP(0)",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                }
+            ],
+            "primary_keys": [
+                "row_id"
+            ],
+            "foreign_keys": [
+                {
+                    "current_table": "diagnoses_icd",
+                    "outer_table": "d_icd_diagnoses",
+                    "current_column": "icd_code",
+                    "outer_column": "icd_code",
+                    "relationship": "N:1"
+                },
+                {
+                    "current_table": "diagnoses_icd",
+                    "outer_table": "admissions",
+                    "current_column": "hadm_id",
+                    "outer_column": "hadm_id",
+                    "relationship": "N:1"
+                }
+            ]
+        },
+        "procedures_icd": {
+            "table_name": "procedures_icd",
+            "columns": [
+                {
+                    "name": "row_id",
+                    "type": "INT",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": true
+                },
+                {
+                    "name": "subject_id",
+                    "type": "INT",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "hadm_id",
+                    "type": "INT",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "icd_code",
+                    "type": "VARCHAR(10)",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "charttime",
+                    "type": "TIMESTAMP(0)",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                }
+            ],
+            "primary_keys": [
+                "row_id"
+            ],
+            "foreign_keys": [
+                {
+                    "current_table": "procedures_icd",
+                    "outer_table": "d_icd_procedures",
+                    "current_column": "icd_code",
+                    "outer_column": "icd_code",
+                    "relationship": "N:1"
+                },
+                {
+                    "current_table": "procedures_icd",
+                    "outer_table": "admissions",
+                    "current_column": "hadm_id",
+                    "outer_column": "hadm_id",
+                    "relationship": "N:1"
+                }
+            ]
+        },
+        "labevents": {
+            "table_name": "labevents",
+            "columns": [
+                {
+                    "name": "row_id",
+                    "type": "INT",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": true
+                },
+                {
+                    "name": "subject_id",
+                    "type": "INT",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "hadm_id",
+                    "type": "INT",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "itemid",
+                    "type": "INT",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "charttime",
+                    "type": "TIMESTAMP(0)",
+                    "notnull": 0,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "valuenum",
+                    "type": "DOUBLE PRECISION",
+                    "notnull": 0,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "valueuom",
+                    "type": "VARCHAR(20)",
+                    "notnull": 0,
+                    "default_value": null,
+                    "enum_values": [
+                        {
+                            "enum_value": "mg/dl",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "meq/l",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "g/dl",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "iu/l",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "k/ul",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "%",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "pg",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "m/ul",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "fl",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "sec",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "#/hpf",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "units",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "ug/ml",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "ng/ml",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "mm hg",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "pg/ml",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "uiu/ml",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "mosm/kg",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "#/ul",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "#/lpf",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "mmol/l",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "mm/hr",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "mg/l",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "ug/dl",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "l/min",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "ratio",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "gpl",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "mpl",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "umol/l",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "ng/dl",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "iu/ml",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "u",
+                            "translation": null
+                        }
+                    ],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                }
+            ],
+            "primary_keys": [
+                "row_id"
+            ],
+            "foreign_keys": [
+                {
+                    "current_table": "labevents",
+                    "outer_table": "d_labitems",
+                    "current_column": "itemid",
+                    "outer_column": "itemid",
+                    "relationship": "N:1"
+                },
+                {
+                    "current_table": "labevents",
+                    "outer_table": "admissions",
+                    "current_column": "hadm_id",
+                    "outer_column": "hadm_id",
+                    "relationship": "N:1"
+                }
+            ]
+        },
+        "prescriptions": {
+            "table_name": "prescriptions",
+            "columns": [
+                {
+                    "name": "row_id",
+                    "type": "INT",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": true
+                },
+                {
+                    "name": "subject_id",
+                    "type": "INT",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "hadm_id",
+                    "type": "INT",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "starttime",
+                    "type": "TIMESTAMP(0)",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "stoptime",
+                    "type": "TIMESTAMP(0)",
+                    "notnull": 0,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "drug",
+                    "type": "VARCHAR(255)",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "dose_val_rx",
+                    "type": "VARCHAR(100)",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "dose_unit_rx",
+                    "type": "VARCHAR(50)",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [
+                        {
+                            "enum_value": "unit",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "neb",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "mg",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "bag",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "ml",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "tab",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "pkt",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "cap",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "vial",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "g",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "gm",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "appl",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "stck",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "syr",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "ptch",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "mcg",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "meq",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "mcg/h",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "enema",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "l",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "loz",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "cadd",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "spry",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "mmol",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "puff",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "drop",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "inh",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "supp",
+                            "translation": null
+                        }
+                    ],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "route",
+                    "type": "VARCHAR(50)",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [
+                        {
+                            "enum_value": "sc",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "ih",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "oral",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "po",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "iv",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "dialys",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "po/ng",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "ng",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "tp",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "td",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "im",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "iv drip",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "neb",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "iv bolus",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "ivpca",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "pr",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "ed",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "subcut",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "nu",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "vg",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "dwell",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "replace",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "ij",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "id",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "left eye",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "both eyes",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "left ear",
+                            "translation": null
+                        }
+                    ],
+                    "display_enum_values_on_prompt": true,
+                    "is_primary_key": false
+                }
+            ],
+            "primary_keys": [
+                "row_id"
+            ],
+            "foreign_keys": [
+                {
+                    "current_table": "prescriptions",
+                    "outer_table": "admissions",
+                    "current_column": "hadm_id",
+                    "outer_column": "hadm_id",
+                    "relationship": "N:1"
+                }
+            ]
+        },
+        "cost": {
+            "table_name": "cost",
+            "columns": [
+                {
+                    "name": "row_id",
+                    "type": "INT",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": true
+                },
+                {
+                    "name": "subject_id",
+                    "type": "INT",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "hadm_id",
+                    "type": "INT",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "event_type",
+                    "type": "VARCHAR(20)",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [
+                        {
+                            "enum_value": "diagnoses_icd",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "labevents",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "procedures_icd",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "prescriptions",
+                            "translation": null
+                        }
+                    ],
+                    "display_enum_values_on_prompt": true,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "event_id",
+                    "type": "INT",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "chargetime",
+                    "type": "TIMESTAMP(0)",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "cost",
+                    "type": "DOUBLE PRECISION",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                }
+            ],
+            "primary_keys": [
+                "row_id"
+            ],
+            "foreign_keys": [
+                {
+                    "current_table": "cost",
+                    "outer_table": "prescriptions",
+                    "current_column": "event_id",
+                    "outer_column": "row_id",
+                    "relationship": "N:1"
+                },
+                {
+                    "current_table": "cost",
+                    "outer_table": "labevents",
+                    "current_column": "event_id",
+                    "outer_column": "row_id",
+                    "relationship": "N:1"
+                },
+                {
+                    "current_table": "cost",
+                    "outer_table": "procedures_icd",
+                    "current_column": "event_id",
+                    "outer_column": "row_id",
+                    "relationship": "N:1"
+                },
+                {
+                    "current_table": "cost",
+                    "outer_table": "diagnoses_icd",
+                    "current_column": "event_id",
+                    "outer_column": "row_id",
+                    "relationship": "N:1"
+                },
+                {
+                    "current_table": "cost",
+                    "outer_table": "admissions",
+                    "current_column": "hadm_id",
+                    "outer_column": "hadm_id",
+                    "relationship": "N:1"
+                }
+            ]
+        },
+        "chartevents": {
+            "table_name": "chartevents",
+            "columns": [
+                {
+                    "name": "row_id",
+                    "type": "INT",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": true
+                },
+                {
+                    "name": "subject_id",
+                    "type": "INT",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "hadm_id",
+                    "type": "INT",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "stay_id",
+                    "type": "INT",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "itemid",
+                    "type": "INT",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [
+                        {
+                            "enum_value": 220210,
+                            "translation": null
+                        },
+                        {
+                            "enum_value": 220051,
+                            "translation": null
+                        },
+                        {
+                            "enum_value": 223762,
+                            "translation": null
+                        },
+                        {
+                            "enum_value": 220052,
+                            "translation": null
+                        },
+                        {
+                            "enum_value": 220045,
+                            "translation": null
+                        },
+                        {
+                            "enum_value": 220277,
+                            "translation": null
+                        },
+                        {
+                            "enum_value": 220050,
+                            "translation": null
+                        },
+                        {
+                            "enum_value": 224639,
+                            "translation": null
+                        },
+                        {
+                            "enum_value": 226730,
+                            "translation": null
+                        }
+                    ],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "charttime",
+                    "type": "TIMESTAMP(0)",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "valuenum",
+                    "type": "DOUBLE PRECISION",
+                    "notnull": 0,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "valueuom",
+                    "type": "VARCHAR(50)",
+                    "notnull": 0,
+                    "default_value": null,
+                    "enum_values": [
+                        {
+                            "enum_value": "insp/min",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "mmhg",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "\u00b0c",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "bpm",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "%",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "kg",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "cm",
+                            "translation": null
+                        }
+                    ],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                }
+            ],
+            "primary_keys": [
+                "row_id"
+            ],
+            "foreign_keys": [
+                {
+                    "current_table": "chartevents",
+                    "outer_table": "d_items",
+                    "current_column": "itemid",
+                    "outer_column": "itemid",
+                    "relationship": "N:1"
+                },
+                {
+                    "current_table": "chartevents",
+                    "outer_table": "icustays",
+                    "current_column": "stay_id",
+                    "outer_column": "stay_id",
+                    "relationship": "N:1"
+                },
+                {
+                    "current_table": "chartevents",
+                    "outer_table": "admissions",
+                    "current_column": "hadm_id",
+                    "outer_column": "hadm_id",
+                    "relationship": "N:1"
+                }
+            ]
+        },
+        "inputevents": {
+            "table_name": "inputevents",
+            "columns": [
+                {
+                    "name": "row_id",
+                    "type": "INT",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": true
+                },
+                {
+                    "name": "subject_id",
+                    "type": "INT",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "hadm_id",
+                    "type": "INT",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "stay_id",
+                    "type": "INT",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "starttime",
+                    "type": "TIMESTAMP(0)",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "itemid",
+                    "type": "INT",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "totalamount",
+                    "type": "DOUBLE PRECISION",
+                    "notnull": 0,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "totalamountuom",
+                    "type": "VARCHAR(50)",
+                    "notnull": 0,
+                    "default_value": null,
+                    "enum_values": [
+                        {
+                            "enum_value": "ml",
+                            "translation": null
+                        }
+                    ],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                }
+            ],
+            "primary_keys": [
+                "row_id"
+            ],
+            "foreign_keys": [
+                {
+                    "current_table": "inputevents",
+                    "outer_table": "d_items",
+                    "current_column": "itemid",
+                    "outer_column": "itemid",
+                    "relationship": "N:1"
+                },
+                {
+                    "current_table": "inputevents",
+                    "outer_table": "icustays",
+                    "current_column": "stay_id",
+                    "outer_column": "stay_id",
+                    "relationship": "N:1"
+                },
+                {
+                    "current_table": "inputevents",
+                    "outer_table": "admissions",
+                    "current_column": "hadm_id",
+                    "outer_column": "hadm_id",
+                    "relationship": "N:1"
+                }
+            ]
+        },
+        "outputevents": {
+            "table_name": "outputevents",
+            "columns": [
+                {
+                    "name": "row_id",
+                    "type": "INT",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": true
+                },
+                {
+                    "name": "subject_id",
+                    "type": "INT",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "hadm_id",
+                    "type": "INT",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "stay_id",
+                    "type": "INT",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "charttime",
+                    "type": "TIMESTAMP(0)",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "itemid",
+                    "type": "INT",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [
+                        {
+                            "enum_value": 226559,
+                            "translation": null
+                        },
+                        {
+                            "enum_value": 227510,
+                            "translation": null
+                        },
+                        {
+                            "enum_value": 226580,
+                            "translation": null
+                        },
+                        {
+                            "enum_value": 226632,
+                            "translation": null
+                        },
+                        {
+                            "enum_value": 227488,
+                            "translation": null
+                        },
+                        {
+                            "enum_value": 227489,
+                            "translation": null
+                        },
+                        {
+                            "enum_value": 226560,
+                            "translation": null
+                        },
+                        {
+                            "enum_value": 226588,
+                            "translation": null
+                        },
+                        {
+                            "enum_value": 226633,
+                            "translation": null
+                        },
+                        {
+                            "enum_value": 226627,
+                            "translation": null
+                        },
+                        {
+                            "enum_value": 226626,
+                            "translation": null
+                        },
+                        {
+                            "enum_value": 226571,
+                            "translation": null
+                        },
+                        {
+                            "enum_value": 226619,
+                            "translation": null
+                        },
+                        {
+                            "enum_value": 226606,
+                            "translation": null
+                        },
+                        {
+                            "enum_value": 226579,
+                            "translation": null
+                        },
+                        {
+                            "enum_value": 226576,
+                            "translation": null
+                        },
+                        {
+                            "enum_value": 226567,
+                            "translation": null
+                        },
+                        {
+                            "enum_value": 226599,
+                            "translation": null
+                        },
+                        {
+                            "enum_value": 226561,
+                            "translation": null
+                        },
+                        {
+                            "enum_value": 227511,
+                            "translation": null
+                        },
+                        {
+                            "enum_value": 226582,
+                            "translation": null
+                        },
+                        {
+                            "enum_value": 226575,
+                            "translation": null
+                        },
+                        {
+                            "enum_value": 226590,
+                            "translation": null
+                        },
+                        {
+                            "enum_value": 226570,
+                            "translation": null
+                        },
+                        {
+                            "enum_value": 227701,
+                            "translation": null
+                        },
+                        {
+                            "enum_value": 226583,
+                            "translation": null
+                        },
+                        {
+                            "enum_value": 226625,
+                            "translation": null
+                        },
+                        {
+                            "enum_value": 226592,
+                            "translation": null
+                        },
+                        {
+                            "enum_value": 226589,
+                            "translation": null
+                        },
+                        {
+                            "enum_value": 226573,
+                            "translation": null
+                        },
+                        {
+                            "enum_value": 226631,
+                            "translation": null
+                        },
+                        {
+                            "enum_value": 226612,
+                            "translation": null
+                        }
+                    ],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "value",
+                    "type": "DOUBLE PRECISION",
+                    "notnull": 0,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "valueuom",
+                    "type": "VARCHAR(50)",
+                    "notnull": 0,
+                    "default_value": null,
+                    "enum_values": [
+                        {
+                            "enum_value": "ml",
+                            "translation": null
+                        }
+                    ],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                }
+            ],
+            "primary_keys": [
+                "row_id"
+            ],
+            "foreign_keys": [
+                {
+                    "current_table": "outputevents",
+                    "outer_table": "d_items",
+                    "current_column": "itemid",
+                    "outer_column": "itemid",
+                    "relationship": "N:1"
+                },
+                {
+                    "current_table": "outputevents",
+                    "outer_table": "icustays",
+                    "current_column": "stay_id",
+                    "outer_column": "stay_id",
+                    "relationship": "N:1"
+                },
+                {
+                    "current_table": "outputevents",
+                    "outer_table": "admissions",
+                    "current_column": "hadm_id",
+                    "outer_column": "hadm_id",
+                    "relationship": "N:1"
+                }
+            ]
+        },
+        "microbiologyevents": {
+            "table_name": "microbiologyevents",
+            "columns": [
+                {
+                    "name": "row_id",
+                    "type": "INT",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": true
+                },
+                {
+                    "name": "subject_id",
+                    "type": "INT",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "hadm_id",
+                    "type": "INT",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "charttime",
+                    "type": "TIMESTAMP(0)",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "spec_type_desc",
+                    "type": "VARCHAR(100)",
+                    "notnull": 0,
+                    "default_value": null,
+                    "enum_values": [
+                        {
+                            "enum_value": "swab",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "serology/blood",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "urine",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "blood (ebv)",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "blood (cmv ab)",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "mini-bal",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "fluid,other",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "blood (toxo)",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "influenza a/b by dfa",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "mrsa screen",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "immunology (cmv)",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "staph aureus swab",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "bronchoalveolar lavage",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "blood culture",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "fluid received in blood culture bottles",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "rapid respiratory viral screen & culture",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "stool",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "bronchial washings",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "pleural fluid",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "sputum",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "tissue",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "abscess",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "peritoneal fluid",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "foreign body",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "csf;spinal fluid",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "blood culture ( myco/f lytic bottle)",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "catheter tip-iv",
+                            "translation": null
+                        }
+                    ],
+                    "display_enum_values_on_prompt": true,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "test_name",
+                    "type": "VARCHAR(100)",
+                    "notnull": 0,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "org_name",
+                    "type": "VARCHAR(100)",
+                    "notnull": 0,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                }
+            ],
+            "primary_keys": [
+                "row_id"
+            ],
+            "foreign_keys": [
+                {
+                    "current_table": "microbiologyevents",
+                    "outer_table": "admissions",
+                    "current_column": "hadm_id",
+                    "outer_column": "hadm_id",
+                    "relationship": "N:1"
+                }
+            ]
+        },
+        "icustays": {
+            "table_name": "icustays",
+            "columns": [
+                {
+                    "name": "row_id",
+                    "type": "INT",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": true
+                },
+                {
+                    "name": "subject_id",
+                    "type": "INT",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "hadm_id",
+                    "type": "INT",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "stay_id",
+                    "type": "INT",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "first_careunit",
+                    "type": "VARCHAR(20)",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "last_careunit",
+                    "type": "VARCHAR(20)",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "intime",
+                    "type": "TIMESTAMP(0)",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "outtime",
+                    "type": "TIMESTAMP(0)",
+                    "notnull": 0,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                }
+            ],
+            "primary_keys": [
+                "row_id"
+            ],
+            "foreign_keys": [
+                {
+                    "current_table": "icustays",
+                    "outer_table": "admissions",
+                    "current_column": "hadm_id",
+                    "outer_column": "hadm_id",
+                    "relationship": "N:1"
+                }
+            ]
+        },
+        "transfers": {
+            "table_name": "transfers",
+            "columns": [
+                {
+                    "name": "row_id",
+                    "type": "INT",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": true
+                },
+                {
+                    "name": "subject_id",
+                    "type": "INT",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "hadm_id",
+                    "type": "INT",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "transfer_id",
+                    "type": "INT",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "eventtype",
+                    "type": "VARCHAR(20)",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [
+                        {
+                            "enum_value": "discharge",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "transfer",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "admit",
+                            "translation": null
+                        },
+                        {
+                            "enum_value": "ed",
+                            "translation": null
+                        }
+                    ],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "careunit",
+                    "type": "VARCHAR(20)",
+                    "notnull": 0,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "intime",
+                    "type": "TIMESTAMP(0)",
+                    "notnull": 1,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                },
+                {
+                    "name": "outtime",
+                    "type": "TIMESTAMP(0)",
+                    "notnull": 0,
+                    "default_value": null,
+                    "enum_values": [],
+                    "display_enum_values_on_prompt": false,
+                    "is_primary_key": false
+                }
+            ],
+            "primary_keys": [
+                "row_id"
+            ],
+            "foreign_keys": [
+                {
+                    "current_table": "transfers",
+                    "outer_table": "admissions",
+                    "current_column": "hadm_id",
+                    "outer_column": "hadm_id",
+                    "relationship": "N:1"
+                }
+            ]
+        }
+    }
+}

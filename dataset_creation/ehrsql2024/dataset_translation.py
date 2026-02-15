@@ -2,6 +2,7 @@ import numpy as np
 import json
 import sqlglot
 import re
+import time
 
 from datetime import datetime as dt
 
@@ -9,7 +10,7 @@ from sqlglot.optimizer.simplify import catch
 
 from dataset_creation.ehrsql2024.util import (
     json_load, json_list_write, get_progress_bar, file_remove,
-    match_and_replace, MimicIvConnectionManager, get_capture_groups_matches
+    match_and_replace, MimicIvConnectionManager, get_capture_groups_matches, dictify
 )
 from dataset_creation.ehrsql2024.constants import (
     ehrsql2024_paths_tuples, tsql_filepath, tsql_ans_eq_filepath,
@@ -17,133 +18,31 @@ from dataset_creation.ehrsql2024.constants import (
 )
 
 # =========================================================
-#               Adding SQLite answers:
-# =========================================================
-def dataset_add_sqlite_answers(in_filepath, out_filepath=None, sqlite_attr_name='sqlite'):
-    import sqlite3
-    ehrsql2024_sqlite_db_path = r"C:\Users\Stas\Downloads\mimic_iv.sqlite"  # TODO: get from user args
-    print('\n')
-
-    out_filepath = in_filepath if out_filepath is None else out_filepath
-    sqlite_ans_attribute_name = f'{sqlite_attr_name}_ans'
-
-    if '_ok.json' in out_filepath:
-        ans_err_filepath = out_filepath.replace('_ok.json', '_err.json')
-        ans_empty_filepath = out_filepath.replace('_ok.json', '_empty.json')
-    else:
-        ans_err_filepath = out_filepath.replace('.json', '_err.json')
-        ans_empty_filepath = out_filepath.replace('.json', '_empty.json')
-
-    ok = []
-    err = []
-    empty = []
-    with sqlite3.connect(ehrsql2024_sqlite_db_path) as conn:
-        for tsql_data in get_progress_bar(json_load(in_filepath), f"Adding SQLite answers [dataset='{in_filepath}']"):
-            if sqlite_attr_name in tsql_data:
-                sqlite_post_processed = sqlite_post_process(tsql_data[sqlite_attr_name])
-                conn.row_factory = sqlite3.Row
-                cur = conn.cursor()
-                try:
-                    cur.execute(sqlite_post_processed)
-                    sqlite_ans = [[str(c) if c is not None else 'null' for c in list(row)]
-                                  for row in cur.fetchall()]
-                    tsql_data[sqlite_ans_attribute_name] = sqlite_ans
-                    if len(sqlite_ans) == 0 or sqlite_ans[0][0] == 'null':
-                        empty.append(tsql_data)
-                    else:
-                        ok.append(tsql_data)
-                except Exception as e:
-                    tsql_data[sqlite_ans_attribute_name] = str(e)
-                    err.append(tsql_data)
-
-    print(f"\n{len(ok)} successfully added non-empty SQLite answers")
-    json_list_write(ok, out_filepath)
-
-    print(f"\n{len(err)} failed attempts to add SQLite answer")
-    json_list_write(err, ans_err_filepath)
-
-    print(f"\n{len(empty)} empty SQLite answers")
-    json_list_write(empty, ans_empty_filepath)
-
-def sqlite_post_process(query):
-    """
-    According to https://github.com/glee4810/ehrsql-2024/blob/master/scoring_program/postprocessing.py
-    """
-
-    CURRENT_DATE = "2100-12-31"
-    CURRENT_TIME = "23:59:00"
-    NOW = f"{CURRENT_DATE} {CURRENT_TIME}"
-    PRECOMPUTED_DICT = {
-        'temperature': (35.5, 38.1),
-        'sao2': (95.0, 100.0),
-        'heart rate': (60.0, 100.0),
-        'respiration': (12.0, 18.0),
-        'systolic bp': (90.0, 120.0),
-        'diastolic bp': (60.0, 90.0),
-        'mean bp': (60.0, 110.0)
-    }
-    TIME_PATTERN = r"(DATE_SUB|DATE_ADD)\((\w+\(\)|'[^']+')[, ]+ INTERVAL (\d+) (MONTH|YEAR|DAY)\)"
-
-    def __convert_date_function(match):
-        function = match.group(1)
-        date = match.group(2)
-        number = match.group(3)
-        unit = match.group(4).lower()
-
-        # Use singular form when number is 1
-        if number == '1':
-            unit = unit.rstrip('s')
-        else:
-            unit += 's' if not unit.endswith('s') else ''
-
-        # Determine the sign based on the function (DATE_SUB or DATE_ADD)
-        sign = '-' if function == 'DATE_SUB' else '+'
-
-        return f"datetime({date}, '{sign}{number} {unit}')"
-
-    query = re.sub('[ ]+', ' ', query.replace('\n', ' ')).strip()
-    query = query.replace('> =', '>=').replace('< =', '<=').replace('! =', '!=')
-
-    query = query.replace(  # due to inconsistency between versions of MIMIC-IV:
-        'totalamount',  # inputevents.
-        "amount")      # inputevents.
-
-    # Convert MySQL to SQLite functions
-    query = re.sub(TIME_PATTERN, __convert_date_function, query)
-
-    if "current_time" in query:  # strftime('%J',current_time) => strftime('%J','2100-12-31 23:59:00')
-        query = query.replace("current_time", f"'{NOW}'")
-    if "current_date" in query:  # strftime('%J',current_date) => strftime('%J','2100-12-31')
-        query = query.replace("current_date", f"'{CURRENT_DATE}'")
-    if "'now'" in query:  # 'now' => '2100-12-31 23:59:00'
-        query = query.replace("'now'", f"'{NOW}'")
-    if "NOW()" in query:  # NOW() => '2100-12-31 23:59:00'
-        query = query.replace("NOW()", f"'{NOW}'")
-    if "CURDATE()" in query:  # CURDATE() => '2100-12-31'
-        query = query.replace("CURDATE()", f"'{CURRENT_DATE}'")
-    if "CURTIME()" in query:  # CURTIME() => '23:59:00'
-        query = query.replace("CURTIME()", f"'{CURRENT_TIME}'")
-
-    if re.search('[ \n]+([a-zA-Z0-9_]+_lower)', query) and re.search('[ \n]+([a-zA-Z0-9_]+_upper)', query):
-        vital_lower_expr = re.findall('[ \n]+([a-zA-Z0-9_]+_lower)', query)[0]
-        vital_upper_expr = re.findall('[ \n]+([a-zA-Z0-9_]+_upper)', query)[0]
-        vital_name_list = list(
-            set(re.findall('([a-zA-Z0-9_]+)_lower', vital_lower_expr) +
-                re.findall('([a-zA-Z0-9_]+)_upper', vital_upper_expr)))
-        if len(vital_name_list) == 1:
-            processed_vital_name = vital_name_list[0].replace('_', ' ')
-            if processed_vital_name in PRECOMPUTED_DICT:
-                vital_range = PRECOMPUTED_DICT[processed_vital_name]
-                query = query.replace(vital_lower_expr, f"{vital_range[0]}").replace(vital_upper_expr, f"{vital_range[1]}")
-
-    query = query.replace("%y", "%Y").replace('%j', '%J')
-
-    return query
-
-
-# =========================================================
 #               Translation validation:
 # =========================================================
+
+# ---- Fixing execution errors: ----
+# TODO: Maybe use in future
+
+def fix_tsql_execution_errors(tsql_filepath, tsql_attr_name, ans_err_filepath):
+    print('\n')
+    tsql_data = json_load(tsql_filepath)
+    tsql_data_dict = dictify(tsql_data)
+    ans_err_data = json_load(ans_err_filepath)
+    ans_attr_name = f'{tsql_attr_name}_ans'
+
+    for ans_err in get_progress_bar(ans_err_data, f"Fixing T-SQL execution errors [{tsql_filepath}]"):
+        if m := re.search(r"Column ['\"](\w+\.)?(\w+)['\"] is invalid in the (select list|ORDER BY clause)", ans_err[ans_attr_name]):
+            col = m.group(2)
+            tsql_line = re.sub(r'\s+', ' ', ans_err[tsql_attr_name].replace('\n', ' ')).strip()
+
+            tsql_line = match_and_replace(tsql_line, [(
+                rf"(?<!GROUP BY {col} )ORDER BY (?:(?!ORDER BY).)*{col}(?:(?!ORDER BY).)*(ASC|DESC)",
+                lambda _m: f'GROUP BY {col} {_m.group(0)}'
+            )])
+            tsql_data_dict[ans_err['id']][tsql_attr_name] = tsql_line
+
+    json_list_write(tsql_data, tsql_filepath)
 
 # ---- Comparing results: ----
 
@@ -257,64 +156,8 @@ def is_num(string):
     except ValueError:
         return False
 
-    def compare_full_dates(ans, expected):
-        ans = dt.fromisoformat(ans).strftime('%Y-%m-%d %H:%M:%S')
-        expected = dt.fromisoformat(expected).strftime('%Y-%m-%d %H:%M:%S')
-        return ans == expected
 
-    # Check if close numbers:
-    if is_num(new_cell) and is_num(expected_cell):
-        return compare_nums(new_cell, expected_cell)
-
-    # Check if same dates, omitting microseconds:
-    # if is_full_date(ans_tsql_row) and is_full_date(ans_expected_row):
-    #     if len(ans_tsql_row) != len(ans_expected_row):
-    #         return compare_full_dates(ans_tsql_row, ans_expected_row)
-
-    # ... else, check if just same strings:
-    return new_cell == expected_cell
-
-
-# ---- Adding DB answers: ----
-
-def dataset_add_tsql_answers():
-    print('\n')
-    ok = []
-    err = []
-
-    tsqls_data = json_load(tsql_filepath)
-    with MimicIvConnectionManager() as conn:
-        # Make sure correct settings:
-        conn.exec("SET SHOWPLAN_XML OFF")
-        conn.exec("ALTER DATABASE SCOPED CONFIGURATION SET TSQL_SCALAR_UDF_INLINING = ON")
-        conn.exec("ALTER DATABASE SCOPED CONFIGURATION SET MAXDOP = 0")
-
-        for tsql_data in get_progress_bar(tsqls_data, f'Adding T-SQL answers'):
-            tsql_for_translation_validation = tsql_modify_for_translation_validation(tsql_data['tsql'])
-            tsql_data['tsql_for_translation_validation'] = tsql_for_translation_validation
-            try:
-                tsql_data['tsql_for_translation_validation_ans'] = conn.exec_fetch(tsql_for_translation_validation)
-            except Exception as e:
-                tsql_data['tsql_for_translation_validation_ans'] = str(e)
-                err.append(tsql_data)
-                continue
-
-            tsql_final = tsql_modify_for_validation(tsql_data['tsql'])
-            tsql_data['tsql_final'] = tsql_final
-            try:
-                tsql_data['tsql_final_ans'] = conn.exec_fetch(tsql_final)
-                ok.append(tsql_data)
-            except Exception as e:
-                tsql_data['tsql_final_ans'] = str(e)
-                err.append(tsql_data)
-
-    print(f"\n{len(ok)} successfully added T-SQL answers")
-    json_list_write(ok, tsql_ans_ok_filepath)
-
-    print(f"\n{len(err)} failed attempts to add T-SQL answer")
-    json_list_write(err, tsql_ans_err_filepath)
-
-    # file_remove(tsql_filepath)
+# ---- Adding T-SQL answers: ----
 
 def tsql_modify_for_translation_validation(tsql: str) -> str:
     """
@@ -331,15 +174,191 @@ def tsql_modify_for_validation(tsql: str) -> str:
     """
     According to https://github.com/glee4810/ehrsql-2024/blob/master/scoring_program/postprocessing.py
     """
-    tsql_pp = tsql_post_process(tsql)
-    return match_and_replace(tsql_pp, [
+    tsql = sql_post_process(tsql)
+
+    return match_and_replace(tsql, [
         (r"GETDATE\(\)", "CAST('2100-12-31 23:59:00' AS DATETIME)"),
     ], [re.IGNORECASE])
 
-def tsql_post_process(tsql: str) -> str:
+def dataset_add_tsql_answers(in_filepath, out_ans_ok_filepath=None, tsql_attr_name='tsql', is_for_translation=True):
+    print('\n')
+    out_ans_ok_filepath = tsql_ans_ok_filepath if is_for_translation else out_ans_ok_filepath
+    ans_attr_name = 'tsql_final_ans' if is_for_translation else f'{tsql_attr_name}_ans'
+
+    if is_for_translation:
+        ans_err_filepath = tsql_ans_err_filepath
+    else:
+        if '_ok.json' in out_ans_ok_filepath:
+            ans_err_filepath = out_ans_ok_filepath.replace('_ok.json','_err.json')
+        else:
+            ans_err_filepath = out_ans_ok_filepath.replace('.json', '_err.json')
+
+    ok = []
+    err = []
+
+    tsqls_data = json_load(in_filepath)
+    with MimicIvConnectionManager() as conn:
+        # Make sure correct settings:
+        conn.exec("SET SHOWPLAN_XML OFF")
+        conn.exec("ALTER DATABASE SCOPED CONFIGURATION SET TSQL_SCALAR_UDF_INLINING = ON")
+        conn.exec("ALTER DATABASE SCOPED CONFIGURATION SET MAXDOP = 0")
+
+        for tsql_data in get_progress_bar(tsqls_data, f'Adding T-SQL answers'):
+            if is_for_translation:
+                tsql_for_translation_validation = tsql_modify_for_translation_validation(tsql_data[tsql_attr_name])
+                tsql_data['tsql_for_translation_validation'] = tsql_for_translation_validation
+                try:
+                    ans = conn.exec_fetch(tsql_for_translation_validation)
+                    tsql_data['tsql_for_translation_validation_ans'] = ans
+                except Exception as e:
+                    tsql_data['tsql_for_translation_validation_ans'] = str(e)
+                    err.append(tsql_data)
+                    continue
+
+            if tsql_attr_name in tsql_data:
+                tsql_final = tsql_modify_for_validation(tsql_data[tsql_attr_name])
+                if is_for_translation:
+                    tsql_data['tsql_final'] = tsql_final
+                try:
+                    tsql_data[ans_attr_name] = conn.exec_fetch(tsql_final)
+                    ok.append(tsql_data)
+                except Exception as e:
+                    tsql_data[ans_attr_name] = str(e)
+                    err.append(tsql_data)
+
+    if is_for_translation:
+        print(f"\n{len(ok)} successfully added T-SQL answers")
+    json_list_write(ok, out_ans_ok_filepath)
+
+    print(f"\n{len(err)} failed attempts to add T-SQL answer")
+    json_list_write(err, ans_err_filepath)
+
+    # file_remove(in_filepath)
+
+
+# ---- Adding SQLite answers: ----
+
+def dataset_add_sqlite_answers(in_filepath, out_ans_ok_filepath=None, sqlite_attr_name='sqlite'):
+    import sqlite3
+    ehrsql2024_sqlite_db_path = r"C:\Users\Stas\Downloads\mimic_iv.sqlite"  # TODO: get from user args
+    print('\n')
+
+    out_ans_ok_filepath = in_filepath if out_ans_ok_filepath is None else out_ans_ok_filepath
+    ans_attr_name = f'{sqlite_attr_name}_ans'
+
+    if '_ok.json' in out_ans_ok_filepath:
+        ans_err_filepath = out_ans_ok_filepath.replace('_ok.json', '_err.json')
+        ans_empty_filepath = out_ans_ok_filepath.replace('_ok.json', '_empty.json')
+    else:
+        ans_err_filepath = out_ans_ok_filepath.replace('.json', '_err.json')
+        ans_empty_filepath = out_ans_ok_filepath.replace('.json', '_empty.json')
+
+    ok = []
+    err = []
+    empty = []
+
+    LIMIT_SECONDS = 10.0
+
+    with sqlite3.connect(ehrsql2024_sqlite_db_path) as conn:
+        for sqlite_data in get_progress_bar(json_load(in_filepath), f"Adding SQLite answers [dataset='{in_filepath}']"):
+            if sqlite_attr_name in sqlite_data:
+                sqlite_post_processed = sqlite_modify_for_validation(sqlite_data[sqlite_attr_name])
+                conn.row_factory = sqlite3.Row
+                conn.set_progress_handler(create_sqlite_timeout_handler(LIMIT_SECONDS), 1000)
+                cur = conn.cursor()
+                try:
+                    cur.execute(sqlite_post_processed)
+                    sqlite_ans = [[str(c) if c is not None else 'null' for c in list(row)]
+                                  for row in cur.fetchall()]
+                    sqlite_data[ans_attr_name] = sqlite_ans
+                    if len(sqlite_ans) == 0 or sqlite_ans[0][0] == 'null':
+                        empty.append(sqlite_data)
+                    else:
+                        ok.append(sqlite_data)
+                except Exception as e:
+                    sqlite_data[ans_attr_name] = str(e)
+                    err.append(sqlite_data)
+
+    print(f"\n{len(ok)} successfully added non-empty SQLite answers")
+    json_list_write(ok, out_ans_ok_filepath)
+
+    print(f"\n{len(err)} failed attempts to add SQLite answer")
+    json_list_write(err, ans_err_filepath)
+
+    print(f"\n{len(empty)} empty SQLite answers")
+    json_list_write(empty, ans_empty_filepath)
+
+def create_sqlite_timeout_handler(limit_seconds):
+    start_time = time.time()
+
+    def handler():
+        elapsed = time.time() - start_time
+        if elapsed > limit_seconds:
+            return 1  # Returning non-zero aborts the query
+        return 0  # Returning zero allows it to continue
+
+    return handler
+
+def sqlite_modify_for_validation(query):
     """
     According to https://github.com/glee4810/ehrsql-2024/blob/master/scoring_program/postprocessing.py
     """
+
+    query = sql_post_process(query)
+
+    # Convert MySQL to SQLite functions
+    TIME_PATTERN = r"(DATE_SUB|DATE_ADD)\((\w+\(\)|'[^']+')[, ]+ INTERVAL (\d+) (MONTH|YEAR|DAY)\)"
+
+    def __convert_date_function(match):
+        function = match.group(1)
+        date = match.group(2)
+        number = match.group(3)
+        unit = match.group(4).lower()
+
+        # Use singular form when number is 1
+        if number == '1':
+            unit = unit.rstrip('s')
+        else:
+            unit += 's' if not unit.endswith('s') else ''
+
+        # Determine the sign based on the function (DATE_SUB or DATE_ADD)
+        sign = '-' if function == 'DATE_SUB' else '+'
+
+        return f"datetime({date}, '{sign}{number} {unit}')"
+
+    query = re.sub(TIME_PATTERN, __convert_date_function, query)
+
+    # Replace current date/time SQLite functions (for validation consistency):
+    CURRENT_DATE = "2100-12-31"
+    CURRENT_TIME = "23:59:00"
+    NOW = f"{CURRENT_DATE} {CURRENT_TIME}"
+
+    if "current_time" in query:  # strftime('%J',current_time) => strftime('%J','2100-12-31 23:59:00')
+        query = query.replace("current_time", f"'{NOW}'")
+    if "current_date" in query:  # strftime('%J',current_date) => strftime('%J','2100-12-31')
+        query = query.replace("current_date", f"'{CURRENT_DATE}'")
+    if "'now'" in query:  # 'now' => '2100-12-31 23:59:00'
+        query = query.replace("'now'", f"'{NOW}'")
+    if "NOW()" in query:  # NOW() => '2100-12-31 23:59:00'
+        query = query.replace("NOW()", f"'{NOW}'")
+    if "CURDATE()" in query:  # CURDATE() => '2100-12-31'
+        query = query.replace("CURDATE()", f"'{CURRENT_DATE}'")
+    if "CURTIME()" in query:  # CURTIME() => '23:59:00'
+        query = query.replace("CURTIME()", f"'{CURRENT_TIME}'")
+
+    return query
+
+def sql_post_process(query):
+    """
+        According to https://github.com/glee4810/ehrsql-2024/blob/master/scoring_program/postprocessing.py
+    """
+
+    # Misc:
+    query = re.sub('[ ]+', ' ', query.replace('\n', ' ')).strip()
+    query = query.replace('> =', '>=').replace('< =', '<=').replace('! =', '!=')
+    query = query.replace("%y", "%Y").replace('%j', '%J')
+
+    # Replace vital sign ranges:
     PRECOMPUTED_DICT = {
         'temperature': (35.5, 38.1),
         'sao2': (95.0, 100.0),
@@ -349,18 +368,17 @@ def tsql_post_process(tsql: str) -> str:
         'diastolic bp': (60.0, 90.0),
         'mean bp': (60.0, 110.0)
     }
-    if re.search('[ \n]+([a-zA-Z0-9_]+_lower)', tsql) and re.search('[ \n]+([a-zA-Z0-9_]+_upper)', tsql):
-        vital_lower_expr = re.findall('[ \n]+([a-zA-Z0-9_]+_lower)', tsql)[0]
-        vital_upper_expr = re.findall('[ \n]+([a-zA-Z0-9_]+_upper)', tsql)[0]
+    if re.search('[ \n]+([a-zA-Z0-9_]+_lower)', query) and re.search('[ \n]+([a-zA-Z0-9_]+_upper)', query):
+        vital_lower_expr = re.findall('[ \n]+([a-zA-Z0-9_]+_lower)', query)[0]
+        vital_upper_expr = re.findall('[ \n]+([a-zA-Z0-9_]+_upper)', query)[0]
         vital_name_list = list(
             set(re.findall('([a-zA-Z0-9_]+)_lower', vital_lower_expr) +
-                re.findall('([a-zA-Z0-9_]+)_upper', vital_upper_expr))
-        )
+                re.findall('([a-zA-Z0-9_]+)_upper', vital_upper_expr)))
         if len(vital_name_list) == 1:
             processed_vital_name = vital_name_list[0].replace('_', ' ')
             if processed_vital_name in PRECOMPUTED_DICT:
                 vital_range = PRECOMPUTED_DICT[processed_vital_name]
-                tsql = tsql.replace(vital_lower_expr, f"{vital_range[0]}").replace(vital_upper_expr, f"{vital_range[1]}")
+                query = query.replace(vital_lower_expr, f"{vital_range[0]}").replace(vital_upper_expr,f"{vital_range[1]}")
 
     # due to inconsistency between versions of MIMIC-IV (TODO: remove after fixing in dataBASE):
     query = query.replace(

@@ -33,7 +33,7 @@ from dataset_creation.ehrsql2024.constants import (
 def main():
     dataset_translate_to_tsql()
     dataset_add_sqlite_answers(tsql_filepath)
-    dataset_add_tsql_answers()
+    dataset_add_tsql_answers(tsql_filepath)
     dataset_validate_translated_tsql_answers()
 
     dataset_add_eps()

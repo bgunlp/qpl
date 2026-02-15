@@ -10,7 +10,7 @@ from dataset_creation.ehrsql2024.constants import (
     tsql_qpl_raw_ok_filepath, tsql_qpl_pp_ok_filepath, tsql_qpl_pp_err_filepath, tsql_ep_ok_filepath, tsql_filepath,
     tsql_qpl_raw_err_filepath, ehrsql2024_path, tsql_ans_eq_filepath, tsql_ep_err_filepath
 )
-from dataset_creation.ehrsql2024.dataset_translation import tsql_post_process
+from dataset_creation.ehrsql2024.dataset_translation import sql_post_process
 
 
 # =========================================================

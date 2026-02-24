@@ -71,12 +71,81 @@ def main():
     ]
     predicted_sql_filenames = [f for triplet in predicted_sql_triplets_filenames for f in triplet]
 
-    validate_predicted_sql_answers(predicted_sql_filenames, filter_method=None)  # !
+    validated_dataset_calculate_sql_features_distribution(predicted_sql_filenames)
+
+    # validate_predicted_sql_answers(predicted_sql_filenames, filter_method=None)  # !
     # validate_predicted_sql_answers(predicted_sql_filenames, '11_validated_sql_answers_summary.txt', filter_leave_temporal_gold_tsql)  # !
     # validate_predicted_sql_answers(predicted_sql_filenames, '12_validated_sql_answers_summary.txt', filter_leave_non_temporal_gold_tsql)  # !
 
     # unify_all_predicted_sqls_with_fixed_sqls(predicted_sql_triplets_filenames)
 # =====================================================================================================================
+
+
+def validated_dataset_calculate_sql_features_distribution(predicted_sql_filenames, out_filepath='validated_sql_answers_features_split.json'):
+    dict_to_print = {}
+
+    for pred_filename in predicted_sql_filenames:
+        dict_per_filename = {}
+
+        if pred_filename.endswith('_ans_err_fixed.json'):
+            subfolder_name = 'ans_err_fixed'
+        elif pred_filename.endswith('_ans_empty_fixed.json'):
+            subfolder_name = 'ans_empty_fixed'
+        elif pred_filename.endswith('_unified.json'):
+            subfolder_name = 'preds_fixed_unified'
+        else:
+            subfolder_name = 'preds'
+
+        validated_preds_folder = f'validation_out/{subfolder_name}'
+        pred_basename = pred_filename.replace('.json', '')
+
+        total_dict = {
+            "has_join": 0.0,
+            "has_group_by": 0.0,
+            "has_order_by": 0.0,
+            "has_aggregation": 0.0,
+            "has_nested": 0.0,
+            "has_temporal": 0.0,
+            "has_code_filtering": 0.0,
+        }
+        total_length = 0
+        for suffix in ['_ans_ok_eq.json', '_ans_ok_uneq.json', '_ans_err.json', '_ans_empty.json']:
+            subset_dict = {
+                "has_join": 0.0,
+                "has_group_by": 0.0,
+                "has_order_by": 0.0,
+                "has_aggregation": 0.0,
+                "has_nested": 0.0,
+                "has_temporal": 0.0,
+                "has_code_filtering": 0.0,
+            }
+            valid_pred_filepath = f'{validated_preds_folder}/{pred_basename}{suffix}'
+            valid_pred_data = json_load(valid_pred_filepath)
+            total_length += len(valid_pred_data)
+
+            for sql_data in get_progress_bar(valid_pred_data, f"Extracting SQL features from [{valid_pred_filepath}]"):
+                features = extract_sql_features_tsql(sql_data['tsql'])
+                for k in features:
+                    subset_dict[k] += features[k]
+                    total_dict[k] += features[k]
+
+            for _k in subset_dict:
+                subset_dict[_k] = round(subset_dict[_k] / len(valid_pred_data) * 100, 2)
+            dict_per_filename[suffix] = subset_dict
+
+        for _k in total_dict:
+            total_dict[_k] = round(total_dict[_k] / total_length * 100, 2)
+        dict_per_filename['total'] = total_dict
+        dict_to_print[pred_basename] = dict_per_filename
+        print('\n')
+
+    json_list_write(dict_to_print, out_filepath)
+
+
+
+
+
+
 
 def filter_leave_temporal_gold_tsql(sql_data):
     features = extract_sql_features_tsql(sql_data['tsql'])
@@ -235,8 +304,6 @@ def validate_predicted_sql_answers(predicted_sql_filenames, out_filename='valida
     s = f.getvalue()
     file_write(_clean_stdout(s), out_filename)
 
-
-
 def _validate_predicted_sql_answers(predicted_sql_filenames, filter_method=None):
     for pred_filename in predicted_sql_filenames:
         if '_sqlite_' in pred_filename:
@@ -273,6 +340,8 @@ def _validate_predicted_sql_answers(predicted_sql_filenames, filter_method=None)
         dataset_validate_predicted_sql_answers(pred_ans_ok_filepath, pred_ans_attr_name, ex_ans_attr_name, pred_pp_filepath, ex_ans_attr_name_alt)  # ! pred_filepath -> pred_pp_filepath
         file_remove(pred_pp_filepath)  # ~
         print('\n\n')
+
+
 
 
 # ---- Unifying predicted SQL with fixed SQL: ----

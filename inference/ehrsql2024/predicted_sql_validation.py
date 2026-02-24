@@ -6,7 +6,7 @@ from dataset_creation.ehrsql2024.dataset_translation import (
     dataset_add_sqlite_answers, is_equal_ans_cells, dataset_add_tsql_answers
 )
 from dataset_creation.ehrsql2024.util import (
-    file_remove, json_load, get_progress_bar, json_list_write, match_and_replace, dictify
+    file_remove, json_load, get_progress_bar, json_list_write, match_and_replace, dictify, file_write
 )
 
 
@@ -71,15 +71,122 @@ def main():
     ]
     predicted_sql_filenames = [f for triplet in predicted_sql_triplets_filenames for f in triplet]
 
-    validate_predicted_sql_answers(predicted_sql_filenames)
+    validate_predicted_sql_answers(predicted_sql_filenames, filter_method=None)  # !
+    # validate_predicted_sql_answers(predicted_sql_filenames, '11_validated_sql_answers_summary.txt', filter_leave_temporal_gold_tsql)  # !
+    # validate_predicted_sql_answers(predicted_sql_filenames, '12_validated_sql_answers_summary.txt', filter_leave_non_temporal_gold_tsql)  # !
+
     # unify_all_predicted_sqls_with_fixed_sqls(predicted_sql_triplets_filenames)
-
-
 # =====================================================================================================================
 
+def filter_leave_temporal_gold_tsql(sql_data):
+    features = extract_sql_features_tsql(sql_data['tsql'])
+    return features['has_temporal']
+
+def filter_leave_non_temporal_gold_tsql(sql_data):
+    features = extract_sql_features_tsql(sql_data['tsql'])
+    return not features['has_temporal']
+
+def extract_sql_features_tsql(sql_string: str,) -> dict[str, bool]:
+    """
+    Extract boolean features from a SQL query string to analyze its complexity.
+    This function analyzes a SQL query string and identifies the presence of various
+    SQL features that indicate query complexity, adapted for T-SQL (MS SQL Server) syntax.
+
+    Args:
+        sql_string (str): The SQL query string to analyze.
+
+    Returns:
+        dict[str, bool]: A dictionary containing boolean flags for detected SQL features:
+            - has_join: True if the query contains any JOIN operation
+            - has_group_by: True if the query contains GROUP BY clause
+            - has_order_by: True if the query contains ORDER BY clause
+            - has_aggregation: True if the query contains aggregation functions
+              (COUNT, SUM, AVG, MAX, MIN)
+            - has_nested: True if the query contains nested SELECT statements
+            - has_temporal: True if the query contains T-SQL temporal functions
+              (GETDATE, DATEADD, DATEDIFF, DATEPART, etc.)
+            - has_code_filtering: True if the query contains a column compared to a string literal
+
+    Note:
+        If the input is not a string, all features will be marked as False.
+        The function performs case-insensitive matching by converting the SQL
+        string to uppercase before analysis.
+
+    Example:
+        >> extract_sql_features_sqlite("SELECT COUNT(*) FROM Users u JOIN Orders o ON u.id = o.UserId WHERE o.OrderDate > DATEADD(day, -1, GETDATE())")
+        {'has_join': True, 'has_group_by': False, 'has_order_by': False,
+         'has_aggregation': True, 'has_nested': False, 'has_temporal': True, 'has_code_filtering': False}
+    """
+
+    if not isinstance(sql_string, str):
+        print("not a string:", sql_string)
+        return {
+            "has_join": False,
+            "has_group_by": False,
+            "has_order_by": False,
+            "has_aggregation": False,
+            "has_nested": False,
+            "has_temporal": False,
+            "has_code_filtering": False,
+        }
+
+    sql = sql_string.upper()
+
+    # Detects SQL conditions where a column is compared to a string literal.
+    # Regex Breakdown:
+    # \b(?:\w+\.)?     : Matches an optional table/alias prefix and a dot (e.g., "users.")
+    # \w+\b            : Matches the column name (e.g., "status")
+    # \s* : Matches optional whitespace
+    # (?:=|!=|<>|LIKE) : Matches the comparison operator
+    # \s* : Matches optional whitespace
+    # (['\"])          : Group 1 - Matches the opening quote (single or double)
+    # (.*?)            : Group 2 - Matches the string content inside the quotes
+    # \1               : Backreference to Group 1 (ensures the closing quote matches the opening quote)
+    # Examples caught: status = 'active', users.role != "admin", t1.email LIKE '%@gmail.com'
+    has_code_filtering_pattern = r"\b(?:\w+\.)?\w+\b\s*(?:=|!=|<>|LIKE)\s*(['\"])(.*?)\1"
+
+    # List of common T-SQL temporal functions
+    tsql_temporal_funcs = [
+        "GETDATE",  # Current timestamp
+        "SYSDATETIME",  # High precision current timestamp
+        "DATEADD",  # Add interval to date
+        "DATEDIFF",  # Difference between dates
+        "DATEPART",  # Extract part of date
+        "DATENAME",  # Extract name of date part
+        "YEAR(",  # Standard extraction (with parenthesis to avoid matching column names like 'YEARLY')
+        "MONTH(",
+        "DAY(",
+        "ISDATE",  # Check if valid date
+        "EOMONTH",  # End of month
+    ]
+    temporal_abstract_funcs = [
+        "dbo.DURING",
+        "dbo.MET_BY",
+        "dbo.TIME_INTERVAL_YMD",
+        "dbo.TIME_POINT_START_OF_YMD",
+        "dbo.TIME_POINT_YMDHMS",
+        "dbo.TIME_INTERVAL_REL",
+        "dbo.TIME_POINT",
+    ]
+    temporal_funcs = tsql_temporal_funcs  + temporal_abstract_funcs  # !
+    # temporal_funcs = temporal_abstract_funcs  # !
+
+    features = {
+        "has_join": "JOIN" in sql,
+        "has_group_by": "GROUP BY" in sql,
+        "has_order_by": "ORDER BY" in sql,
+        "has_aggregation": any(agg in sql for agg in ["COUNT(", "SUM(", "AVG(", "MAX(", "MIN("]),
+        # The \s* ensures we catch "(SELECT", "( SELECT", and "(  SELECT"
+        "has_nested": bool(re.search(r"\(\s*SELECT", sql)),
+        "has_temporal": any(term.upper() in sql for term in temporal_funcs),
+        "has_code_filtering": bool(re.search(has_code_filtering_pattern, sql)),
+    }
+
+    return features
 
 
-def validate_predicted_sql_answers(predicted_sql_filenames, out_filename='validated_sql_answers_summary.txt'): # , filter_method=None
+
+def validate_predicted_sql_answers(predicted_sql_filenames, out_filename='validated_sql_answers_summary.txt', filter_method=None):
     """
     Prints the cleaned stdout of `_validate_predicted_sql_answers` into a file
     """
@@ -122,7 +229,7 @@ def validate_predicted_sql_answers(predicted_sql_filenames, out_filename='valida
 
     # The code block whose output we want to capture:
     with redirect_stdout(f):
-        _validate_predicted_sql_answers(predicted_sql_filenames) # , filter_method
+        _validate_predicted_sql_answers(predicted_sql_filenames, filter_method)
 
     # After the 'with' block, standard output is restored to normal
     s = f.getvalue()
@@ -130,7 +237,7 @@ def validate_predicted_sql_answers(predicted_sql_filenames, out_filename='valida
 
 
 
-def _validate_predicted_sql_answers(predicted_sql_filenames):  # , filter_method=None
+def _validate_predicted_sql_answers(predicted_sql_filenames, filter_method=None):
     for pred_filename in predicted_sql_filenames:
         if '_sqlite_' in pred_filename:
             datatype = 'sqlite'
@@ -161,9 +268,10 @@ def _validate_predicted_sql_answers(predicted_sql_filenames):  # , filter_method
         pred_pp_filepath = f'validation_out/{subfolder_name}/' + pred_filename.replace('.json', '_pp.json')
         pred_ans_ok_filepath = f'validation_out/{subfolder_name}/' + pred_filename.replace('.json', '_ans_ok.json')
 
-        pp_method(pred_filepath, pred_pp_filepath, pred_attr_name)
+        pp_method(pred_filepath, pred_pp_filepath, pred_attr_name, filter_method)
         add_ans_method(pred_pp_filepath, pred_ans_ok_filepath, pred_attr_name)
-        dataset_validate_predicted_sql_answers(pred_ans_ok_filepath, pred_ans_attr_name, ex_ans_attr_name, pred_filepath, ex_ans_attr_name_alt)
+        dataset_validate_predicted_sql_answers(pred_ans_ok_filepath, pred_ans_attr_name, ex_ans_attr_name, pred_pp_filepath, ex_ans_attr_name_alt)  # ! pred_filepath -> pred_pp_filepath
+        file_remove(pred_pp_filepath)  # ~
         print('\n\n')
 
 
@@ -207,7 +315,7 @@ def _unify_predicted_sqls_with_fixed_sqls(preds_filepath, err_fixes_filepath, em
 
 # ---- Comparing answers: ----
 
-def dataset_validate_predicted_sql_answers(in_pred_ans_filepath, pred_ans_attr_name, ex_ans_attr_name, pred_filepath, ex_ans_attr_name_alt=None):
+def dataset_validate_predicted_sql_answers(in_pred_ans_filepath, pred_ans_attr_name, ex_ans_attr_name, pred_pp_filepath, ex_ans_attr_name_alt=None):
     print('\n')
     eq_filepath = in_pred_ans_filepath.replace('.json', '_eq.json')
     uneq_filepath = in_pred_ans_filepath.replace('.json', '_uneq.json')
@@ -250,7 +358,7 @@ def dataset_validate_predicted_sql_answers(in_pred_ans_filepath, pred_ans_attr_n
     json_list_write(uneq, uneq_filepath)
 
     pred_attr_name = pred_ans_attr_name.replace('_ans', '')
-    preds_non_null_exist_in_dataset = list(filter(lambda x: x['sqlite'] != 'null' and pred_attr_name in x, json_load(pred_filepath)))
+    preds_non_null_exist_in_dataset = list(filter(lambda x: x['sqlite'] != 'null' and pred_attr_name in x, json_load(pred_pp_filepath)))
     print(f'\nFinal accuracy score: {(len(eq) / len(preds_non_null_exist_in_dataset) * 100):.2f}')
 
     file_remove(in_pred_ans_filepath)
@@ -317,7 +425,7 @@ def is_cell_contained_in_row(cell_ex, row_pred, alt_check=False):
 
 def dataset_add_predicted_tsql_answers(in_pred_filepath, out_pred_ans_ok_filepath, tsql_attr_name):
     dataset_add_tsql_answers(in_pred_filepath, out_pred_ans_ok_filepath, tsql_attr_name, False)
-    file_remove(in_pred_filepath)
+    # file_remove(in_pred_filepath)
 
     ok = []
     empty = []
@@ -340,85 +448,103 @@ def dataset_add_predicted_tsql_answers(in_pred_filepath, out_pred_ans_ok_filepat
 
 def dataset_add_predicted_sqlite_answers(in_pred_filepath, out_pred_ans_ok_filepath, sqlite_attr_name):
     dataset_add_sqlite_answers(in_pred_filepath, out_pred_ans_ok_filepath, sqlite_attr_name)
-    file_remove(in_pred_filepath)
+    # file_remove(in_pred_filepath)
 
 
 # ---- Initial post-processing of predicted SQL: ----
 
-def post_process_predicted_sqlite(in_filepath, out_filepath, sqlite_attr_name):
+def post_process_predicted_sqlite(in_filepath, out_filepath, sqlite_attr_name, filter_method=None):
     sql_pred_data = json_load(in_filepath)
+
+    # tsql_pred_usr_func_filepath = in_filepath.replace('_notemp', '').replace('_sqlite_', '_tsql_with_user_func_')  # !!
+    # tsql_pred_usr_func_dct = dictify(json_load(tsql_pred_usr_func_filepath))                                     # !!
+
+    sql_pred_data_pp = []  # !
     for e in get_progress_bar(sql_pred_data, f"Post-processing predicted SQLites [{in_filepath}]"):
         if sqlite_attr_name in e:
-            e[sqlite_attr_name] = match_and_replace(e[sqlite_attr_name], [
-                # Lowercase all comparable string literals:
-                (r" = ('[^']+')", lambda m: f' = {m.group(1).lower()}'),
 
-                # Lowercase all string literals (without wildcards):
-                # (r"('[^']+')", lambda m: f'{m.group(1).lower()}'),  # if '%' not validation_in m.group(1) else m.group(1)
+            # if filter_method is None or (e['id'] in tsql_pred_usr_func_dct and filter_method(e['tsql'], tsql_pred_usr_func_dct[e['id']]['tsql_predicted'])):  # !!
+            if filter_method is None or filter_method(e):  # !
+                e[sqlite_attr_name] = match_and_replace(e[sqlite_attr_name], [
+                    # Lowercase all comparable string literals:
+                    (r" = ('[^']+')", lambda m: f' = {m.group(1).lower()}'),
 
-                # Convert boolean strings to integers:
-                (r"THEN 'yes'", "THEN 1"),
-                (r"THEN 'no'", "THEN 0"),
-                (r"ELSE 'yes'", "ELSE 1"),
-                (r"ELSE 'no'", "ELSE 0"),
-                (r"THEN 'greater'", "THEN 1"),
-                (r"THEN 'not greater'", "THEN 0"),
-                (r"ELSE 'greater'", "ELSE 1"),
-                (r"ELSE 'not greater'", "ELSE 0"),
-            ], flags=[re.RegexFlag.IGNORECASE])
+                    # Lowercase all string literals (without wildcards):
+                    # (r"('[^']+')", lambda m: f'{m.group(1).lower()}'),  # if '%' not validation_in m.group(1) else m.group(1)
 
-    json_list_write(sql_pred_data, out_filepath)
+                    # Convert boolean strings to integers:
+                    (r"THEN 'yes'", "THEN 1"),
+                    (r"THEN 'no'", "THEN 0"),
+                    (r"ELSE 'yes'", "ELSE 1"),
+                    (r"ELSE 'no'", "ELSE 0"),
+                    (r"THEN 'greater'", "THEN 1"),
+                    (r"THEN 'not greater'", "THEN 0"),
+                    (r"ELSE 'greater'", "ELSE 1"),
+                    (r"ELSE 'not greater'", "ELSE 0"),
+                ], flags=[re.RegexFlag.IGNORECASE])
 
-def post_process_predicted_tsql(in_filepath, out_filepath, tsql_attr_name):
+                sql_pred_data_pp.append(e)  # !
+
+    # json_list_write(sql_pred_data, out_filepath)   # !
+    json_list_write(sql_pred_data_pp, out_filepath)  # !
+
+def post_process_predicted_tsql(in_filepath, out_filepath, tsql_attr_name, filter_method=None):
     sql_pred_data = json_load(in_filepath)
+
+    # tsql_pred_usr_func_filepath = in_filepath.replace('_no_user_func_', '_with_user_func_')  # !!
+    # tsql_pred_usr_func_dct = dictify(json_load(tsql_pred_usr_func_filepath))                 # !!
+
+    sql_pred_data_pp = []  # !
     for e in get_progress_bar(sql_pred_data, f"Post-processing predicted T-SQLs [{in_filepath}]"):
         if tsql_attr_name in e:
-            tsql = e[tsql_attr_name]
+            # if filter_method is None or (e['id'] in tsql_pred_usr_func_dct and 'tsql_predicted' in tsql_pred_usr_func_dct[e['id']] and filter_method(e['tsql'], tsql_pred_usr_func_dct[e['id']]['tsql_predicted'])):  # !!
+            if filter_method is None or filter_method(e):  # !
+                tsql = e[tsql_attr_name]
 
-            # if e['id'] == '6df8c8add4bde78a73d76071':
-            #     ...
+                # Try fix non-TSQL code:
+                try:
+                    tsql = match_and_replace(tsql, [("DATEDIFF", "DATEDIFFF")])  # weird fix for weird sqlglot behavior [1]
+                    tsql_fixed = sqlglot.transpile(tsql, read="sqlite", write="tsql")[0]
+                    e[tsql_attr_name] = match_and_replace(tsql_fixed, [("DATEDIFFF", "DATEDIFF")])  # weird fix for weird sqlglot behavior [2]
+                except Exception as ex:
+                    ...
 
-            # Try fix non-TSQL code:
-            try:
-                tsql = match_and_replace(tsql, [("DATEDIFF", "DATEDIFFF")])  # weird fix for weird sqlglot behavior [1]
-                tsql_fixed = sqlglot.transpile(tsql, read="sqlite", write="tsql")[0]
-                e[tsql_attr_name] = match_and_replace(tsql_fixed, [("DATEDIFFF", "DATEDIFF")])  # weird fix for weird sqlglot behavior [2]
-            except Exception as ex:
-                ...
+                e[tsql_attr_name] = match_and_replace(e[tsql_attr_name], [
 
-            e[tsql_attr_name] = match_and_replace(e[tsql_attr_name], [
+                    # Add missing 'dbo.' prefixes:
+                    (r"([\s,]+)(DURING|MET_BY|TIME_POINT|TIME_INTERVAL_YMD|TIME_POINT_YMDHMS|TIME_POINT_START_OF_YMD|TIME_INTERVAL_REL)(\s*\()",
+                        lambda m: f'{m.group(1)}dbo.{m.group(2)}{m.group(3)}'
+                                if m.group(2)
+                                else m.group(0)
+                        ),
 
-                # Add missing 'dbo.' prefixes:
-                (r"([\s,]+)(DURING|MET_BY|TIME_POINT|TIME_INTERVAL_YMD|TIME_POINT_YMDHMS|TIME_POINT_START_OF_YMD|TIME_INTERVAL_REL)(\s*\()",
-                 lambda m: f'{m.group(1)}dbo.{m.group(2)}{m.group(3)}'
-                           if m.group(2)
-                           else m.group(0)
-                 ),
+                    # Remove wrong 'dbo.' prefixes:
+                    (r"dbo.DATEADD", "DATEADD"),
+                    (r"dbo.DATEDIFF", "DATEDIFF"),
+                    (r"dbo.GETDATE", "GETDATE"),
 
-                # Remove wrong 'dbo.' prefixes:
-                (r"dbo.DATEADD", "DATEADD"),
-                (r"dbo.DATEDIFF", "DATEDIFF"),
-                (r"dbo.GETDATE", "GETDATE"),
+                    # Lowercase all comparable string literals:
+                    (r" = ('[^']+')", lambda m: f' = {m.group(1).lower()}'),
 
-                # Lowercase all comparable string literals:
-                (r" = ('[^']+')", lambda m: f' = {m.group(1).lower()}'),
+                    # Convert boolean strings to integers:
+                    (r"THEN 'yes'", "THEN 1"),
+                    (r"THEN 'no'", "THEN 0"),
+                    (r"ELSE 'yes'", "ELSE 1"),
+                    (r"ELSE 'no'", "ELSE 0"),
+                    (r"THEN 'greater'", "THEN 1"),
+                    (r"THEN 'not greater'", "THEN 0"),
+                    (r"ELSE 'greater'", "ELSE 1"),
+                    (r"ELSE 'not greater'", "ELSE 0"),
 
-                # Convert boolean strings to integers:
-                (r"THEN 'yes'", "THEN 1"),
-                (r"THEN 'no'", "THEN 0"),
-                (r"ELSE 'yes'", "ELSE 1"),
-                (r"ELSE 'no'", "ELSE 0"),
-                (r"THEN 'greater'", "THEN 1"),
-                (r"THEN 'not greater'", "THEN 0"),
-                (r"ELSE 'greater'", "ELSE 1"),
-                (r"ELSE 'not greater'", "ELSE 0"),
+                    # T-SQL syntax fix:  [?]
+                    (r"(?<!OFFSET \d ROWS )FETCH FIRST \d+ ROWS ONLY", lambda m: f'OFFSET 0 ROWS {m.group(0)}'),
 
-                # T-SQL syntax fix:  [?]
-                (r"(?<!OFFSET \d ROWS )FETCH FIRST \d+ ROWS ONLY", lambda m: f'OFFSET 0 ROWS {m.group(0)}'),
+                ], flags=[re.RegexFlag.IGNORECASE])
 
-            ], flags=[re.RegexFlag.IGNORECASE])
+                sql_pred_data_pp.append(e)  # !
 
-    json_list_write(sql_pred_data, out_filepath)
+    # json_list_write(sql_pred_data, out_filepath)   # !
+    json_list_write(sql_pred_data_pp, out_filepath)  # !
 
 
 if __name__ == "__main__":

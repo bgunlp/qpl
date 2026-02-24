@@ -62,6 +62,10 @@ def json_list_write(lst, json_path, is_pretty_print_json=True, is_pretty_print_d
     file_write(obj_json_str, json_path)
     return True
 
+def file_read(json_path):
+    with open(json_path, mode="r", encoding="utf-8") as f:
+        return f.read()
+
 def file_write(text, filepath):
     with open(filepath, mode="w", encoding="utf-8") as f:
         return f.write(text)

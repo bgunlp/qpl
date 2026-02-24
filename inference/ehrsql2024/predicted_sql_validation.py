@@ -76,7 +76,59 @@ def main():
 # =====================================================================================================================
 
 
-def validate_predicted_sql_answers(predicted_sql_filenames):
+
+def validate_predicted_sql_answers(predicted_sql_filenames, out_filename='validated_sql_answers_summary.txt'): # , filter_method=None
+    """
+    Prints the cleaned stdout of `_validate_predicted_sql_answers` into a file
+    """
+    import io
+    from contextlib import redirect_stdout
+
+    def _clean_stdout(text):
+        text = match_and_replace(text, [
+            # (r'Post-processing predicted [\w-]+ \[\w+/\w+/', '# '),  # !
+
+            # (r'\]:\s*\d+%.*',         ''),      # !
+            # (r'Writing to.*',         ''),      # !
+
+            (r'Writing to .*_ans_.', ''),  # !
+            (r'Writing to \[\w+\/\w+\/', '# '),  # !
+
+            (r'_unified_pp.json\]', ''),  # !
+            (r'Adding.*', ''),
+            (r'Deleting.*', ''),
+            (r'Validating.*', ''),
+
+            (r'empty [\w-]+ answers', 'empty answers'),
+            (r'successfully added non-empty answers', 'OK answers'),
+            (r'failed attempts to add [\w-]+ answer', 'errors'),
+            (r'predicted queries with answer', 'answers'),
+            (r'Final accuracy score', 'Accuracy'),
+
+            (r'^(?!\s*$)(?!(?:\d+|#|Accuracy:)).*', ''),
+
+            (r'\n+', r'\n'),
+            (r'#', r'\n#'),
+
+            # (r'# [\w\.]+\n\n',           ''),   # !
+
+        ], flags=[re.RegexFlag.IGNORECASE, re.RegexFlag.MULTILINE])
+        return text
+
+    # Create a file-like object in memory to write to:
+    f = io.StringIO()
+
+    # The code block whose output we want to capture:
+    with redirect_stdout(f):
+        _validate_predicted_sql_answers(predicted_sql_filenames) # , filter_method
+
+    # After the 'with' block, standard output is restored to normal
+    s = f.getvalue()
+    file_write(_clean_stdout(s), out_filename)
+
+
+
+def _validate_predicted_sql_answers(predicted_sql_filenames):  # , filter_method=None
     for pred_filename in predicted_sql_filenames:
         if '_sqlite_' in pred_filename:
             datatype = 'sqlite'

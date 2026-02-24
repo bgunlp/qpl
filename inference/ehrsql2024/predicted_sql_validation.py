@@ -11,50 +11,50 @@ from dataset_creation.ehrsql2024.util import (
 
 
 def main():
-    validation_predicted_sqlite_notemp_filenames = [
+    validation_predicted_sqlite_notemp_filenames = [                                          # 1 (validation)
         # 'ehrsql2024_valid_predicted_sqlite_qwen_notemp.json',
         # 'ehrsql2024_valid_predicted_sqlite_qwen_notemp_ans_err_fixed.json',
         # 'ehrsql2024_valid_predicted_sqlite_qwen_notemp_ans_empty_fixed.json',
         'ehrsql2024_valid_predicted_sqlite_qwen_notemp_unified.json',
     ]
-    validation_predicted_sqlite_filenames = [
+    validation_predicted_sqlite_filenames = [                                                 # 2 (validation)
         # 'ehrsql2024_valid_predicted_sqlite_qwen.json',
         # 'ehrsql2024_valid_predicted_sqlite_qwen_ans_err_fixed.json',
         # 'ehrsql2024_valid_predicted_sqlite_qwen_ans_empty_fixed.json',
         'ehrsql2024_valid_predicted_sqlite_qwen_unified.json',
     ]
-    validation_predicted_tsql_no_user_func_filenames = [
+    validation_predicted_tsql_no_user_func_filenames = [                                      # 3 (validation)
         # 'ehrsql2024_valid_predicted_tsql_no_user_func_qwen.json',
         # 'ehrsql2024_valid_predicted_tsql_no_user_func_qwen_ans_err_fixed.json',
         # 'ehrsql2024_valid_predicted_tsql_no_user_func_qwen_ans_empty_fixed.json',
         'ehrsql2024_valid_predicted_tsql_no_user_func_qwen_unified.json',
     ]
-    validation_predicted_tsql_with_user_func_filenames = [
+    validation_predicted_tsql_with_user_func_filenames = [                                     # 4 (validation)
         # 'ehrsql2024_valid_predicted_tsql_with_user_func_qwen.json',
         # 'ehrsql2024_valid_predicted_tsql_with_user_func_qwen_ans_err_fixed.json',
         # 'ehrsql2024_valid_predicted_tsql_with_user_func_qwen_ans_empty_fixed.json',
         'ehrsql2024_valid_predicted_tsql_with_user_func_qwen_unified.json',
     ]
 
-    test_predicted_sqlite_notemp_filenames = [
+    test_predicted_sqlite_notemp_filenames = [                                                 # 1 (test)
         # 'ehrsql2024_test_predicted_sqlite_qwen_notemp.json',
         # 'ehrsql2024_test_predicted_sqlite_qwen_notemp_ans_err_fixed.json',
         # 'ehrsql2024_test_predicted_sqlite_qwen_notemp_ans_empty_fixed.json',
         'ehrsql2024_test_predicted_sqlite_qwen_notemp_unified.json',
     ]
-    test_predicted_sqlite_filenames = [
+    test_predicted_sqlite_filenames = [                                                        # 2 (test)
         # 'ehrsql2024_test_predicted_sqlite_qwen.json',
         # 'ehrsql2024_test_predicted_sqlite_qwen_ans_err_fixed.json',
         # 'ehrsql2024_test_predicted_sqlite_qwen_ans_empty_fixed.json',
         'ehrsql2024_test_predicted_sqlite_qwen_unified.json',
     ]
-    test_predicted_tsql_no_user_func_filenames = [
+    test_predicted_tsql_no_user_func_filenames = [                                             # 3 (test)
         # 'ehrsql2024_test_predicted_tsql_no_user_func_qwen.json',
         # 'ehrsql2024_test_predicted_tsql_no_user_func_qwen_ans_err_fixed.json',
         # 'ehrsql2024_test_predicted_tsql_no_user_func_qwen_ans_empty_fixed.json',
         'ehrsql2024_test_predicted_tsql_no_user_func_qwen_unified.json',
     ]
-    test_predicted_tsql_with_user_func_filenames = [
+    test_predicted_tsql_with_user_func_filenames = [                                           # 4 (test)
         # 'ehrsql2024_test_predicted_tsql_with_user_func_qwen.json',
         # 'ehrsql2024_test_predicted_tsql_with_user_func_qwen_ans_err_fixed.json',
         # 'ehrsql2024_test_predicted_tsql_with_user_func_qwen_ans_empty_fixed.json',
@@ -63,9 +63,11 @@ def main():
 
     predicted_sql_triplets_filenames = [
         validation_predicted_sqlite_notemp_filenames, validation_predicted_sqlite_filenames,
-        validation_predicted_tsql_no_user_func_filenames, validation_predicted_tsql_with_user_func_filenames,
+        validation_predicted_tsql_no_user_func_filenames,
+        validation_predicted_tsql_with_user_func_filenames,
         test_predicted_sqlite_notemp_filenames, test_predicted_sqlite_filenames,
-        test_predicted_tsql_no_user_func_filenames, test_predicted_tsql_with_user_func_filenames
+        test_predicted_tsql_no_user_func_filenames,
+        test_predicted_tsql_with_user_func_filenames
     ]
     predicted_sql_filenames = [f for triplet in predicted_sql_triplets_filenames for f in triplet]
 

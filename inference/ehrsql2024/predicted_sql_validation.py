@@ -71,13 +71,15 @@ def main():
     ]
     predicted_sql_filenames = [f for triplet in predicted_sql_triplets_filenames for f in triplet]
 
-    validated_dataset_calculate_sql_features_distribution(predicted_sql_filenames)
-
-    # validate_predicted_sql_answers(predicted_sql_filenames, filter_method=None)  # !
-    # validate_predicted_sql_answers(predicted_sql_filenames, '11_validated_sql_answers_summary.txt', filter_leave_temporal_gold_tsql)  # !
-    # validate_predicted_sql_answers(predicted_sql_filenames, '12_validated_sql_answers_summary.txt', filter_leave_non_temporal_gold_tsql)  # !
+    validate_predicted_sql_answers(predicted_sql_filenames)
+    # validate_predicted_sql_answers(predicted_sql_filenames, '11_validated_sql_answers_summary.txt', filter_leave_temporal_gold_tsql)
+    # validate_predicted_sql_answers(predicted_sql_filenames, '12_validated_sql_answers_summary.txt', filter_leave_non_temporal_gold_tsql)
 
     # unify_all_predicted_sqls_with_fixed_sqls(predicted_sql_triplets_filenames)
+
+    # validated_dataset_calculate_sql_features_distribution(predicted_sql_filenames)
+
+
 # =====================================================================================================================
 
 
@@ -142,10 +144,7 @@ def validated_dataset_calculate_sql_features_distribution(predicted_sql_filename
     json_list_write(dict_to_print, out_filepath)
 
 
-
-
-
-
+# ---- SQL feature extraction and filtering : ----
 
 def filter_leave_temporal_gold_tsql(sql_data):
     features = extract_sql_features_tsql(sql_data['tsql'])
@@ -237,8 +236,7 @@ def extract_sql_features_tsql(sql_string: str,) -> dict[str, bool]:
         "dbo.TIME_INTERVAL_REL",
         "dbo.TIME_POINT",
     ]
-    temporal_funcs = tsql_temporal_funcs  + temporal_abstract_funcs  # !
-    # temporal_funcs = temporal_abstract_funcs  # !
+    temporal_funcs = tsql_temporal_funcs  + temporal_abstract_funcs
 
     features = {
         "has_join": "JOIN" in sql,
@@ -254,6 +252,7 @@ def extract_sql_features_tsql(sql_string: str,) -> dict[str, bool]:
     return features
 
 
+# ---- Validating answers: ----
 
 def validate_predicted_sql_answers(predicted_sql_filenames, out_filename='validated_sql_answers_summary.txt', filter_method=None):
     """
@@ -264,15 +263,15 @@ def validate_predicted_sql_answers(predicted_sql_filenames, out_filename='valida
 
     def _clean_stdout(text):
         text = match_and_replace(text, [
-            # (r'Post-processing predicted [\w-]+ \[\w+/\w+/', '# '),  # !
+            # (r'Post-processing predicted [\w-]+ \[\w+/\w+/', '# '),
 
-            # (r'\]:\s*\d+%.*',         ''),      # !
-            # (r'Writing to.*',         ''),      # !
+            # (r'\]:\s*\d+%.*',         ''),
+            # (r'Writing to.*',         ''),
 
-            (r'Writing to .*_ans_.', ''),  # !
-            (r'Writing to \[\w+\/\w+\/', '# '),  # !
+            (r'Writing to .*_ans_.', ''),
+            (r'Writing to \[\w+\/\w+\/', '# '),
 
-            (r'_unified_pp.json\]', ''),  # !
+            (r'_unified_pp.json\]', ''),
             (r'Adding.*', ''),
             (r'Deleting.*', ''),
             (r'Validating.*', ''),
@@ -288,7 +287,7 @@ def validate_predicted_sql_answers(predicted_sql_filenames, out_filename='valida
             (r'\n+', r'\n'),
             (r'#', r'\n#'),
 
-            # (r'# [\w\.]+\n\n',           ''),   # !
+            # (r'# [\w\.]+\n\n',           ''),
 
         ], flags=[re.RegexFlag.IGNORECASE, re.RegexFlag.MULTILINE])
         return text
@@ -340,8 +339,6 @@ def _validate_predicted_sql_answers(predicted_sql_filenames, filter_method=None)
         dataset_validate_predicted_sql_answers(pred_ans_ok_filepath, pred_ans_attr_name, ex_ans_attr_name, pred_pp_filepath, ex_ans_attr_name_alt)  # ! pred_filepath -> pred_pp_filepath
         file_remove(pred_pp_filepath)  # ~
         print('\n\n')
-
-
 
 
 # ---- Unifying predicted SQL with fixed SQL: ----
@@ -524,16 +521,10 @@ def dataset_add_predicted_sqlite_answers(in_pred_filepath, out_pred_ans_ok_filep
 
 def post_process_predicted_sqlite(in_filepath, out_filepath, sqlite_attr_name, filter_method=None):
     sql_pred_data = json_load(in_filepath)
-
-    # tsql_pred_usr_func_filepath = in_filepath.replace('_notemp', '').replace('_sqlite_', '_tsql_with_user_func_')  # !!
-    # tsql_pred_usr_func_dct = dictify(json_load(tsql_pred_usr_func_filepath))                                     # !!
-
-    sql_pred_data_pp = []  # !
+    sql_pred_data_pp = []
     for e in get_progress_bar(sql_pred_data, f"Post-processing predicted SQLites [{in_filepath}]"):
         if sqlite_attr_name in e:
-
-            # if filter_method is None or (e['id'] in tsql_pred_usr_func_dct and filter_method(e['tsql'], tsql_pred_usr_func_dct[e['id']]['tsql_predicted'])):  # !!
-            if filter_method is None or filter_method(e):  # !
+            if filter_method is None or filter_method(e):
                 e[sqlite_attr_name] = match_and_replace(e[sqlite_attr_name], [
                     # Lowercase all comparable string literals:
                     (r" = ('[^']+')", lambda m: f' = {m.group(1).lower()}'),
@@ -552,22 +543,16 @@ def post_process_predicted_sqlite(in_filepath, out_filepath, sqlite_attr_name, f
                     (r"ELSE 'not greater'", "ELSE 0"),
                 ], flags=[re.RegexFlag.IGNORECASE])
 
-                sql_pred_data_pp.append(e)  # !
+                sql_pred_data_pp.append(e)
 
-    # json_list_write(sql_pred_data, out_filepath)   # !
-    json_list_write(sql_pred_data_pp, out_filepath)  # !
+    json_list_write(sql_pred_data_pp, out_filepath)
 
 def post_process_predicted_tsql(in_filepath, out_filepath, tsql_attr_name, filter_method=None):
     sql_pred_data = json_load(in_filepath)
-
-    # tsql_pred_usr_func_filepath = in_filepath.replace('_no_user_func_', '_with_user_func_')  # !!
-    # tsql_pred_usr_func_dct = dictify(json_load(tsql_pred_usr_func_filepath))                 # !!
-
-    sql_pred_data_pp = []  # !
+    sql_pred_data_pp = []
     for e in get_progress_bar(sql_pred_data, f"Post-processing predicted T-SQLs [{in_filepath}]"):
         if tsql_attr_name in e:
-            # if filter_method is None or (e['id'] in tsql_pred_usr_func_dct and 'tsql_predicted' in tsql_pred_usr_func_dct[e['id']] and filter_method(e['tsql'], tsql_pred_usr_func_dct[e['id']]['tsql_predicted'])):  # !!
-            if filter_method is None or filter_method(e):  # !
+            if filter_method is None or filter_method(e):
                 tsql = e[tsql_attr_name]
 
                 # Try fix non-TSQL code:
@@ -610,10 +595,9 @@ def post_process_predicted_tsql(in_filepath, out_filepath, tsql_attr_name, filte
 
                 ], flags=[re.RegexFlag.IGNORECASE])
 
-                sql_pred_data_pp.append(e)  # !
+                sql_pred_data_pp.append(e)
 
-    # json_list_write(sql_pred_data, out_filepath)   # !
-    json_list_write(sql_pred_data_pp, out_filepath)  # !
+    json_list_write(sql_pred_data_pp, out_filepath)
 
 
 if __name__ == "__main__":

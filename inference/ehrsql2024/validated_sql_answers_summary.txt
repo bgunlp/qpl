@@ -1,0 +1,64 @@
+
+# ehrsql2024_valid_predicted_sqlite_qwen_notemp
+604 OK answers
+39 errors
+188 empty answers
+341 answers equal to expected
+263 answers different than expected
+Accuracy: 41.03
+
+# ehrsql2024_valid_predicted_sqlite_qwen
+647 OK answers
+35 errors
+149 empty answers
+356 answers equal to expected
+291 answers different than expected
+Accuracy: 42.84
+
+# ehrsql2024_valid_predicted_tsql_no_user_func_qwen
+70 errors
+662 OK answers
+99 empty answers
+387 answers equal to expected
+275 answers different than expected
+Accuracy: 46.57
+
+# ehrsql2024_valid_predicted_tsql_with_user_func_qwen
+157 errors
+583 OK answers
+91 empty answers
+331 answers equal to expected
+252 answers different than expected
+Accuracy: 39.83
+
+# ehrsql2024_test_predicted_sqlite_qwen_notemp
+604 OK answers
+30 errors
+170 empty answers
+326 answers equal to expected
+278 answers different than expected
+Accuracy: 40.55
+
+# ehrsql2024_test_predicted_sqlite_qwen
+647 OK answers
+36 errors
+121 empty answers
+368 answers equal to expected
+279 answers different than expected
+Accuracy: 45.77
+
+# ehrsql2024_test_predicted_tsql_no_user_func_qwen
+47 errors
+676 OK answers
+81 empty answers
+395 answers equal to expected
+281 answers different than expected
+Accuracy: 49.13
+
+# ehrsql2024_test_predicted_tsql_with_user_func_qwen
+158 errors
+552 OK answers
+94 empty answers
+314 answers equal to expected
+238 answers different than expected
+Accuracy: 39.05

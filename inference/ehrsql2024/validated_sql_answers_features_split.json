@@ -1,0 +1,378 @@
+{
+    "ehrsql2024_valid_predicted_sqlite_qwen_notemp_unified": {
+        "_ans_ok_eq.json": {
+            "has_join": 8.21,
+            "has_group_by": 19.35,
+            "has_order_by": 56.01,
+            "has_aggregation": 9.97,
+            "has_nested": 74.19,
+            "has_temporal": 58.65,
+            "has_code_filtering": 46.92
+        },
+        "_ans_ok_uneq.json": {
+            "has_join": 18.63,
+            "has_group_by": 35.74,
+            "has_order_by": 39.54,
+            "has_aggregation": 12.17,
+            "has_nested": 93.16,
+            "has_temporal": 73.0,
+            "has_code_filtering": 63.88
+        },
+        "_ans_err.json": {
+            "has_join": 30.77,
+            "has_group_by": 46.15,
+            "has_order_by": 61.54,
+            "has_aggregation": 23.08,
+            "has_nested": 100.0,
+            "has_temporal": 69.23,
+            "has_code_filtering": 84.62
+        },
+        "_ans_empty.json": {
+            "has_join": 19.15,
+            "has_group_by": 28.19,
+            "has_order_by": 60.64,
+            "has_aggregation": 23.4,
+            "has_nested": 97.87,
+            "has_temporal": 85.11,
+            "has_code_filtering": 81.91
+        },
+        "total": {
+            "has_join": 15.04,
+            "has_group_by": 27.8,
+            "has_order_by": 52.11,
+            "has_aggregation": 14.32,
+            "has_nested": 86.76,
+            "has_temporal": 69.68,
+            "has_code_filtering": 61.97
+        }
+    },
+    "ehrsql2024_valid_predicted_sqlite_qwen_unified": {
+        "_ans_ok_eq.json": {
+            "has_join": 9.55,
+            "has_group_by": 20.22,
+            "has_order_by": 53.65,
+            "has_aggregation": 10.67,
+            "has_nested": 74.44,
+            "has_temporal": 62.36,
+            "has_code_filtering": 49.72
+        },
+        "_ans_ok_uneq.json": {
+            "has_join": 16.84,
+            "has_group_by": 35.4,
+            "has_order_by": 43.64,
+            "has_aggregation": 14.09,
+            "has_nested": 94.5,
+            "has_temporal": 74.23,
+            "has_code_filtering": 62.2
+        },
+        "_ans_err.json": {
+            "has_join": 28.57,
+            "has_group_by": 45.71,
+            "has_order_by": 60.0,
+            "has_aggregation": 22.86,
+            "has_nested": 100.0,
+            "has_temporal": 60.0,
+            "has_code_filtering": 94.29
+        },
+        "_ans_empty.json": {
+            "has_join": 21.48,
+            "has_group_by": 26.85,
+            "has_order_by": 63.09,
+            "has_aggregation": 21.48,
+            "has_nested": 97.99,
+            "has_temporal": 80.54,
+            "has_code_filtering": 83.22
+        },
+        "total": {
+            "has_join": 15.04,
+            "has_group_by": 27.8,
+            "has_order_by": 52.11,
+            "has_aggregation": 14.32,
+            "has_nested": 86.76,
+            "has_temporal": 69.68,
+            "has_code_filtering": 61.97
+        }
+    },
+    "ehrsql2024_valid_predicted_tsql_no_user_func_qwen_unified": {
+        "_ans_ok_eq.json": {
+            "has_join": 8.53,
+            "has_group_by": 18.6,
+            "has_order_by": 54.26,
+            "has_aggregation": 9.82,
+            "has_nested": 77.26,
+            "has_temporal": 63.31,
+            "has_code_filtering": 50.65
+        },
+        "_ans_ok_uneq.json": {
+            "has_join": 18.55,
+            "has_group_by": 41.45,
+            "has_order_by": 42.91,
+            "has_aggregation": 14.91,
+            "has_nested": 93.09,
+            "has_temporal": 72.0,
+            "has_code_filtering": 63.64
+        },
+        "_ans_err.json": {
+            "has_join": 31.43,
+            "has_group_by": 32.86,
+            "has_order_by": 62.86,
+            "has_aggregation": 17.14,
+            "has_nested": 97.14,
+            "has_temporal": 72.86,
+            "has_code_filtering": 82.86
+        },
+        "_ans_empty.json": {
+            "has_join": 19.19,
+            "has_group_by": 22.22,
+            "has_order_by": 61.62,
+            "has_aggregation": 28.28,
+            "has_nested": 98.99,
+            "has_temporal": 85.86,
+            "has_code_filtering": 86.87
+        },
+        "total": {
+            "has_join": 15.04,
+            "has_group_by": 27.8,
+            "has_order_by": 52.11,
+            "has_aggregation": 14.32,
+            "has_nested": 86.76,
+            "has_temporal": 69.68,
+            "has_code_filtering": 61.97
+        }
+    },
+    "ehrsql2024_valid_predicted_tsql_with_user_func_qwen_unified": {
+        "_ans_ok_eq.json": {
+            "has_join": 5.74,
+            "has_group_by": 18.13,
+            "has_order_by": 54.98,
+            "has_aggregation": 8.46,
+            "has_nested": 76.13,
+            "has_temporal": 64.05,
+            "has_code_filtering": 51.06
+        },
+        "_ans_ok_uneq.json": {
+            "has_join": 13.89,
+            "has_group_by": 32.54,
+            "has_order_by": 42.46,
+            "has_aggregation": 17.06,
+            "has_nested": 90.87,
+            "has_temporal": 72.22,
+            "has_code_filtering": 57.94
+        },
+        "_ans_err.json": {
+            "has_join": 35.67,
+            "has_group_by": 40.13,
+            "has_order_by": 57.96,
+            "has_aggregation": 15.29,
+            "has_nested": 98.09,
+            "has_temporal": 72.61,
+            "has_code_filtering": 81.53
+        },
+        "_ans_empty.json": {
+            "has_join": 16.48,
+            "has_group_by": 28.57,
+            "has_order_by": 58.24,
+            "has_aggregation": 26.37,
+            "has_nested": 94.51,
+            "has_temporal": 78.02,
+            "has_code_filtering": 79.12
+        },
+        "total": {
+            "has_join": 15.04,
+            "has_group_by": 27.8,
+            "has_order_by": 52.11,
+            "has_aggregation": 14.32,
+            "has_nested": 86.76,
+            "has_temporal": 69.68,
+            "has_code_filtering": 61.97
+        }
+    },
+    "ehrsql2024_test_predicted_sqlite_qwen_notemp_unified": {
+        "_ans_ok_eq.json": {
+            "has_join": 6.75,
+            "has_group_by": 15.64,
+            "has_order_by": 55.52,
+            "has_aggregation": 7.67,
+            "has_nested": 71.17,
+            "has_temporal": 57.67,
+            "has_code_filtering": 46.32
+        },
+        "_ans_ok_uneq.json": {
+            "has_join": 16.55,
+            "has_group_by": 33.81,
+            "has_order_by": 44.6,
+            "has_aggregation": 11.15,
+            "has_nested": 92.45,
+            "has_temporal": 72.66,
+            "has_code_filtering": 65.47
+        },
+        "_ans_err.json": {
+            "has_join": 30.0,
+            "has_group_by": 43.33,
+            "has_order_by": 53.33,
+            "has_aggregation": 26.67,
+            "has_nested": 100.0,
+            "has_temporal": 60.0,
+            "has_code_filtering": 93.33
+        },
+        "_ans_empty.json": {
+            "has_join": 24.12,
+            "has_group_by": 34.12,
+            "has_order_by": 62.35,
+            "has_aggregation": 15.88,
+            "has_nested": 98.24,
+            "has_temporal": 81.18,
+            "has_code_filtering": 80.59
+        },
+        "total": {
+            "has_join": 14.68,
+            "has_group_by": 26.87,
+            "has_order_by": 53.11,
+            "has_aggregation": 11.32,
+            "has_nested": 85.32,
+            "has_temporal": 67.91,
+            "has_code_filtering": 61.94
+        }
+    },
+    "ehrsql2024_test_predicted_sqlite_qwen_unified": {
+        "_ans_ok_eq.json": {
+            "has_join": 7.88,
+            "has_group_by": 17.12,
+            "has_order_by": 55.16,
+            "has_aggregation": 8.15,
+            "has_nested": 73.64,
+            "has_temporal": 60.87,
+            "has_code_filtering": 47.01
+        },
+        "_ans_ok_uneq.json": {
+            "has_join": 18.28,
+            "has_group_by": 34.77,
+            "has_order_by": 45.16,
+            "has_aggregation": 10.39,
+            "has_nested": 93.19,
+            "has_temporal": 70.61,
+            "has_code_filtering": 65.95
+        },
+        "_ans_err.json": {
+            "has_join": 36.11,
+            "has_group_by": 52.78,
+            "has_order_by": 72.22,
+            "has_aggregation": 22.22,
+            "has_nested": 100.0,
+            "has_temporal": 69.44,
+            "has_code_filtering": 86.11
+        },
+        "_ans_empty.json": {
+            "has_join": 20.66,
+            "has_group_by": 30.58,
+            "has_order_by": 59.5,
+            "has_aggregation": 19.83,
+            "has_nested": 98.35,
+            "has_temporal": 82.64,
+            "has_code_filtering": 90.91
+        },
+        "total": {
+            "has_join": 14.68,
+            "has_group_by": 26.87,
+            "has_order_by": 53.11,
+            "has_aggregation": 11.32,
+            "has_nested": 85.32,
+            "has_temporal": 67.91,
+            "has_code_filtering": 61.94
+        }
+    },
+    "ehrsql2024_test_predicted_tsql_no_user_func_qwen_unified": {
+        "_ans_ok_eq.json": {
+            "has_join": 6.84,
+            "has_group_by": 17.22,
+            "has_order_by": 54.68,
+            "has_aggregation": 8.86,
+            "has_nested": 75.44,
+            "has_temporal": 62.03,
+            "has_code_filtering": 51.14
+        },
+        "_ans_ok_uneq.json": {
+            "has_join": 18.51,
+            "has_group_by": 36.3,
+            "has_order_by": 44.48,
+            "has_aggregation": 12.1,
+            "has_nested": 93.24,
+            "has_temporal": 71.53,
+            "has_code_filtering": 64.06
+        },
+        "_ans_err.json": {
+            "has_join": 55.32,
+            "has_group_by": 59.57,
+            "has_order_by": 74.47,
+            "has_aggregation": 12.77,
+            "has_nested": 100.0,
+            "has_temporal": 78.72,
+            "has_code_filtering": 91.49
+        },
+        "_ans_empty.json": {
+            "has_join": 16.05,
+            "has_group_by": 22.22,
+            "has_order_by": 62.96,
+            "has_aggregation": 19.75,
+            "has_nested": 97.53,
+            "has_temporal": 77.78,
+            "has_code_filtering": 90.12
+        },
+        "total": {
+            "has_join": 14.68,
+            "has_group_by": 26.87,
+            "has_order_by": 53.11,
+            "has_aggregation": 11.32,
+            "has_nested": 85.32,
+            "has_temporal": 67.91,
+            "has_code_filtering": 61.94
+        }
+    },
+    "ehrsql2024_test_predicted_tsql_with_user_func_qwen_unified": {
+        "_ans_ok_eq.json": {
+            "has_join": 4.14,
+            "has_group_by": 16.24,
+            "has_order_by": 53.5,
+            "has_aggregation": 10.19,
+            "has_nested": 75.48,
+            "has_temporal": 63.06,
+            "has_code_filtering": 52.55
+        },
+        "_ans_ok_uneq.json": {
+            "has_join": 15.13,
+            "has_group_by": 32.77,
+            "has_order_by": 40.34,
+            "has_aggregation": 11.34,
+            "has_nested": 89.5,
+            "has_temporal": 70.59,
+            "has_code_filtering": 57.98
+        },
+        "_ans_err.json": {
+            "has_join": 36.71,
+            "has_group_by": 42.41,
+            "has_order_by": 63.92,
+            "has_aggregation": 10.76,
+            "has_nested": 93.67,
+            "has_temporal": 68.99,
+            "has_code_filtering": 77.85
+        },
+        "_ans_empty.json": {
+            "has_join": 11.7,
+            "has_group_by": 21.28,
+            "has_order_by": 65.96,
+            "has_aggregation": 15.96,
+            "has_nested": 93.62,
+            "has_temporal": 75.53,
+            "has_code_filtering": 76.6
+        },
+        "total": {
+            "has_join": 14.68,
+            "has_group_by": 26.87,
+            "has_order_by": 53.11,
+            "has_aggregation": 11.32,
+            "has_nested": 85.32,
+            "has_temporal": 67.91,
+            "has_code_filtering": 61.94
+        }
+    }
+}

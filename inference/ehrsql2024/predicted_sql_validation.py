@@ -71,19 +71,75 @@ def main():
     ]
     predicted_sql_filenames = [f for triplet in predicted_sql_triplets_filenames for f in triplet]
 
+    # validated_dataset_fetch_predictions_from_external_source(predicted_sql_filenames)
+
     validate_predicted_sql_answers(predicted_sql_filenames)
-    # validate_predicted_sql_answers(predicted_sql_filenames, '11_validated_sql_answers_summary.txt', filter_leave_temporal_gold_tsql)
-    # validate_predicted_sql_answers(predicted_sql_filenames, '12_validated_sql_answers_summary.txt', filter_leave_non_temporal_gold_tsql)
+    validated_dataset_calculate_sql_features_prevalence(predicted_sql_filenames)  #
 
-    # unify_all_predicted_sqls_with_fixed_sqls(predicted_sql_triplets_filenames)
-
-    # validated_dataset_calculate_sql_features_distribution(predicted_sql_filenames)
+    validate_predicted_sql_answers(predicted_sql_filenames, '11_validated_sql_answers_summary.txt', filter_leave_temporal_gold_tsql)
+    validate_predicted_sql_answers(predicted_sql_filenames, '12_validated_sql_answers_summary.txt', filter_leave_non_temporal_gold_tsql)
 
 
 # =====================================================================================================================
 
 
-def validated_dataset_calculate_sql_features_distribution(predicted_sql_filenames, out_filepath='validated_sql_answers_features_split.json'):
+def validated_dataset_fetch_predictions_from_external_source(predicted_sql_filenames):
+    """
+    Fetching the predicted SQL queries from an external source (e.g., someone else's results for comparison),
+    OVERWRITING the final dataset and keeping only entries with non-null answers from the external source.
+    Need to adapt the code to the structure of the specific external source.
+    """
+    def dictify_custom(dct):
+        lst = dct['run_records_response']
+        return dict([(e['question_record_id'], e) for e in lst])
+
+    for pred_filename in predicted_sql_filenames:
+        missing_ids = []
+
+        if pred_filename.endswith('_ans_err_fixed.json'):
+            subfolder_name = 'ans_err_fixed'
+        elif pred_filename.endswith('_ans_empty_fixed.json'):
+            subfolder_name = 'ans_empty_fixed'
+        elif pred_filename.endswith('_unified.json'):
+            subfolder_name = 'preds_fixed_unified'
+        else:
+            subfolder_name = 'preds'
+
+        validated_preds_folder = f'validation_in/{subfolder_name}'
+        valid_pred_filepath = f'{validated_preds_folder}/{pred_filename}'
+        valid_pred_data = json_load(valid_pred_filepath)
+
+        if '_tsql_' in pred_filename:
+            source_filepath = 'shahar_results_tsql_test.json'  if '_test_' in pred_filename else 'shahar_results_tsql_val.json'
+            pred_attr_name = 'tsql_predicted'
+        elif '_sqlite_' in pred_filename:
+            source_filepath = 'shahar_results_sqlite_test.json'  if '_test_' in pred_filename else 'shahar_results_sqlite_val.json'
+            pred_attr_name = 'sqlite_predicted'
+        else:
+            raise ValueError('Unknown filename: ' + pred_filename)
+
+        source_dict = dictify_custom(json_load(source_filepath))
+
+        pred_data_new = []
+        for sql_data in get_progress_bar(valid_pred_data, f"Enriching [{valid_pred_filepath}] with predictions from [{source_filepath}]"):
+            if sql_data['id'] in source_dict:
+                if source_dict[sql_data['id']]['pipeline_output']['model_response']['final_response'] is not None:
+                    sql_data[pred_attr_name] = source_dict[sql_data['id']]['pipeline_output']['model_response']['final_response']
+                    pred_data_new.append(sql_data)
+            else:
+                missing_ids.append(sql_data['id'])
+
+        json_list_write(pred_data_new, valid_pred_filepath)
+        print(f'Missing IDs: {len(missing_ids)}')
+        # json_list_write(missing_ids, valid_pred_filepath.replace('.json', '_missing_ids.json'))
+        file_remove(valid_pred_filepath.replace('.json', '_missing_ids.json'))
+        print('\n')
+
+def validated_dataset_calculate_sql_features_prevalence(predicted_sql_filenames, out_filepath='validated_sql_answers_features_split.json'):
+    """
+    Pre-condition: `validate_predicted_sql_answers(predicted_sql_filenames)` has been called on relevant filenames,
+    so that the validated predicted SQL answers are available in the output folder.
+    """
     dict_to_print = {}
 
     for pred_filename in predicted_sql_filenames:
@@ -523,7 +579,7 @@ def post_process_predicted_sqlite(in_filepath, out_filepath, sqlite_attr_name, f
     sql_pred_data = json_load(in_filepath)
     sql_pred_data_pp = []
     for e in get_progress_bar(sql_pred_data, f"Post-processing predicted SQLites [{in_filepath}]"):
-        if sqlite_attr_name in e:
+        if sqlite_attr_name in e and e['sqlite'] != 'null':
             if filter_method is None or filter_method(e):
                 e[sqlite_attr_name] = match_and_replace(e[sqlite_attr_name], [
                     # Lowercase all comparable string literals:
@@ -551,10 +607,9 @@ def post_process_predicted_tsql(in_filepath, out_filepath, tsql_attr_name, filte
     sql_pred_data = json_load(in_filepath)
     sql_pred_data_pp = []
     for e in get_progress_bar(sql_pred_data, f"Post-processing predicted T-SQLs [{in_filepath}]"):
-        if tsql_attr_name in e:
+        if tsql_attr_name in e and e['sqlite'] != 'null':
             if filter_method is None or filter_method(e):
                 tsql = e[tsql_attr_name]
-
                 # Try fix non-TSQL code:
                 try:
                     tsql = match_and_replace(tsql, [("DATEDIFF", "DATEDIFFF")])  # weird fix for weird sqlglot behavior [1]

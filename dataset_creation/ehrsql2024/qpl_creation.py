@@ -91,7 +91,7 @@ def eps_data_to_raw_qpls(eps_data_for_scala: list[dict[str, str]]) -> list[dict[
 
 def run_ep_to_qpl_scala_cli(in_json_path, out_json_path):
     cmd = get_ep_to_qpl_scala_cli_command(in_json_path, out_json_path)
-    with RuntimeCountManager(f"Execution plans to QPL (Scala CLI command)"):
+    with RuntimeCountManager(f"Execution plans to QPL '{' '.join(cmd)}'"):
         result = subprocess.run(cmd, capture_output=True, text=True)
 
     if result.returncode == 0:
